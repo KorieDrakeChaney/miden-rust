@@ -1,0 +1,17 @@
+begin
+	repeat.4
+		padw
+	end
+	push.0
+	push.1
+	push.2
+	push.3
+	push.4
+	push.5
+	push.6
+	push.7
+	push.8
+	movdn.3
+end
+
+#stack output : [7, 6, 5, 8, 4, 3, 2, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0] 

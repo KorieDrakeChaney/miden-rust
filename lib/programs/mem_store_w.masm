@@ -1,0 +1,14 @@
+begin
+	push.5
+	push.2
+	push.3
+	push.4
+	mem_storew
+	repeat.4
+		drop
+	end
+	push.4
+	mem_loadw
+end
+
+#stack output : [3, 2, 5, 0, 0, 0, 0] 

@@ -1,0 +1,7 @@
+begin
+	push.5
+	push.5
+	mul
+end
+
+#stack output : [25, 0, 0, 0, 0, 0, 0, 0, 0] 

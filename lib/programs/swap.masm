@@ -1,0 +1,11 @@
+begin
+	repeat.8
+		padw
+	end
+	repeat.7
+		push.1
+	end
+	swapw.3
+end
+
+#stack output : [0, 0, 0, 0, 1, 1, 1, 0, 0, 0, 0, 0, 1, 1, 1, 1, 0, 0, 0, 0, 0, 0, 0] 

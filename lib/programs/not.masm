@@ -1,0 +1,6 @@
+begin
+	push.1
+	not
+end
+
+#stack output : [0, 0, 0, 0, 0, 0, 0, 0, 0] 

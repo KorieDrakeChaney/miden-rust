@@ -1,0 +1,11 @@
+proc.testProc.3
+	push.5
+	loc_store.2
+	loc_load.2
+end
+
+begin
+	exec.testProc
+end
+
+#stack output : [5, 0, 0, 0, 0, 0, 0, 0, 0] 

@@ -1,0 +1,6 @@
+begin
+	push.5
+	add.10
+end
+
+#stack output : [15, 0, 0, 0, 0, 0, 0, 0, 0] 

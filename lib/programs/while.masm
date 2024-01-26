@@ -1,0 +1,17 @@
+begin
+	adv_push.1
+	while.true
+		swap.1
+		dup.1
+		add
+		dup.1
+		eq.89
+		if.true
+			push.0
+		else
+			push.1
+		end
+	end
+end
+
+#stack output : [144, 89] 

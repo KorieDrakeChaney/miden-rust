@@ -1,0 +1,9 @@
+begin
+	repeat.10
+		swap.1
+		dup.1
+		add
+	end
+end
+
+#stack output : [89, 55] 

@@ -1,0 +1,13 @@
+proc.Fibonacci.1
+	swap.1
+	dup.1
+	add
+end
+
+begin
+	repeat.100
+		exec.Fibonacci
+	end
+end
+
+#stack output : [1298777861964970150, 3736710860384812976] 

@@ -1,0 +1,11 @@
+[package]
+name = "rust-masm-cli"
+version = "0.1.0"
+edition = "2021"
+
+# See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
+
+[dependencies]
+rust-masm = { path = "../lib" }
+clap = { version = "4.0.0", features = ["derive"] }
+termcolor = "1.4.1"

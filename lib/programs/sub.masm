@@ -1,0 +1,7 @@
+begin
+	push.5
+	push.5
+	sub
+end
+
+#stack output : [0, 0, 0, 0, 0, 0, 0, 0, 0] 

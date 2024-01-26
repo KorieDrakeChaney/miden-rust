@@ -1,0 +1,12 @@
+begin
+	push.3
+	push.5
+	adv_push.1
+	if.true
+		add
+	else
+		mul
+	end
+end
+
+#stack output : [8, 1] 
