@@ -4,7 +4,7 @@ begin
 		swap.1
 		dup.1
 		add
-		dup.1
+		dup.0
 		eq.89
 		if.true
 			push.0
@@ -14,4 +14,4 @@ begin
 	end
 end
 
-#stack output : [144, 89] 
+#stack output : [89, 55, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0] 

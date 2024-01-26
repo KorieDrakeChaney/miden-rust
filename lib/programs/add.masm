@@ -4,4 +4,4 @@ begin
 	add
 end
 
-#stack output : [10, 0, 0, 0, 0, 0, 0, 0, 0] 
+#stack output : [10, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0] 

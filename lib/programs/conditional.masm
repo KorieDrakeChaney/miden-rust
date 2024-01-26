@@ -9,4 +9,4 @@ begin
 	end
 end
 
-#stack output : [8, 1] 
+#stack output : [8, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0] 

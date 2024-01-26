@@ -48,21 +48,27 @@ fn main() {
             continue;
         }
 
+        if args.len() == 2 {
+            if HELP.contains(&args[1]) {
+                let _ = stdout.set_color(ColorSpec::new().set_fg(Some(Color::Cyan)));
+                let _ = println!("{}", help);
+                continue;
+            } else if VERSION.contains(&args[1]) {
+                if let Some(version) = version {
+                    let _ = stdout.set_color(ColorSpec::new().set_fg(Some(Color::Cyan)));
+                    let _ = println!("{}", version);
+                }
+                continue;
+            }
+        }
+
         if HELP.contains(&args[1]) {
             let _ = stdout.set_color(ColorSpec::new().set_fg(Some(Color::Cyan)));
-            let _ = println!("{}", help);
-            continue;
-        } else if VERSION.contains(&args[1]) {
-            if let Some(version) = version {
-                let _ = stdout.set_color(ColorSpec::new().set_fg(Some(Color::Cyan)));
-                let _ = println!("{}", version);
-            }
-            continue;
+        } else {
+            let _ = stdout.set_color(ColorSpec::new().set_fg(Some(Color::Red)).set_bold(true));
         }
 
         let matches = app().try_get_matches_from(args);
-
-        let _ = stdout.set_color(ColorSpec::new().set_fg(Some(Color::Red)).set_bold(true));
 
         match matches {
             Ok(matches) => match matches.subcommand() {

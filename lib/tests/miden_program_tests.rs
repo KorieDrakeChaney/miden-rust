@@ -1,4 +1,4 @@
-use rust_masm::{EmptyProgram, Inputs, MidenProgram, Program};
+use rust_masm::{EmptyProgram, Inputs, MidenProgram};
 
 #[test]
 fn test_error() {
@@ -273,7 +273,7 @@ fn test_while() {
 
     let mut while_program = MidenProgram::new();
 
-    while_program.add_program(&fib);
+    while_program.add_program(|| fib.get_operands());
 
     while_program.dup();
 
@@ -318,13 +318,13 @@ fn nested_if_else() {
 
     let mut if_program_2 = MidenProgram::new();
 
-    if_program_2.add_program(&program_2);
+    if_program_2.add_program(|| program_2.get_operands());
 
-    if_program_2.add_program(&program_2);
+    if_program_2.add_program(|| program_2.get_operands());
 
     program_3.if_else(|| if_program_2.get_operands(), || program_2.get_operands());
 
-    program.add_program(&program_3);
+    program.add_program(|| program_3.get_operands());
 
     program.save("programs/nested_if_else.masm");
     assert_eq!(Some(program.stack[0].into()), program.prove());
@@ -348,13 +348,13 @@ fn nested_repeat() {
 
     let mut repeat_program_2 = MidenProgram::new();
 
-    repeat_program_2.add_program(&program_2);
+    repeat_program_2.add_program(|| program_2.get_operands());
 
-    repeat_program_2.add_program(&program_2);
+    repeat_program_2.add_program(|| program_2.get_operands());
 
     program_3.repeat(2, || repeat_program_2.get_operands());
 
-    program.add_program(&program_3);
+    program.add_program(|| program_3.get_operands());
     program.print_masm();
 
     program.print("test stack");
@@ -555,9 +555,9 @@ fn test_empty_program() {
 
     let mut program = MidenProgram::new();
 
-    program.add_program(&rand_program);
+    program.add_program(|| rand_program.get_operands());
 
-    program.add_program(&if_program);
+    program.add_program(|| if_program.get_operands());
 
     program.repeat(5, || {
         let mut repeat_program = EmptyProgram::new();
@@ -570,4 +570,18 @@ fn test_empty_program() {
     });
 
     program.save("programs/empty_program.masm");
+}
+
+#[test]
+fn while_block() {
+    let mut program = MidenProgram::new();
+    program.while_block(|| {
+        let mut block = EmptyProgram::new();
+        block.push(1);
+        block.increment();
+        block.dup();
+        block.neq_n(10);
+        block.print("loop");
+        block.get_operands()
+    });
 }

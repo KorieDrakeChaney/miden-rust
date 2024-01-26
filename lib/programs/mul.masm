@@ -4,4 +4,4 @@ begin
 	mul
 end
 
-#stack output : [25, 0, 0, 0, 0, 0, 0, 0, 0] 
+#stack output : [25, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0] 

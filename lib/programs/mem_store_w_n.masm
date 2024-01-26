@@ -10,4 +10,4 @@ begin
 	mem_loadw.4
 end
 
-#stack output : [4, 3, 2, 5, 0, 0, 0, 0] 
+#stack output : [4, 3, 2, 5, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0] 

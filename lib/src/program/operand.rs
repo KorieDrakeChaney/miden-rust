@@ -75,6 +75,9 @@ pub enum Operand {
     MemStoreWImm(u32),
     LocStoreW(u16),
 
+    Increment,
+    Decrement,
+
     Exec(String),
 
     Error(MidenProgramError),
@@ -152,6 +155,9 @@ impl std::fmt::Display for Operand {
             Self::BEGIN => write!(f, "begin"),
             Self::Exec(value) => write!(f, "exec.{value}"),
             Self::PRINT(_) => write!(f, ""),
+
+            Self::Increment => write!(f, "add.1"),
+            Self::Decrement => write!(f, "sub.1"),
 
             Self::Error(e) => write!(f, "{}", e),
         }

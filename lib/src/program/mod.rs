@@ -11,8 +11,8 @@ pub use empty::*;
 
 mod manipulation;
 
-pub use crate::Inputs;
-use operand::Operand;
+use crate::Inputs;
+pub use operand::Operand;
 
 use std::collections::{HashMap, VecDeque};
 
@@ -20,10 +20,6 @@ use math::{fields::f64::BaseElement, FieldElement, StarkField};
 use miden::{
     prove, AdviceInputs, Assembler, DefaultHost, MemAdviceProvider, ProvingOptions, StackInputs,
 };
-
-pub trait Program {
-    fn get_operands(&self) -> VecDeque<Operand>;
-}
 
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub enum ProgramType {
@@ -52,7 +48,7 @@ pub struct MidenProgram {
 impl MidenProgram {
     pub fn new() -> MidenProgram {
         MidenProgram {
-            stack: VecDeque::from(vec![BaseElement::ZERO; 8]),
+            stack: VecDeque::from(vec![BaseElement::ZERO; 16]),
             operand_stack: VecDeque::new(),
             advice_stack: VecDeque::new(),
 
@@ -72,7 +68,7 @@ impl MidenProgram {
 
     pub fn proc(name: &str) -> MidenProgram {
         MidenProgram {
-            stack: VecDeque::from(vec![BaseElement::ZERO; 8]),
+            stack: VecDeque::from(vec![BaseElement::ZERO; 16]),
             operand_stack: VecDeque::new(),
             advice_stack: VecDeque::new(),
 
@@ -228,12 +224,12 @@ impl MidenProgram {
         self
     }
 
-    fn add_operands(&mut self, operands: &VecDeque<Operand>) {
-        if self.program_type == ProgramType::Begin {
-            self.execute_block(&mut operands.clone());
-        }
-        for op in operands {
+    fn add_operands(&mut self, operands: VecDeque<Operand>) {
+        for op in &operands {
             self.operand_stack.push_back(op.clone());
+        }
+        if self.program_type == ProgramType::Begin {
+            self.execute_block(&operands);
         }
     }
 
@@ -242,11 +238,11 @@ impl MidenProgram {
         self.operand_stack.push_back(operand);
     }
 
-    pub fn add_program<T>(&mut self, program: &T)
+    pub fn add_program<F>(&mut self, program: F)
     where
-        T: Program,
+        F: FnOnce() -> VecDeque<Operand>,
     {
-        self.add_operands(&program.get_operands());
+        self.add_operands(program());
     }
 
     pub fn print(&mut self, message: &str) {
@@ -266,10 +262,8 @@ impl MidenProgram {
             todo!("error for appending proc to proc");
         }
     }
-}
 
-impl Program for MidenProgram {
-    fn get_operands(&self) -> VecDeque<Operand> {
+    pub fn get_operands(&self) -> VecDeque<Operand> {
         self.operand_stack.clone()
     }
 }
