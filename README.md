@@ -128,3 +128,11 @@ fn main() {
 ```
 
 Which is beneficial for debugging
+
+# CLI
+
+Also try using this simple CLI tool to see how your stack transforms:
+
+```bash
+cargo run
+```
