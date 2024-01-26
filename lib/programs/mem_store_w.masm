@@ -11,4 +11,4 @@ begin
 	mem_loadw
 end
 
-#stack output : [3, 2, 5, 0, 0, 0, 0] 
+#stack output : [3, 2, 5, 0, 0, 0, 0, 0] 

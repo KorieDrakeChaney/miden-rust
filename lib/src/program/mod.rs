@@ -160,10 +160,6 @@ impl MidenProgram {
         &self.loc_memory
     }
 
-    pub fn print_stack(&self) {
-        println!("{:?}", self.stack);
-    }
-
     pub fn print_masm(&self) {
         println!("{}", self);
     }

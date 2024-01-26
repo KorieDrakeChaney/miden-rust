@@ -1,4 +1,4 @@
-use rust_masm::{Inputs, MidenProgram};
+use rust_masm::{EmptyProgram, Inputs, MidenProgram, Program};
 
 #[test]
 fn test_error() {
@@ -18,7 +18,7 @@ fn test_inv() {
     program.push(5);
     program.inv();
 
-    program.print_stack();
+    program.print("test stack");
     program.save("programs/inv.masm");
 
     assert_eq!(Some(program.stack[0].into()), program.prove());
@@ -129,7 +129,7 @@ fn test_repeat() {
     fib.dup_n(1);
     fib.add();
 
-    program.repeat(10, &mut fib);
+    program.repeat(10, || fib.get_operands());
 
     program.save("programs/repeat.masm");
     assert_eq!(Some(program.stack[0].into()), program.prove());
@@ -146,7 +146,7 @@ fn test_conditional() {
     if_program.add();
     let mut else_program = MidenProgram::new();
     else_program.mul();
-    program.if_else(&if_program, &else_program);
+    program.if_else(|| if_program.get_operands(), || else_program.get_operands());
 
     program.save("programs/conditional.masm");
     assert_eq!(Some(program.stack[0].into()), program.prove());
@@ -172,8 +172,8 @@ fn test_swap() {
     pad_program.padw();
 
     program2.push(1);
-    program.repeat(8, &mut pad_program);
-    program.repeat(7, &mut program2);
+    program.repeat(8, || pad_program.get_operands());
+    program.repeat(7, || program2.get_operands());
 
     program.swapw_n(3);
 
@@ -189,7 +189,7 @@ fn test_movup() {
 
     pad_program.padw();
 
-    program.repeat(4, &mut pad_program);
+    program.repeat(4, || pad_program.get_operands());
 
     for i in 0..9 {
         program.push(i);
@@ -209,7 +209,7 @@ fn test_movdn() {
 
     pad_program.padw();
 
-    program.repeat(4, &mut pad_program);
+    program.repeat(4, || pad_program.get_operands());
 
     for i in 0..9 {
         program.push(i);
@@ -229,7 +229,7 @@ fn test_movupw() {
 
     pad_program.padw();
 
-    program.repeat(4, &mut pad_program);
+    program.repeat(4, || pad_program.get_operands());
 
     for i in 0..9 {
         program.push(i);
@@ -249,7 +249,7 @@ fn test_movdnw() {
 
     pad_program.padw();
 
-    program.repeat(4, &mut pad_program);
+    program.repeat(4, || pad_program.get_operands());
 
     for i in 0..9 {
         program.push(i);
@@ -284,10 +284,10 @@ fn test_while() {
     let mut else_program = MidenProgram::new();
     else_program.push(1);
 
-    while_program.if_else(&if_program, &else_program);
+    while_program.if_else(|| if_program.get_operands(), || else_program.get_operands());
 
     program.adv_push(1);
-    program.while_block(&while_program);
+    program.while_block(|| while_program.get_operands());
 
     program.save("programs/while.masm");
     assert_eq!(Some(program.stack[0].into()), program.prove());
@@ -310,7 +310,7 @@ fn nested_if_else() {
 
     else_program.push(0);
 
-    program_2.if_else(&if_program, &else_program);
+    program_2.if_else(|| if_program.get_operands(), || else_program.get_operands());
 
     let mut program_3 = MidenProgram::new();
 
@@ -322,7 +322,7 @@ fn nested_if_else() {
 
     if_program_2.add_program(&program_2);
 
-    program_3.if_else(&if_program_2, &program_2);
+    program_3.if_else(|| if_program_2.get_operands(), || program_2.get_operands());
 
     program.add_program(&program_3);
 
@@ -340,7 +340,7 @@ fn nested_repeat() {
 
     repeat_program.push(1);
 
-    program_2.repeat(2, &mut repeat_program);
+    program_2.repeat(2, || repeat_program.get_operands());
 
     let mut program_3 = MidenProgram::new();
 
@@ -352,12 +352,12 @@ fn nested_repeat() {
 
     repeat_program_2.add_program(&program_2);
 
-    program_3.repeat(2, &mut repeat_program_2);
+    program_3.repeat(2, || repeat_program_2.get_operands());
 
     program.add_program(&program_3);
     program.print_masm();
 
-    program.print_stack();
+    program.print("test stack");
     program.save("programs/nested_repeat.masm");
     assert_eq!(Some(program.stack[0].into()), program.prove());
 }
@@ -403,13 +403,13 @@ fn test_mem_store_w() {
 
     drop_program.drop();
 
-    program.repeat(4, &mut drop_program);
+    program.repeat(4, || drop_program.get_operands());
 
     program.push(4);
 
     program.mem_load_w();
     program.print_masm();
-    program.print_stack();
+    program.print("test stack");
     program.save("programs/mem_store_w.masm");
     assert_eq!(Some(program.stack[0].into()), program.prove());
 }
@@ -428,11 +428,11 @@ fn test_mem_store_w_n() {
 
     drop_program.drop();
 
-    program.repeat(4, &mut drop_program);
+    program.repeat(4, || drop_program.get_operands());
 
     program.mem_load_w_n(4);
 
-    program.print_stack();
+    program.print("test stack");
     program.save("programs/mem_store_w_n.masm");
     assert_eq!(Some(program.stack[0].into()), program.prove());
 }
@@ -468,7 +468,7 @@ fn test_loc_store_w() {
 
     drop_program.drop();
 
-    local_proc.repeat(4, &mut drop_program);
+    local_proc.repeat(4, || drop_program.get_operands());
 
     local_proc.loc_load_w(4);
 
@@ -489,7 +489,7 @@ fn test_refresh() {
     program.push(3);
     program.push(4);
 
-    program.print_stack();
+    program.print("test stack");
 
     program.save("programs/refresh.masm");
     assert_eq!(Some(program.stack[0].into()), program.prove());
@@ -511,12 +511,63 @@ fn test_test() {
 
     repeat_program.exec("Fibonacci");
 
-    program.repeat(100, &mut repeat_program);
+    program.repeat(100, || repeat_program.get_operands());
 
-    program.print_stack();
+    program.print("fibonacci");
     program.print_masm();
 
     program.save("programs/test_test.masm");
 
     assert_eq!(Some(program.stack[0].into()), program.prove());
+}
+
+#[test]
+fn test_empty_program() {
+    let mut add_program = EmptyProgram::new();
+
+    add_program.add_n(5);
+
+    let mut if_program = EmptyProgram::new();
+
+    if_program.if_else(
+        || add_program.get_operands(),
+        || {
+            let mut else_program = EmptyProgram::new();
+            else_program.push(1);
+            else_program.add_n(2);
+            else_program.get_operands()
+        },
+    );
+
+    let mut rand_program = EmptyProgram::new();
+
+    rand_program.push(5);
+
+    rand_program.push(1);
+
+    rand_program.mem_store();
+
+    rand_program.mem_load_n(1);
+
+    rand_program.mul_n(2);
+
+    rand_program.eq_n(10);
+
+    let mut program = MidenProgram::new();
+
+    program.add_program(&rand_program);
+
+    program.add_program(&if_program);
+
+    program.repeat(5, || {
+        let mut repeat_program = EmptyProgram::new();
+
+        repeat_program.exp_n(2);
+
+        repeat_program.print("repeat_program");
+
+        repeat_program.get_operands()
+    });
+
+    program.save("programs/empty_program.masm");
 }

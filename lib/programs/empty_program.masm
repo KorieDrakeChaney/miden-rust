@@ -1,0 +1,19 @@
+begin
+	push.5
+	push.1
+	mem_store
+	mem_load.1
+	mul.2
+	eq.10
+	if.true
+		add.5
+	else
+		push.1
+		add.2
+	end
+	repeat.5
+		exp.2
+	end
+end
+
+#stack output : [3273349785757477523, 0, 0, 0, 0, 0, 0, 0] 
