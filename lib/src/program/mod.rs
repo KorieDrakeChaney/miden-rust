@@ -6,6 +6,7 @@ mod field;
 mod io;
 mod manipulation;
 mod operand;
+mod parser;
 mod utils;
 
 use crate::Inputs;
@@ -106,7 +107,6 @@ impl MidenProgram {
     /// A string containing the MASM representation of the program.
     pub fn get_masm(&self) -> String {
         let mut masm: String;
-
         match self.program_type {
             ProgramType::Begin => {
                 masm = String::new();
@@ -155,9 +155,14 @@ impl MidenProgram {
 
         masm.push_str(&format!("end\n\n"));
 
-        if self.program_type == ProgramType::Begin {
-            masm.push_str(&format!("#stack output : {:?} \n", &self.stack));
+        match self.program_type {
+            ProgramType::Proc(ref name) => {
+                masm.push_str(&format!("begin\n\texec.{}\nend\n", name));
+            }
+            _ => {}
         }
+
+        masm.push_str(&format!("#stack output : {:?} \n", &self.stack));
 
         masm
     }
@@ -217,24 +222,30 @@ impl MidenProgram {
     pub fn prove(&mut self) -> Option<u64> {
         let assembler = Assembler::default();
 
-        let program = assembler.compile(self.get_masm()).unwrap();
+        match assembler.compile(self.get_masm()) {
+            Ok(program) => {
+                let advice_provider = MemAdviceProvider::from(self.advice_inputs.clone());
 
-        let advice_provider = MemAdviceProvider::from(self.advice_inputs.clone());
+                let host = DefaultHost::new(advice_provider);
 
-        let host = DefaultHost::new(advice_provider);
+                let (outputs, _) = prove(
+                    &program,
+                    self.stack_inputs.clone(),
+                    host,
+                    ProvingOptions::default(),
+                )
+                .unwrap();
 
-        let (outputs, _) = prove(
-            &program,
-            self.stack_inputs.clone(),
-            host,
-            ProvingOptions::default(),
-        )
-        .unwrap();
-
-        if let Some(output) = outputs.stack().first() {
-            return Some(*output);
-        } else {
-            return None;
+                if let Some(output) = outputs.stack().first() {
+                    return Some(*output);
+                } else {
+                    return None;
+                }
+            }
+            Err(e) => {
+                println!("{}", e);
+                return None;
+            }
         }
     }
 
@@ -302,7 +313,7 @@ impl MidenProgram {
     /// # Arguments
     ///
     /// * `operands` - The operands to add.
-    fn add_operands(&mut self, operands: VecDeque<Operand>) {
+    pub fn add_operands(&mut self, operands: VecDeque<Operand>) {
         for op in &operands {
             self.operand_stack.push_back(op.clone());
         }
@@ -311,7 +322,7 @@ impl MidenProgram {
         }
     }
 
-    fn add_operand(&mut self, operand: Operand) {
+    pub fn add_operand(&mut self, operand: Operand) {
         self.execute_operand(&operand);
         self.operand_stack.push_back(operand);
     }
@@ -334,8 +345,7 @@ impl MidenProgram {
     ///
     /// * `message` - The message to print.
     pub fn print(&mut self, message: &str) {
-        self.operand_stack
-            .push_back(Operand::PRINT(message.to_string()));
+        self.add_operand(Operand::PRINT(message.to_string()));
     }
 
     /// Appends a procedure to the internal programs of the program.

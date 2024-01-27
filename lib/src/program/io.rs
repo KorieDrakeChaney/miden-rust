@@ -99,9 +99,6 @@ impl MidenProgram {
         let op: Operand;
         match self.program_type {
             ProgramType::Proc(_) => {
-                if n > self.loc_count {
-                    self.loc_count = n + 1;
-                }
                 op = Operand::LocStore(n);
             }
             ProgramType::Begin => {
@@ -122,9 +119,6 @@ impl MidenProgram {
         let op: Operand;
         match self.program_type {
             ProgramType::Proc(_) => {
-                if n >= self.loc_count {
-                    self.loc_count = n + 1;
-                }
                 op = Operand::LocStoreW(n);
             }
             ProgramType::Begin => {

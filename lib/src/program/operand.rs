@@ -46,7 +46,7 @@ pub enum Operand {
     EqImm(BaseElement),
     Neq,
     NeqImm(BaseElement),
-    Eqw,
+    EqW,
     Lt,
     Lte,
     Gt,
@@ -92,6 +92,119 @@ pub enum Operand {
     Exec(String),
 
     Error(MidenProgramError),
+
+    // u32 arithmetic operations
+    U32CheckedAdd,
+    U32CheckedAddImm(u32),
+
+    U32OverflowingAdd,
+    U32OverflowingAddImm(u32),
+
+    U32WrappingAdd,
+    U32WrappingAddImm(u32),
+
+    U32OverflowingAdd3,
+    U32WrappingAdd3,
+
+    U32CheckedSub,
+    U32CheckedSubImm(u32),
+
+    U32OverflowingSub,
+    U32OverflowingSubImm(u32),
+
+    U32WrappingSub,
+    U32WrappingSubImm(u32),
+
+    U32CheckedMul,
+    U32CheckedMulImm(u32),
+
+    U32OverflowingMul,
+    U32OverflowingMulImm(u32),
+
+    U32WrappingMul,
+    U32WrappingMulImm(u32),
+
+    U32OverflowingMadd,
+    U32WrappingMadd,
+
+    U32CheckedDiv,
+    U32CheckedDivImm(u32),
+
+    U32UncheckedDiv,
+    U32UncheckedDivImm(u32),
+
+    U32CheckedMod,
+    U32CheckedModImm(u32),
+
+    U32UncheckedMod,
+    U32UncheckedModImm(u32),
+
+    U32CheckedDivMod,
+    U32CheckedDivModImm(u32),
+
+    U32UncheckedDivMod,
+    U32UncheckedDivModImm(u32),
+
+    // u32 bitwise operations
+    U32CheckedAnd,
+
+    U32CheckedOr,
+
+    U32CheckedXor,
+
+    U32CheckedNot,
+
+    U32CheckedShl,
+    U32CheckedShlImm(u32),
+
+    U32UncheckedShl,
+    U32UncheckedShlImm(u32),
+
+    U32CheckedShr,
+    U32CheckedShrImm(u32),
+
+    U32UncheckedShr,
+    U32UncheckedShrImm(u32),
+
+    U32CheckedRotl,
+    U32CheckedRotlImm(u32),
+
+    U32UncheckedRotl,
+    U32UncheckedRotlImm(u32),
+
+    U32CheckedRotr,
+    U32CheckedRotrImm(u32),
+
+    U32UncheckedRotr,
+    U32UncheckedRotrImm(u32),
+
+    U32CheckedPopcnt,
+    U32UncheckedPopcnt,
+
+    // u32 comparison operations
+    U32CheckedEq,
+    U32CheckedEqImm(u32),
+
+    U32CheckedNeq,
+    U32CheckedNeqImm(u32),
+
+    U32CheckedLt,
+    U32UncheckedLt,
+
+    U32CheckedLte,
+    U32UncheckedLte,
+
+    U32CheckedGt,
+    U32UncheckedGt,
+
+    U32CheckedGte,
+    U32UncheckedGte,
+
+    U32CheckedMin,
+    U32UncheckedMin,
+
+    U32CheckedMax,
+    U32UncheckedMax,
 }
 
 impl std::fmt::Display for Operand {
@@ -137,7 +250,7 @@ impl std::fmt::Display for Operand {
             Self::EqImm(value) => write!(f, "eq.{value}"),
             Self::Neq => write!(f, "neq"),
             Self::NeqImm(value) => write!(f, "neq.{value}"),
-            Self::Eqw => write!(f, "eqw"),
+            Self::EqW => write!(f, "eqw"),
             Self::Lt => write!(f, "lt"),
             Self::Lte => write!(f, "lte"),
             Self::Gt => write!(f, "gt"),
@@ -181,6 +294,119 @@ impl std::fmt::Display for Operand {
             Self::Decrement => write!(f, "sub.1"),
 
             Self::Error(e) => write!(f, "{}", e),
+
+            // u32 arithmetic operations
+            Self::U32CheckedAdd => write!(f, "u32checked_add"),
+            Self::U32CheckedAddImm(value) => write!(f, "u32checked_add.{value}"),
+
+            Self::U32OverflowingAdd => write!(f, "u32overflowing_add"),
+            Self::U32OverflowingAddImm(value) => write!(f, "u32overflowing_add.{value}"),
+
+            Self::U32WrappingAdd => write!(f, "u32wrapping_add"),
+            Self::U32WrappingAddImm(value) => write!(f, "u32wrapping_add.{value}"),
+
+            Self::U32OverflowingAdd3 => write!(f, "u32overflowing_add3"),
+            Self::U32WrappingAdd3 => write!(f, "u32wrapping_add3"),
+
+            Self::U32CheckedSub => write!(f, "u32checked_sub"),
+            Self::U32CheckedSubImm(value) => write!(f, "u32checked_sub.{value}"),
+
+            Self::U32OverflowingSub => write!(f, "u32overflowing_sub"),
+            Self::U32OverflowingSubImm(value) => write!(f, "u32overflowing_sub.{value}"),
+
+            Self::U32WrappingSub => write!(f, "u32wrapping_sub"),
+            Self::U32WrappingSubImm(value) => write!(f, "u32wrapping_sub.{value}"),
+
+            Self::U32CheckedMul => write!(f, "u32checked_mul"),
+            Self::U32CheckedMulImm(value) => write!(f, "u32checked_mul.{value}"),
+
+            Self::U32OverflowingMul => write!(f, "u32overflowing_mul"),
+            Self::U32OverflowingMulImm(value) => write!(f, "u32overflowing_mul.{value}"),
+
+            Self::U32WrappingMul => write!(f, "u32wrapping_mul"),
+            Self::U32WrappingMulImm(value) => write!(f, "u32wrapping_mul.{value}"),
+
+            Self::U32OverflowingMadd => write!(f, "u32overflowing_madd"),
+            Self::U32WrappingMadd => write!(f, "u32wrapping_madd"),
+
+            Self::U32CheckedDiv => write!(f, "u32checked_div"),
+            Self::U32CheckedDivImm(value) => write!(f, "u32checked_div.{value}"),
+
+            Self::U32UncheckedDiv => write!(f, "u32unchecked_div"),
+            Self::U32UncheckedDivImm(value) => write!(f, "u32unchecked_div.{value}"),
+
+            Self::U32CheckedMod => write!(f, "u32checked_mod"),
+            Self::U32CheckedModImm(value) => write!(f, "u32checked_mod.{value}"),
+
+            Self::U32UncheckedMod => write!(f, "u32unchecked_mod"),
+            Self::U32UncheckedModImm(value) => write!(f, "u32unchecked_mod.{value}"),
+
+            Self::U32CheckedDivMod => write!(f, "u32checked_divmod"),
+            Self::U32CheckedDivModImm(value) => write!(f, "u32checked_divmod.{value}"),
+
+            Self::U32UncheckedDivMod => write!(f, "u32unchecked_divmod"),
+            Self::U32UncheckedDivModImm(value) => write!(f, "u32unchecked_divmod.{value}"),
+
+            // u32 bitwise operations
+            Self::U32CheckedAnd => write!(f, "u32checked_and"),
+
+            Self::U32CheckedOr => write!(f, "u32checked_or"),
+
+            Self::U32CheckedXor => write!(f, "u32checked_xor"),
+
+            Self::U32CheckedNot => write!(f, "u32checked_not"),
+
+            Self::U32CheckedShl => write!(f, "u32checked_shl"),
+            Self::U32CheckedShlImm(value) => write!(f, "u32checked_shl.{value}"),
+
+            Self::U32UncheckedShl => write!(f, "u32unchecked_shl"),
+            Self::U32UncheckedShlImm(value) => write!(f, "u32unchecked_shl.{value}"),
+
+            Self::U32CheckedShr => write!(f, "u32checked_shr"),
+            Self::U32CheckedShrImm(value) => write!(f, "u32checked_shr.{value}"),
+
+            Self::U32UncheckedShr => write!(f, "u32unchecked_shr"),
+            Self::U32UncheckedShrImm(value) => write!(f, "u32unchecked_shr.{value}"),
+
+            Self::U32CheckedRotl => write!(f, "u32checked_rotl"),
+            Self::U32CheckedRotlImm(value) => write!(f, "u32checked_rotl.{value}"),
+
+            Self::U32UncheckedRotl => write!(f, "u32unchecked_rotl"),
+            Self::U32UncheckedRotlImm(value) => write!(f, "u32unchecked_rotl.{value}"),
+
+            Self::U32CheckedRotr => write!(f, "u32checked_rotr"),
+            Self::U32CheckedRotrImm(value) => write!(f, "u32checked_rotr.{value}"),
+
+            Self::U32UncheckedRotr => write!(f, "u32unchecked_rotr"),
+            Self::U32UncheckedRotrImm(value) => write!(f, "u32unchecked_rotr.{value}"),
+
+            Self::U32CheckedPopcnt => write!(f, "u32checked_popcnt"),
+            Self::U32UncheckedPopcnt => write!(f, "u32unchecked_popcnt"),
+
+            // u32 comparison operations
+            Self::U32CheckedEq => write!(f, "u32checked_eq"),
+            Self::U32CheckedEqImm(value) => write!(f, "u32checked_eq.{value}"),
+
+            Self::U32CheckedNeq => write!(f, "u32checked_neq"),
+            Self::U32CheckedNeqImm(value) => write!(f, "u32checked_neq.{value}"),
+
+            Self::U32CheckedLt => write!(f, "u32checked_lt"),
+            Self::U32UncheckedLt => write!(f, "u32unchecked_lt"),
+
+            Self::U32CheckedLte => write!(f, "u32checked_lte"),
+            Self::U32UncheckedLte => write!(f, "u32unchecked_lte"),
+
+            Self::U32CheckedGt => write!(f, "u32checked_gt"),
+            Self::U32UncheckedGt => write!(f, "u32unchecked_gt"),
+
+            Self::U32CheckedGte => write!(f, "u32checked_gte"),
+            Self::U32UncheckedGte => write!(f, "u32unchecked_gte"),
+
+            Self::U32CheckedMin => write!(f, "u32checked_min"),
+            Self::U32UncheckedMin => write!(f, "u32unchecked_min"),
+
+            Self::U32CheckedMax => write!(f, "u32checked_max"),
+            Self::U32UncheckedMax => write!(f, "u32unchecked_max"),
         }
     }
 }

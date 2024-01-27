@@ -225,7 +225,7 @@ impl MidenProgram {
 
     /// Checks if the top value on the stack is equal to the width of the field.
     pub fn eqw(&mut self) {
-        self.add_operand(Operand::Eqw);
+        self.add_operand(Operand::EqW);
     }
 
     /// Increments the top value on the stack by 1.

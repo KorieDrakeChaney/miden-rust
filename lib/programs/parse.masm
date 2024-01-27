@@ -1,0 +1,38 @@
+proc.MasmFromRust.9095
+	push.1
+	push.2
+	push.3
+	push.4
+	add
+	add
+	add
+	push.20
+	push.30
+	push.40
+	mul.2
+	mul.2
+	push.5
+	push.4
+	push.3
+	push.2
+	loc_store.1
+	loc_storew.5
+	loc_storew.9
+	loc_storew.90
+	loc_storew.909
+	loc_storew.9094
+	loc_storew.906
+	loc_storew.9069
+	add
+	mul
+	mul.2
+	add
+	mul.2
+	exp.2
+	add.10
+end
+
+begin
+	exec.MasmFromRust
+end
+#stack output : [211610, 30, 20, 10, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0] 

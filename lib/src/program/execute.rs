@@ -574,6 +574,9 @@ impl MidenProgram {
             }
 
             Operand::LocStore(key) => {
+                if *key >= self.loc_count {
+                    self.loc_count = key + 1;
+                }
                 if let Some(a) = self.stack.pop_front() {
                     self.loc_memory.insert(
                         *key,
@@ -583,6 +586,9 @@ impl MidenProgram {
             }
 
             Operand::LocStoreW(key) => {
+                if *key >= self.loc_count {
+                    self.loc_count = key + 1;
+                }
                 while self.stack.len() < 5 {
                     self.stack.push_back(BaseElement::ZERO);
                 }

@@ -1,4 +1,4 @@
-use rust_masm::{EmptyProgram, Inputs, MidenProgram};
+use rust_masm::{tokenize, EmptyProgram, Inputs, MidenProgram};
 
 #[test]
 fn test_error() {
@@ -584,4 +584,236 @@ fn while_block() {
         block.print("loop");
         block.get_operands()
     });
+}
+
+#[test]
+fn test_tokenizer() {
+    let tokens = tokenize(
+        "
+        proc.MasmFromRust.9095
+        push.1
+        push.2
+        push.3
+        push.4
+        add
+        add
+        add
+        push.20
+        push.30
+        push.40
+        mul.2
+        mul.2
+        push.5
+        push.4
+        push.3
+        push.2
+        loc_store.1
+        loc_storew.5
+        loc_storew.9
+        loc_storew.90
+        loc_storew.909
+        loc_storew.9094
+        loc_storew.906
+        loc_storew.9069
+        add
+        mul
+        mul.2
+        add
+        mul.2
+        exp.2
+        add.10
+        end
+    ",
+    );
+
+    println!("{:?}", tokens);
+}
+
+#[test]
+fn test_parse() {
+    let program = MidenProgram::parse(
+        "
+        proc.MasmFromRust.9095
+        push.1
+        push.2
+        push.3
+        push.4
+        add
+        add
+        add
+        push.20
+        push.30
+        push.40
+        mul.2
+        mul.2
+        push.5
+        push.4
+        push.3
+        push.2
+        loc_store.1
+        loc_storew.5
+        loc_storew.9
+        loc_storew.90
+        loc_storew.909
+        loc_storew.9094
+        loc_storew.906
+        loc_storew.9069
+        add
+        mul
+        mul.2
+        add
+        mul.2
+        exp.2
+        add.10
+        end
+    ",
+    );
+
+    match program {
+        Ok(mut program) => {
+            program.print_masm();
+            program.save("programs/parse.masm");
+            assert_eq!(Some(program.stack[0].into()), program.prove());
+        }
+        Err(e) => {
+            println!("{}", e);
+        }
+    }
+}
+
+#[test]
+fn test_parse2() {
+    let append = MidenProgram::parse(
+        "
+        proc.append
+        dup
+    
+        dup.2
+    
+        mem_store
+    
+        swap.2
+        swap
+        add.1
+    end
+    
+    ",
+    )
+    .unwrap();
+
+    let should_continue = MidenProgram::parse(
+        "
+    proc.should_continue
+        dup.1
+        dup.1
+
+        neq
+    end
+    ",
+    )
+    .unwrap();
+
+    let is_not_prime_should_continue = MidenProgram::parse(
+        "
+        proc.is_not_prime_should_continue
+        dup
+        mem_load
+
+        push.0.1
+
+        dup.2
+        dup
+        mul
+        dup.5
+        gt
+        if.true
+            drop
+            drop
+            push.1.0
+        end
+
+        dup
+        if.true
+            dup.4
+            dup.3
+            u32checked_mod
+
+            eq.0
+            if.true
+                drop
+                drop
+                push.0.0
+            end
+        end
+
+        swap.2
+        drop
+        swap
+        end",
+    )
+    .unwrap();
+
+    let is_not_prime = MidenProgram::parse(
+        "
+        proc.is_not_prime
+        push.0
+
+        exec.is_not_prime_should_continue
+        while.true
+            drop
+            add.1
+
+            exec.is_not_prime_should_continue
+        end
+
+        swap
+        drop
+        eq.0
+        end
+        ",
+    )
+    .unwrap();
+
+    let next = MidenProgram::parse(
+        "
+        proc.next
+    
+        dup.2
+        add.2
+    
+        exec.is_not_prime
+        while.true
+            add.2
+            exec.is_not_prime
+        end
+    
+        exec.append
+        end
+        ",
+    )
+    .unwrap();
+
+    let begin = MidenProgram::parse(
+        "
+        begin
+            push.0
+
+            push.2
+            exec.append
+
+            push.3
+            exec.append
+
+            exec.should_continue
+            while.true
+                exec.next
+                exec.should_continue
+            end
+
+            drop
+            drop
+        end
+        ",
+    )
+    .unwrap();
 }

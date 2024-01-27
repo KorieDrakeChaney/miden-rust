@@ -391,7 +391,7 @@ impl EmptyProgram {
 
     /// Pushes `Eqw` command onto the stack.
     pub fn eqw(&mut self) {
-        self.add_operand(Operand::Eqw);
+        self.add_operand(Operand::EqW);
     }
 
     /// Pushes `MemLoad` command onto the stack.
