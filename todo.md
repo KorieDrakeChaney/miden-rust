@@ -1,3 +1,3 @@
 # Upcoming Features
 
-- [] MASM -> RUST
+- [x] MASM -> RUST
