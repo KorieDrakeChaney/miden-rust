@@ -141,13 +141,7 @@ fn main() {
         push.5
         push.1
         add
-    end");
-
-    program.parse("begin
-        push.5
-        push.1
-        add
-    end");
+    end").unwrap();
 
     program.print("add 5 and 1");
 }
