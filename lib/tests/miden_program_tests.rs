@@ -290,6 +290,7 @@ fn test_while() {
     program.while_block(|| while_program.get_operands());
 
     program.save("programs/while.masm");
+    program.print_masm();
     assert_eq!(Some(program.stack[0].into()), program.prove());
 }
 
@@ -445,7 +446,7 @@ fn test_loc_store() {
     local_proc.push(5);
     local_proc.loc_store(2);
     local_proc.loc_load(2);
-    program.append_proc(local_proc);
+    program.add_proc(local_proc);
 
     program.exec("testProc");
 
@@ -472,7 +473,7 @@ fn test_loc_store_w() {
 
     local_proc.loc_load_w(4);
 
-    program.append_proc(local_proc);
+    program.add_proc(local_proc);
 
     program.exec("testProc");
 
@@ -505,7 +506,7 @@ fn test_test() {
     fib.dup_n(1);
     fib.add();
 
-    program.append_proc(fib);
+    program.add_proc(fib);
 
     let mut repeat_program = MidenProgram::new();
 
@@ -757,19 +758,19 @@ fn test_parse2() {
         "
         proc.is_not_prime
         push.0
-
+    
         exec.is_not_prime_should_continue
         while.true
             drop
             add.1
-
+    
             exec.is_not_prime_should_continue
         end
-
+    
         swap
         drop
         eq.0
-        end
+    end
         ",
     )
     .unwrap();
@@ -793,27 +794,80 @@ fn test_parse2() {
     )
     .unwrap();
 
-    let begin = MidenProgram::parse(
+    let mut program = MidenProgram::new().with_inputs(Inputs::from_file("inputs/prime.json"));
+
+    program.add_proc(append);
+    program.add_proc(should_continue);
+    program.add_proc(is_not_prime_should_continue);
+    program.add_proc(is_not_prime);
+    program.add_proc(next);
+
+    program.push(0);
+    program.push(2);
+    program.exec("append");
+    program.push(3);
+    program.exec("append");
+    program.exec("should_continue");
+
+    program.while_block(|| {
+        let mut block = EmptyProgram::new();
+
+        block.exec("next");
+        block.print("next");
+        block.exec("should_continue");
+        block.print("should_continue");
+        block.get_operands()
+    });
+
+    program.drop();
+    program.drop();
+
+    program.print_masm();
+
+    program.save("programs/prime.masm");
+
+    assert_eq!(Some(program.stack[0].into()), program.prove());
+}
+
+#[test]
+fn test_add_parse() {
+    let mut program = MidenProgram::parse(
+        "begin
+        push.5
+        push.1
+        add
+    end",
+    )
+    .unwrap();
+
+    program.print("add 5 and 1");
+}
+
+#[test]
+fn test_parse_3() {
+    let mut simple_miden_program = MidenProgram::parse(
         "
         begin
-            push.0
-
-            push.2
-            exec.append
-
-            push.3
-            exec.append
-
-            exec.should_continue
-            while.true
-                exec.next
-                exec.should_continue
-            end
-
-            drop
-            drop
+        push.1.2.3.4.5.6
+        add
+        add
+        add.1
+        dup.1
+        swap
+        swap.2
+        swap.3
+        swap.4
+        mul
+        mul.5
+        exp.2
+        push.1.123.12.312.31.12.312.21
         end
         ",
     )
     .unwrap();
+
+    simple_miden_program.add();
+    simple_miden_program.exp_n(4);
+
+    simple_miden_program.print_masm();
 }

@@ -29,7 +29,7 @@ impl MidenProgram {
                                         if_block.push_back(next_op);
                                     }
                                 }
-                                Operand::IF => {
+                                Operand::IF | Operand::WHILE | Operand::REPEAT(_) => {
                                     if_scope_count += 1;
                                     if_block.push_back(next_op);
                                 }
@@ -104,7 +104,7 @@ impl MidenProgram {
                         if let Some(n) = self.stack.pop_front() {
                             if n == BaseElement::ONE {
                                 self.execute_block(&while_block);
-                            } else if n == BaseElement::ZERO {
+                            } else {
                                 break 'while_loop;
                             }
                         }
@@ -214,9 +214,6 @@ impl MidenProgram {
 
             Operand::Swap(n) => {
                 if self.stack.len() > 0 {
-                    if self.stack.len() < 2 {
-                        self.stack.push_back(BaseElement::from(0_u64));
-                    }
                     self.stack.swap(0, *n);
                 }
             }
@@ -265,8 +262,8 @@ impl MidenProgram {
             }
 
             Operand::Exec(name) => {
-                if let Some(program) = self.internal_programs.get(name) {
-                    self.execute_block(&mut program.operand_stack.clone());
+                if let Some(program) = self.internal_programs.get(name).cloned() {
+                    self.execute_block(&program);
                 }
             }
 
@@ -638,6 +635,20 @@ impl MidenProgram {
             Operand::Decrement => {
                 if let Some(a) = self.stack.pop_front() {
                     self.stack.push_front(a - BaseElement::ONE);
+                }
+            }
+
+            Operand::U32UncheckedMod => {
+                if let (Some(a), Some(b)) = (self.stack.pop_front(), self.stack.pop_front()) {
+                    self.stack
+                        .push_front(BaseElement::from(a.as_int() % b.as_int()));
+                }
+            }
+
+            Operand::U32CheckedMod => {
+                if let (Some(a), Some(b)) = (self.stack.pop_front(), self.stack.pop_front()) {
+                    self.stack
+                        .push_front(BaseElement::from(a.as_int() % b.as_int()));
                 }
             }
 

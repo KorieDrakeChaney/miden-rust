@@ -7,7 +7,7 @@ const HELP: [&'static str; 4] = ["help", "h", "--help", "-h"];
 const VERSION: [&'static str; 4] = ["version", "-v", "-V", "--version"];
 
 fn main() {
-    let mut program = MidenProgram::proc("MasmFromRust");
+    let mut program = MidenProgram::new();
     let mut stdout = StandardStream::stdout(ColorChoice::Always);
 
     let _ = stdout.set_color(ColorSpec::new().set_fg(Some(Color::Cyan)));
@@ -21,7 +21,6 @@ fn main() {
 
         println!("\nstack : {:?}\n", program.get_stack());
         println!("ram : {:?}\n", program.get_ram_memory());
-        println!("loc : {:?}\n", program.get_loc_memory());
 
         let _ = stdout.set_color(ColorSpec::new().set_fg(Some(Color::Green)));
 
@@ -278,38 +277,6 @@ fn main() {
                         program.mem_store_w_n(n);
                     } else {
                         program.mem_store_w();
-                    }
-                }
-
-                Some(("loc_store", loc_store_matches)) => {
-                    if loc_store_matches.contains_id("address") {
-                        let n: u16 = *loc_store_matches.get_one("address").unwrap();
-
-                        program.loc_store(n);
-                    }
-                }
-
-                Some(("loc_storew", loc_storew_matches)) => {
-                    if loc_storew_matches.contains_id("address") {
-                        let n: u16 = *loc_storew_matches.get_one("address").unwrap();
-
-                        program.loc_store_w(n);
-                    }
-                }
-
-                Some(("loc_load", loc_load_matches)) => {
-                    if loc_load_matches.contains_id("address") {
-                        let n: u16 = *loc_load_matches.get_one("address").unwrap();
-
-                        program.loc_load(n);
-                    }
-                }
-
-                Some(("loc_loadw", loc_loadw_matches)) => {
-                    if loc_loadw_matches.contains_id("address") {
-                        let n: u16 = *loc_loadw_matches.get_one("address").unwrap();
-
-                        program.loc_load_w(n);
                     }
                 }
 

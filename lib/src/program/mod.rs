@@ -7,6 +7,7 @@ mod io;
 mod manipulation;
 mod operand;
 mod parser;
+mod u32;
 mod utils;
 
 use crate::Inputs;
@@ -32,7 +33,9 @@ pub struct MidenProgram {
     pub advice_stack: VecDeque<u64>,
     pub operand_stack: VecDeque<Operand>,
 
-    internal_programs: HashMap<String, MidenProgram>,
+    internal_programs: HashMap<String, VecDeque<Operand>>,
+
+    proc_script: String,
 
     program_type: ProgramType,
 
@@ -58,6 +61,8 @@ impl MidenProgram {
             advice_stack: VecDeque::new(),
 
             internal_programs: HashMap::new(),
+
+            proc_script: String::new(),
 
             inputs: Inputs::default(),
 
@@ -88,6 +93,8 @@ impl MidenProgram {
 
             internal_programs: HashMap::new(),
 
+            proc_script: String::new(),
+
             inputs: Inputs::default(),
 
             program_type: ProgramType::Proc(name.to_string()),
@@ -96,7 +103,7 @@ impl MidenProgram {
             advice_inputs: AdviceInputs::default(),
             ram_memory: HashMap::new(),
             loc_memory: HashMap::new(),
-            loc_count: 1,
+            loc_count: 0,
         }
     }
 
@@ -106,22 +113,17 @@ impl MidenProgram {
     ///
     /// A string containing the MASM representation of the program.
     pub fn get_masm(&self) -> String {
-        let mut masm: String;
+        let mut masm: String = self.proc_script.clone();
         match self.program_type {
             ProgramType::Begin => {
-                masm = String::new();
-                for (_, program) in self.internal_programs.iter() {
-                    match program.program_type {
-                        ProgramType::Proc(_) => {
-                            masm.push_str(&program.get_masm());
-                        }
-                        _ => {}
-                    }
-                }
                 masm.push_str("begin\n");
             }
             ProgramType::Proc(ref name) => {
-                masm = format!("proc.{}.{}\n", name, self.loc_count);
+                masm = format!("proc.{}", name);
+                if self.loc_count > 0 {
+                    masm.push_str(&format!(".{}", self.loc_count));
+                }
+                masm.push_str("\n");
             }
         }
 
@@ -155,14 +157,9 @@ impl MidenProgram {
 
         masm.push_str(&format!("end\n\n"));
 
-        match self.program_type {
-            ProgramType::Proc(ref name) => {
-                masm.push_str(&format!("begin\n\texec.{}\nend\n", name));
-            }
-            _ => {}
+        if self.program_type == ProgramType::Begin {
+            masm.push_str(&format!("#stack output : {:?} \n", &self.stack));
         }
-
-        masm.push_str(&format!("#stack output : {:?} \n", &self.stack));
 
         masm
     }
@@ -221,8 +218,16 @@ impl MidenProgram {
 
     pub fn prove(&mut self) -> Option<u64> {
         let assembler = Assembler::default();
+        let mut masm = self.get_masm();
 
-        match assembler.compile(self.get_masm()) {
+        match self.program_type {
+            ProgramType::Proc(ref name) => {
+                masm.push_str(&format!("begin\n\texec.{}\nend\n", name));
+            }
+            _ => {}
+        }
+
+        match assembler.compile(masm) {
             Ok(program) => {
                 let advice_provider = MemAdviceProvider::from(self.advice_inputs.clone());
 
@@ -323,7 +328,9 @@ impl MidenProgram {
     }
 
     pub fn add_operand(&mut self, operand: Operand) {
-        self.execute_operand(&operand);
+        if self.program_type == ProgramType::Begin {
+            self.execute_operand(&operand);
+        }
         self.operand_stack.push_back(operand);
     }
 
@@ -354,11 +361,16 @@ impl MidenProgram {
     ///
     /// * `program` - The procedure to append.
     ///
-    pub fn append_proc(&mut self, program: MidenProgram) {
+    pub fn add_proc(&mut self, program: MidenProgram) {
         if self.program_type == ProgramType::Begin {
             match program.program_type {
                 ProgramType::Proc(ref name) => {
-                    self.internal_programs.insert(name.clone(), program);
+                    self.proc_script.push_str(&program.get_masm());
+
+                    self.proc_script.push_str("\n");
+
+                    self.internal_programs
+                        .insert(name.clone(), program.get_operands());
                 }
                 _ => {}
             }
