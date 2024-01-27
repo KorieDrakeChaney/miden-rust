@@ -129,6 +129,30 @@ fn main() {
 
 Which is beneficial for debugging
 
+# Parse from MASM to Rust
+
+You can also parse MASM code into Rust code:
+
+```rust
+use rust_masm::{MidenProgram};
+
+fn main() {
+    let mut program = MidenProgram::parse("begin
+        push.5
+        push.1
+        add
+    end");
+
+    program.parse("begin
+        push.5
+        push.1
+        add
+    end");
+
+    program.print("add 5 and 1");
+}
+```
+
 # CLI
 
 Also try using this simple CLI tool to see how your stack transforms:
