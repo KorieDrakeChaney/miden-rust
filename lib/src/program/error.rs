@@ -10,6 +10,7 @@ pub enum MidenProgramError {
     DivideByZero,
     NotBinaryValue(u64),
     InvalidParameter(String, usize, usize, usize),
+    Pow2Overflow(u64),
 }
 
 impl std::fmt::Display for MidenProgramError {
@@ -28,6 +29,7 @@ impl std::fmt::Display for MidenProgramError {
             Self::AdviceStackReadOutOfBounds( value, max) => write!(f, "Advice stack read out of bounds: {value} > {max}"),
             Self::NotBinaryValue( value) => write!(f, "NotBinaryValue({value}), {value} is not binary"),
             Self::InvalidParameter(op, value, min, max) => write!(f, "InvalidParameter({value}), {op}.{value} is invalid, must be between {min} and {max}"),
+            Self::Pow2Overflow(value) => write!(f, "Pow2Overflow({value}), {value} is too large to be an exponent of 2"),
         }
     }
 }

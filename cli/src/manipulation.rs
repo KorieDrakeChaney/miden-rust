@@ -122,8 +122,29 @@ fn movdnw() -> Command {
         )
 }
 
+pub const HELP: &'static str = "
+Manipulation Options: \n
+    --drop, drop -          Drops first value from stack 
+    --dup, dup <n> -        Duplicates first value on stack 
+    --swap, swap <n> -      Swaps first two values on stack 
+    --swapw, swapw <n> -    Swaps 0,1,2,3 with n,n+1,n+2,n+3 
+    --padw, padw - Pads     stack with 4 0s 
+    --movup, movup <n> -    Moves value at index n to index 0 
+    --movupw, movupw <n> -  Moves values at index n,n+1,n+2,n+3 to 0,1,2,3 
+    --movdn, movdn <n> -    Moves value at index 0 to index n 
+    --movdnw, movdnw <n> -  Moves values at index 0,1,2,3 to n,n+1,n+2,n+3 
+";
+
+fn manipulation() -> Command {
+    Command::new("manipulation")
+        .about("Prints manipulation Options")
+        .long_flag("manipulation")
+        .long_about("Manipulation Options")
+}
+
 pub fn commands() -> Vec<Command> {
     vec![
+        manipulation(),
         drop(),
         dup(),
         swap(),

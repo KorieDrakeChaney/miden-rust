@@ -593,6 +593,10 @@ impl MidenProgram {
                     self.stack.pop_front(),
                 ) {
                     self.loc_memory.insert(*key, [a, b, c, d]);
+                    self.stack.push_front(d);
+                    self.stack.push_front(c);
+                    self.stack.push_front(b);
+                    self.stack.push_front(a);
                 }
             }
 

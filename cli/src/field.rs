@@ -215,8 +215,38 @@ fn neq() -> Command {
         )
 }
 
+pub const HELP: &'static str = "
+Field Options\n
+    --add, add <n>                    Adds two values
+    --sub, sub <n>                    Subtracts two values
+    --mul, mul <n>                    Multiplies two values
+    --div, div <n>                    Divides two values
+    --neg, neg                        Negates the top value
+    --inv, inv                        Inverts the top value
+    --pow2, pow2                      Raises 2 to the power of the top value
+    --exp, exp <n>                    Raises a value to a value
+    --and, and                        Performs a bitwise and on two binary values
+    --or, or                          Performs a bitwise or on two binary values
+    --xor, xor                        Performs a bitwise xor on two binary values
+    --not, not                        Performs a bitwise not on a binary value
+    --eq, eq <n>                      Checks if two values are equal
+    --lt, lt                          Checks if the first value is less than the second value
+    --gt, gt                          Checks if the first value is greater than the second value
+    --lte, lte                        Checks if the first value is less than or equal to the second value
+    --gte, gte                        Checks if the first value is greater than or equal to the second value
+    --neq, neq <n>                    Checks if two values are not equal
+";
+
+fn field() -> Command {
+    Command::new("field")
+        .about("Performs field operations")
+        .long_flag("field")
+        .long_about("Performs field operations")
+}
+
 pub fn commands() -> Vec<Command> {
     vec![
+        field(),
         add(),
         sub(),
         mul(),

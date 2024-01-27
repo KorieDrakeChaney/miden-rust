@@ -20,6 +20,7 @@ pub enum Operand {
     MovDn(usize),  // 2-15
     MovDnW(usize), // 2-3
 
+    // Arithmetic and Boolean operations
     Add,
     AddImm(BaseElement),
     Sub,
@@ -39,6 +40,8 @@ pub enum Operand {
     And,
     Or,
     Xor,
+
+    // Comparison operations
     Eq,
     EqImm(BaseElement),
     Neq,
@@ -49,6 +52,14 @@ pub enum Operand {
     Gt,
     Gte,
     IsOdd,
+
+    // Extension Field Operations
+    Ext2Add,
+    Ext2Sub,
+    Ext2Mul,
+    Ext2Neg,
+    Ext2Inv,
+    Ext2Div,
 
     AdvPush(usize),
 
@@ -100,6 +111,7 @@ impl std::fmt::Display for Operand {
             Self::MovDn(value) => write!(f, "movdn.{value}"),
             Self::MovDnW(value) => write!(f, "movdnw.{value}"),
 
+            // Arithmetic and Boolean operations
             Self::Add => write!(f, "add"),
             Self::AddImm(value) => write!(f, "add.{value}"),
             Self::Sub => write!(f, "sub"),
@@ -114,8 +126,9 @@ impl std::fmt::Display for Operand {
             Self::Pow2 => write!(f, "pow2"),
             Self::Exp => write!(f, "exp"),
             Self::ExpImm(value) => write!(f, "exp.{value}"),
-
             Self::ExpBitLength(value) => write!(f, "exp.u{value}"),
+
+            // Comparison operations
             Self::Not => write!(f, "not"),
             Self::And => write!(f, "and"),
             Self::Or => write!(f, "or"),
@@ -130,6 +143,14 @@ impl std::fmt::Display for Operand {
             Self::Gt => write!(f, "gt"),
             Self::Gte => write!(f, "gte"),
             Self::IsOdd => write!(f, "is_odd"),
+
+            // Extension Field Operations
+            Self::Ext2Add => write!(f, "ext2add"),
+            Self::Ext2Sub => write!(f, "ext2sub"),
+            Self::Ext2Mul => write!(f, "ext2mul"),
+            Self::Ext2Neg => write!(f, "ext2neg"),
+            Self::Ext2Inv => write!(f, "ext2inv"),
+            Self::Ext2Div => write!(f, "ext2div"),
 
             Self::MemLoad => write!(f, "mem_load"),
             Self::MemLoadImm(value) => write!(f, "mem_load.{value}"),

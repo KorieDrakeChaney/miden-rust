@@ -1,5 +1,5 @@
 use rust_masm::MidenProgram;
-use rust_masm_cli::app;
+use rust_masm_cli::{app, APP_HELP, APP_VERSION, FIELD_HELP, IO_HELP, MANIPULATION_HELP};
 use std::io::{self, Write};
 use termcolor::{Color, ColorChoice, ColorSpec, StandardStream, WriteColor};
 
@@ -7,17 +7,12 @@ const HELP: [&'static str; 4] = ["help", "h", "--help", "-h"];
 const VERSION: [&'static str; 4] = ["version", "-v", "-V", "--version"];
 
 fn main() {
-    let mut command_app = app();
-
-    let help = command_app.render_help();
-    let version = command_app.get_version();
-
     let mut program = MidenProgram::proc("MasmFromRust");
     let mut stdout = StandardStream::stdout(ColorChoice::Always);
 
     let _ = stdout.set_color(ColorSpec::new().set_fg(Some(Color::Cyan)));
 
-    writeln!(&mut stdout, "{}", help).unwrap();
+    writeln!(&mut stdout, "{}", APP_HELP).unwrap();
 
     'app_loop: loop {
         let mut input = String::new();
@@ -51,21 +46,18 @@ fn main() {
         if args.len() == 2 {
             if HELP.contains(&args[1]) {
                 let _ = stdout.set_color(ColorSpec::new().set_fg(Some(Color::Cyan)));
-                let _ = println!("{}", help);
+                let _ = println!("{}", APP_HELP);
                 continue;
             } else if VERSION.contains(&args[1]) {
-                if let Some(version) = version {
-                    let _ = stdout.set_color(ColorSpec::new().set_fg(Some(Color::Cyan)));
-                    let _ = println!("{}", version);
-                }
+                let _ = stdout.set_color(ColorSpec::new().set_fg(Some(Color::Cyan)));
+                let _ = println!("{}", APP_VERSION);
                 continue;
             }
         }
 
-        if HELP.contains(&args[1]) {
+        let _ = stdout.set_color(ColorSpec::new().set_fg(Some(Color::Red)).set_bold(true));
+        if args.len() >= 3 && (HELP.contains(&args[2]) || HELP.contains(&args[1])) {
             let _ = stdout.set_color(ColorSpec::new().set_fg(Some(Color::Cyan)));
-        } else {
-            let _ = stdout.set_color(ColorSpec::new().set_fg(Some(Color::Red)).set_bold(true));
         }
 
         let matches = app().try_get_matches_from(args);
@@ -73,7 +65,38 @@ fn main() {
         match matches {
             Ok(matches) => match matches.subcommand() {
                 Some(("end", _)) => {
+                    let _ = stdout.set_color(ColorSpec::new().set_fg(Some(Color::White)));
                     break 'app_loop;
+                }
+                Some(("field", _)) => {
+                    match stdout.set_color(ColorSpec::new().set_fg(Some(Color::Cyan))) {
+                        Ok(_) => {
+                            let _ = writeln!(&mut stdout, "\n{}", FIELD_HELP);
+                        }
+                        Err(_) => {
+                            println!("\n{}", FIELD_HELP);
+                        }
+                    }
+                }
+                Some(("manipulation", _)) => {
+                    match stdout.set_color(ColorSpec::new().set_fg(Some(Color::Cyan))) {
+                        Ok(_) => {
+                            let _ = writeln!(&mut stdout, "\n{}", MANIPULATION_HELP);
+                        }
+                        Err(_) => {
+                            println!("\n{}", MANIPULATION_HELP);
+                        }
+                    }
+                }
+                Some(("io", _)) => {
+                    match stdout.set_color(ColorSpec::new().set_fg(Some(Color::Cyan))) {
+                        Ok(_) => {
+                            let _ = writeln!(&mut stdout, "\n{}", IO_HELP);
+                        }
+                        Err(_) => {
+                            println!("\n{}", IO_HELP);
+                        }
+                    }
                 }
                 Some(("save", save_matches)) => {
                     let mut file: String = save_matches

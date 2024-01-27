@@ -78,7 +78,12 @@ impl MidenProgram {
 
     /// Pushes 2 to the power of the first value on the stack.
     pub fn pow2(&mut self) {
-        self.add_operand(Operand::Pow2);
+        let top: u64 = self.stack[0].into();
+        if top > 63_u64 {
+            self.add_operand(Operand::Error(MidenProgramError::Pow2Overflow(top)));
+        } else {
+            self.add_operand(Operand::Pow2);
+        }
     }
 
     /// Raises the number `e` to the power of the top value on the stack.
@@ -231,5 +236,49 @@ impl MidenProgram {
     /// Decrements the top value on the stack by 1.
     pub fn decrement(&mut self) {
         self.add_operand(Operand::Decrement);
+    }
+
+    /// Assumes a b c d are top of the stack, and performs the following operations:
+    /// b = b + d
+    /// a = a + c
+    /// pushes a and b to the stack
+    pub fn ext2add(&mut self) {
+        self.add_operand(Operand::Ext2Add);
+    }
+    /// Assumes a b c d are top of the stack, and performs the following operations:
+    /// a = (a + b) * (c + d)
+    /// b = (a * c) - 2 * (b * d)
+    /// pushes a and b to the stack
+    pub fn ext2mul(&mut self) {
+        self.add_operand(Operand::Ext2Mul);
+    }
+    /// Assumes a b c d are top of the stack, and performs the following operations:
+    /// a = a - c
+    /// b = b - d
+    /// pushes a and b to the stack
+    pub fn ext2sub(&mut self) {
+        self.add_operand(Operand::Ext2Sub);
+    }
+    /// Assumes a b are top of the stack, and performs the following operations:
+    /// a = -a
+    /// b = -b
+    /// pushes a and b to the stack
+    pub fn ext2neg(&mut self) {
+        self.add_operand(Operand::Ext2Neg);
+    }
+
+    /// Assumes a b are top of the stack, and performs the following operations:
+    /// a = 1/a
+    /// b = 1/b
+    /// pushes a and b to the stack
+    pub fn ext2inv(&mut self) {
+        self.add_operand(Operand::Ext2Inv);
+    }
+    /// Assumes a b c d are top of the stack, and performs the following operations:
+    /// a = a / c
+    /// b = b / d
+    /// pushes a and b to the stack
+    pub fn ext2div(&mut self) {
+        self.add_operand(Operand::Ext2Div);
     }
 }
