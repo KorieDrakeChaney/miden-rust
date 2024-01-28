@@ -7,3 +7,4 @@
 - [ ] AdvPipe and AdvLoadW
 - [ ] U32 for CLI
 - [ ] Performance improvements
+- [ ] Better componentization
