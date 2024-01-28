@@ -31,6 +31,7 @@ proc.is_not_prime_should_continue
 		push.1
 		push.0
 	end
+
 	dup.0
 	if.true
 		dup.4
@@ -43,7 +44,9 @@ proc.is_not_prime_should_continue
 			push.0
 			push.0
 		end
+
 	end
+
 	swap.2
 	drop
 	swap.1
@@ -58,6 +61,7 @@ proc.is_not_prime
 		add.1
 		exec.is_not_prime_should_continue
 	end
+
 	swap.1
 	drop
 	eq.0
@@ -72,6 +76,7 @@ proc.next
 		add.2
 		exec.is_not_prime
 	end
+
 	exec.append
 end
 
@@ -87,6 +92,7 @@ begin
 		exec.next
 		exec.should_continue
 	end
+
 	drop
 	drop
 end

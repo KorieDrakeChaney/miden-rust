@@ -1,6 +1,7 @@
 mod field;
 mod io;
 mod manipulation;
+mod u32;
 mod utils;
 
 pub use field::HELP as FIELD_HELP;
@@ -9,6 +10,7 @@ pub use manipulation::HELP as MANIPULATION_HELP;
 
 use clap::Command;
 
+// --u32, u32                          Description for u32 commands
 pub const APP_HELP: &'static str = "
 USAGE:
     rust-masm [FLAGS] [OPTIONS] [SUBCOMMAND]

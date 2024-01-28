@@ -1,6 +1,3 @@
-use crate::program::block::execute_repeat;
-
-use super::block::{execute_if_else, execute_while};
 use super::{MidenProgram, Operand};
 use math::{fields::f64::BaseElement, FieldElement, StarkField};
 use std::collections::VecDeque;
@@ -9,11 +6,134 @@ use std::ops::Neg;
 impl MidenProgram {
     pub fn execute_block(&mut self, block: &mut VecDeque<Operand>) {
         while let Some(op) = block.pop_front() {
-            println!("op: {:?} {:?}", op, self.stack);
             match op {
-                Operand::IF => execute_if_else(self, block),
-                Operand::WHILE => execute_while(self, block),
-                Operand::REPEAT(n) => execute_repeat(n, self, block),
+                Operand::IF => {
+                    if let Some(n) = self.stack.pop_front() {
+                        let mut if_block = VecDeque::new();
+                        let mut else_block = VecDeque::new();
+                        let mut if_scope_count = 1;
+                        let mut else_scope_count = 1;
+
+                        'if_block: while let Some(next_op) = block.pop_front() {
+                            match next_op {
+                                Operand::ELSE => {
+                                    if if_scope_count == 1 {
+                                        break 'if_block;
+                                    } else {
+                                        if_block.push_back(next_op);
+                                    }
+                                }
+                                Operand::IF | Operand::WHILE | Operand::REPEAT(_) => {
+                                    if_scope_count += 1;
+                                    if_block.push_back(next_op);
+                                }
+                                Operand::END => {
+                                    if_scope_count -= 1;
+                                    if if_scope_count == 0 {
+                                        break 'if_block;
+                                    } else {
+                                        if_block.push_back(next_op);
+                                    }
+                                }
+                                _ => {
+                                    if_block.push_back(next_op);
+                                }
+                            }
+                        }
+
+                        if if_scope_count > 0 {
+                            'else_block: while let Some(next_op) = block.pop_front() {
+                                match next_op {
+                                    Operand::END => {
+                                        else_scope_count -= 1;
+                                        if else_scope_count == 0 {
+                                            break 'else_block;
+                                        } else {
+                                            else_block.push_back(next_op);
+                                        }
+                                    }
+                                    Operand::WHILE | Operand::IF | Operand::REPEAT(_) => {
+                                        else_scope_count += 1;
+                                        else_block.push_back(next_op);
+                                    }
+                                    _ => {
+                                        else_block.push_back(next_op);
+                                    }
+                                }
+                            }
+                        }
+
+                        if n == BaseElement::ONE {
+                            if if_block.len() > 0 {
+                                self.execute_block(&mut if_block.clone());
+                            }
+                        } else {
+                            if else_block.len() > 0 {
+                                self.execute_block(&mut else_block.clone());
+                            }
+                        }
+                    }
+                }
+                Operand::WHILE => {
+                    let mut while_block = VecDeque::new();
+                    let mut scope_count = 1;
+                    'while_block: while let Some(next_op) = block.pop_front() {
+                        match next_op {
+                            Operand::END => {
+                                scope_count -= 1;
+                                if scope_count == 0 {
+                                    break 'while_block;
+                                } else {
+                                    while_block.push_back(next_op);
+                                }
+                            }
+                            Operand::WHILE | Operand::IF | Operand::REPEAT(_) => {
+                                scope_count += 1;
+                                while_block.push_back(next_op);
+                            }
+                            _ => {
+                                while_block.push_back(next_op);
+                            }
+                        }
+                    }
+
+                    'while_loop: loop {
+                        if let Some(n) = self.stack.pop_front() {
+                            if n == BaseElement::ONE {
+                                self.execute_block(&mut while_block.clone());
+                            } else {
+                                break 'while_loop;
+                            }
+                        }
+                    }
+                }
+                Operand::REPEAT(n) => {
+                    let mut repeat_operands = VecDeque::new();
+                    let mut scope_count = 1;
+                    'outer: while let Some(next_op) = block.pop_front() {
+                        match next_op {
+                            Operand::END => {
+                                scope_count -= 1;
+                                if scope_count == 0 {
+                                    break 'outer;
+                                } else {
+                                    repeat_operands.push_back(next_op);
+                                }
+                            }
+                            Operand::WHILE | Operand::IF | Operand::REPEAT(_) => {
+                                scope_count += 1;
+                                repeat_operands.push_back(next_op);
+                            }
+                            _ => {
+                                repeat_operands.push_back(next_op);
+                            }
+                        }
+                    }
+
+                    for _ in 0..n {
+                        self.execute_block(&mut repeat_operands.clone());
+                    }
+                }
                 _ => {
                     self.execute_operand(&op);
                 }
@@ -417,6 +537,8 @@ impl MidenProgram {
                 println!("____________________________________________________\n");
                 println!("{}", message);
                 println!("stack : {:?}\n", self.stack);
+                println!("ram : {:?}\n", self.ram_memory);
+                println!("loc : {:?}\n", self.loc_memory);
                 println!("____________________________________________________\n");
             }
 
@@ -471,6 +593,7 @@ impl MidenProgram {
     }
 
     pub fn exec(&mut self, name: &str) {
+        self.add_operand(Operand::PRINT(name.to_string()));
         self.add_operand(Operand::Exec(name.to_string()));
     }
 }

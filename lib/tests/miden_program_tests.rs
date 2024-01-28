@@ -1,4 +1,4 @@
-use rust_masm::{tokenize, EmptyProgram, Inputs, Methods, MidenProgram};
+use rust_masm::{tokenize, EmptyProgram, Inputs, MidenProgram};
 
 #[test]
 fn test_inv() {
@@ -611,111 +611,9 @@ fn test_parse() {
 }
 
 #[test]
-fn test_parse2() {
-    let mut program = MidenProgram::parse_with_inputs(
-        "
-                proc.append
-                    dup
-
-                    dup.2
-
-                    mem_store
-
-                    swap.2
-                    swap
-                    add.1
-                end
-
-                proc.should_continue
-                    dup.1
-                    dup.1
-
-                    neq
-                end
-
-                proc.is_not_prime_should_continue
-                    dup
-                    mem_load
-
-                    push.0.1
-
-                    dup.2
-                    dup
-                    mul
-                    dup.5
-                    gt
-                    if.true
-                        drop
-                        drop
-                        push.1.0
-                    end
-
-                    dup
-                    if.true
-                        dup.4
-                        dup.3
-                        u32checked_mod
-
-                        eq.0
-                        if.true
-                            drop
-                            drop
-                            push.0.0
-                        end
-                    end
-
-                    swap.2
-                    drop
-                    swap
-                end
-
-                proc.is_not_prime
-                    push.0
-
-                    exec.is_not_prime_should_continue
-                    while.true
-                        drop
-                        add.1
-
-                        exec.is_not_prime_should_continue
-                    end
-                    swap
-                    drop
-                    eq.0
-                end
-
-                proc.next
-                    dup.2
-                    add.2
-
-                    exec.is_not_prime
-                    while.true
-                        add.2
-                        exec.is_not_prime
-                    end
-
-                    exec.append
-                end
-
-                begin
-                    push.0
-                    print.test
-                    push.2
-                    exec.append
-
-                    push.3
-                    exec.append
-
-                    exec.should_continue
-                    while.true
-                        exec.next
-                        exec.should_continue
-                    end
-
-                    drop
-                    drop
-                end
-    ",
+fn test_prime() {
+    let mut program = MidenProgram::parse_from_file_with_inputs(
+        "examples/prime.masm",
         Inputs::from_file("inputs/prime.json"),
     )
     .unwrap();
@@ -732,7 +630,6 @@ fn test_add_parse() {
     let mut program = MidenProgram::parse(
         "
         begin
-        
           push.1.2.3.4.5
           u32checked_mod
         end",
@@ -769,4 +666,19 @@ fn test_parse_3() {
     simple_miden_program.exp_n(4);
 
     simple_miden_program.print_masm();
+}
+
+#[test]
+fn test_game_of_life() {
+    let mut program = MidenProgram::parse_from_file_with_inputs(
+        "examples/game_of_life.masm",
+        Inputs::from_file("inputs/game_of_life.json"),
+    )
+    .unwrap();
+
+    program.print_masm();
+
+    program.save("programs/game_of_life.masm");
+
+    assert_eq!(Some(program.stack[0].into()), program.prove());
 }

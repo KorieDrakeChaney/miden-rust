@@ -1,5 +1,8 @@
+mod sanitize;
 mod token;
 mod tokenizer;
+
+use sanitize::sanitize;
 
 use std::collections::VecDeque;
 
@@ -7,11 +10,9 @@ use math::fields::f64::BaseElement;
 use token::Token;
 pub use tokenizer::tokenize;
 
-use crate::{MidenProgram, Operand, Proc};
+use crate::{Operand, Proc};
 
 pub fn parse(tokens: Vec<Token>) -> Result<(VecDeque<Operand>, Vec<Proc>), String> {
-    let mut program: MidenProgram;
-
     let mut procedures: Vec<Proc> = Vec::new();
 
     let mut operands: VecDeque<Operand> = VecDeque::new();
@@ -44,7 +45,7 @@ pub fn parse(tokens: Vec<Token>) -> Result<(VecDeque<Operand>, Vec<Proc>), Strin
                     }
                     if i + 1 < tokens.len() {
                         match &tokens[i + 1] {
-                            Token::Number(n) => {
+                            Token::Number(_) => {
                                 i += 1;
                             }
                             _ => {}
@@ -2157,9 +2158,7 @@ pub fn parse(tokens: Vec<Token>) -> Result<(VecDeque<Operand>, Vec<Proc>), Strin
                 }
             }
 
-            Token::Number(_) => {
-                return Err(format!("Unexpected number: {:?}", token));
-            }
+            Token::Number(_) => {}
 
             Token::String(_) => {}
         }

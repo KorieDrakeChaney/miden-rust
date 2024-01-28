@@ -1,0 +1,829 @@
+proc.storecellsn.16
+	loc_store.0
+	loc_store.1
+	loc_store.2
+	loc_store.3
+	loc_store.4
+	loc_store.5
+	loc_store.6
+	loc_store.7
+	loc_store.8
+	loc_store.9
+	loc_store.10
+	loc_store.11
+	loc_store.12
+	loc_store.13
+	loc_store.14
+	loc_store.15
+end
+
+
+proc.loadcellsnplus1.32
+	loc_load.16
+	loc_load.17
+	loc_load.18
+	loc_load.19
+	loc_load.20
+	loc_load.21
+	loc_load.22
+	loc_load.23
+	loc_load.24
+	loc_load.25
+	loc_load.26
+	loc_load.27
+	loc_load.28
+	loc_load.29
+	loc_load.30
+	loc_load.31
+end
+
+
+proc.clearstack
+	repeat.16
+		drop
+	end
+
+end
+
+
+proc.zero.17
+	push.0
+	loc_store.16
+	loc_load.1
+	loc_load.4
+	loc_load.5
+	loc_load.0
+	if.true
+		repeat.7
+			add
+		end
+
+		dup.0
+		push.2
+		eq
+		if.true
+			push.1
+			loc_store.16
+		end
+
+		push.3
+		eq
+		if.true
+			push.1
+			loc_store.16
+		end
+
+	else
+		repeat.7
+			add
+		end
+
+		push.3
+		eq
+		if.true
+			push.1
+			loc_store.16
+		end
+
+	end
+
+end
+
+
+proc.one.18
+	push.0
+	loc_store.17
+	loc_load.0
+	loc_load.2
+	loc_load.4
+	loc_load.5
+	loc_load.6
+	loc_load.1
+	if.true
+		repeat.7
+			add
+		end
+
+		dup.0
+		push.2
+		eq
+		if.true
+			push.1
+			loc_store.17
+		end
+
+		push.3
+		eq
+		if.true
+			push.1
+			loc_store.17
+		end
+
+	else
+		repeat.7
+			add
+		end
+
+		push.3
+		eq
+		if.true
+			push.1
+			loc_store.17
+		end
+
+	end
+
+end
+
+
+proc.two.19
+	push.0
+	loc_store.18
+	loc_load.1
+	loc_load.3
+	loc_load.5
+	loc_load.6
+	loc_load.7
+	loc_load.2
+	if.true
+		repeat.7
+			add
+		end
+
+		dup.0
+		push.2
+		eq
+		if.true
+			push.1
+			loc_store.18
+		end
+
+		push.3
+		eq
+		if.true
+			push.1
+			loc_store.18
+		end
+
+	else
+		repeat.7
+			add
+		end
+
+		push.3
+		eq
+		if.true
+			push.1
+			loc_store.18
+		end
+
+	end
+
+end
+
+
+proc.three.20
+	push.0
+	loc_store.19
+	loc_load.2
+	loc_load.6
+	loc_load.7
+	loc_load.3
+	if.true
+		repeat.7
+			add
+		end
+
+		dup.0
+		push.2
+		eq
+		if.true
+			push.1
+			loc_store.19
+		end
+
+		push.3
+		eq
+		if.true
+			push.1
+			loc_store.19
+		end
+
+	else
+		repeat.7
+			add
+		end
+
+		push.3
+		eq
+		if.true
+			push.1
+			loc_store.19
+		end
+
+	end
+
+end
+
+
+proc.four.21
+	push.0
+	loc_store.20
+	loc_load.0
+	loc_load.1
+	loc_load.5
+	loc_load.8
+	loc_load.9
+	loc_load.4
+	if.true
+		repeat.7
+			add
+		end
+
+		dup.0
+		push.2
+		eq
+		if.true
+			push.1
+			loc_store.20
+		end
+
+		push.3
+		eq
+		if.true
+			push.1
+			loc_store.20
+		end
+
+	else
+		repeat.7
+			add
+		end
+
+		push.3
+		eq
+		if.true
+			push.1
+			loc_store.20
+		end
+
+	end
+
+end
+
+
+proc.five.22
+	push.0
+	loc_store.21
+	loc_load.0
+	loc_load.1
+	loc_load.2
+	loc_load.4
+	loc_load.6
+	loc_load.8
+	loc_load.9
+	loc_load.10
+	loc_load.5
+	if.true
+		repeat.7
+			add
+		end
+
+		dup.0
+		push.2
+		eq
+		if.true
+			push.1
+			loc_store.21
+		end
+
+		push.3
+		eq
+		if.true
+			push.1
+			loc_store.21
+		end
+
+	else
+		repeat.7
+			add
+		end
+
+		push.3
+		eq
+		if.true
+			push.1
+			loc_store.21
+		end
+
+	end
+
+end
+
+
+proc.six.23
+	push.0
+	loc_store.22
+	loc_load.1
+	loc_load.2
+	loc_load.3
+	loc_load.5
+	loc_load.7
+	loc_load.9
+	loc_load.10
+	loc_load.11
+	loc_load.6
+	if.true
+		repeat.7
+			add
+		end
+
+		dup.0
+		push.2
+		eq
+		if.true
+			push.1
+			loc_store.22
+		end
+
+		push.3
+		eq
+		if.true
+			push.1
+			loc_store.22
+		end
+
+	else
+		repeat.7
+			add
+		end
+
+		push.3
+		eq
+		if.true
+			push.1
+			loc_store.22
+		end
+
+	end
+
+end
+
+
+proc.seven.24
+	push.0
+	loc_store.23
+	loc_load.2
+	loc_load.3
+	loc_load.6
+	loc_load.10
+	loc_load.11
+	loc_load.7
+	if.true
+		repeat.7
+			add
+		end
+
+		dup.0
+		push.2
+		eq
+		if.true
+			push.1
+			loc_store.23
+		end
+
+		push.3
+		eq
+		if.true
+			push.1
+			loc_store.23
+		end
+
+	else
+		repeat.7
+			add
+		end
+
+		push.3
+		eq
+		if.true
+			push.1
+			loc_store.23
+		end
+
+	end
+
+end
+
+
+proc.eight.25
+	push.0
+	loc_store.24
+	loc_load.4
+	loc_load.5
+	loc_load.9
+	loc_load.12
+	loc_load.13
+	loc_load.8
+	if.true
+		repeat.7
+			add
+		end
+
+		dup.0
+		push.2
+		eq
+		if.true
+			push.1
+			loc_store.24
+		end
+
+		push.3
+		eq
+		if.true
+			push.1
+			loc_store.24
+		end
+
+	else
+		repeat.7
+			add
+		end
+
+		push.3
+		eq
+		if.true
+			push.1
+			loc_store.24
+		end
+
+	end
+
+end
+
+
+proc.nine.26
+	push.0
+	loc_store.25
+	loc_load.4
+	loc_load.5
+	loc_load.6
+	loc_load.8
+	loc_load.10
+	loc_load.12
+	loc_load.13
+	loc_load.14
+	loc_load.9
+	if.true
+		repeat.7
+			add
+		end
+
+		dup.0
+		push.2
+		eq
+		if.true
+			push.1
+			loc_store.25
+		end
+
+		push.3
+		eq
+		if.true
+			push.1
+			loc_store.25
+		end
+
+	else
+		repeat.7
+			add
+		end
+
+		push.3
+		eq
+		if.true
+			push.1
+			loc_store.25
+		end
+
+	end
+
+end
+
+
+proc.ten.27
+	push.0
+	loc_store.26
+	loc_load.5
+	loc_load.6
+	loc_load.7
+	loc_load.9
+	loc_load.11
+	loc_load.13
+	loc_load.14
+	loc_load.15
+	loc_load.10
+	if.true
+		repeat.7
+			add
+		end
+
+		dup.0
+		push.2
+		eq
+		if.true
+			push.1
+			loc_store.26
+		end
+
+		push.3
+		eq
+		if.true
+			push.1
+			loc_store.26
+		end
+
+	else
+		repeat.7
+			add
+		end
+
+		push.3
+		eq
+		if.true
+			push.1
+			loc_store.26
+		end
+
+	end
+
+end
+
+
+proc.eleven.28
+	push.0
+	loc_store.27
+	loc_load.7
+	loc_load.6
+	loc_load.10
+	loc_load.14
+	loc_load.15
+	loc_load.11
+	if.true
+		repeat.7
+			add
+		end
+
+		dup.0
+		push.2
+		eq
+		if.true
+			push.1
+			loc_store.27
+		end
+
+		push.3
+		eq
+		if.true
+			push.1
+			loc_store.27
+		end
+
+	else
+		repeat.7
+			add
+		end
+
+		push.3
+		eq
+		if.true
+			push.1
+			loc_store.27
+		end
+
+	end
+
+end
+
+
+proc.twelve.29
+	push.0
+	loc_store.28
+	loc_load.8
+	loc_load.9
+	loc_load.13
+	loc_load.12
+	if.true
+		repeat.7
+			add
+		end
+
+		dup.0
+		push.2
+		eq
+		if.true
+			push.1
+			loc_store.28
+		end
+
+		push.3
+		eq
+		if.true
+			push.1
+			loc_store.28
+		end
+
+	else
+		repeat.7
+			add
+		end
+
+		push.3
+		eq
+		if.true
+			push.1
+			loc_store.28
+		end
+
+	end
+
+end
+
+
+proc.thirteen.30
+	push.0
+	loc_store.29
+	loc_load.8
+	loc_load.9
+	loc_load.10
+	loc_load.12
+	loc_load.14
+	loc_load.13
+	if.true
+		repeat.7
+			add
+		end
+
+		dup.0
+		push.2
+		eq
+		if.true
+			push.1
+			loc_store.29
+		end
+
+		push.3
+		eq
+		if.true
+			push.1
+			loc_store.29
+		end
+
+	else
+		repeat.7
+			add
+		end
+
+		push.3
+		eq
+		if.true
+			push.1
+			loc_store.29
+		end
+
+	end
+
+end
+
+
+proc.fourteen.31
+	push.0
+	loc_store.30
+	loc_load.9
+	loc_load.10
+	loc_load.11
+	loc_load.13
+	loc_load.15
+	loc_load.14
+	if.true
+		repeat.7
+			add
+		end
+
+		dup.0
+		push.2
+		eq
+		if.true
+			push.1
+			loc_store.30
+		end
+
+		push.3
+		eq
+		if.true
+			push.1
+			loc_store.30
+		end
+
+	else
+		repeat.7
+			add
+		end
+
+		push.3
+		eq
+		if.true
+			push.1
+			loc_store.30
+		end
+
+	end
+
+end
+
+
+proc.fifteen.32
+	push.0
+	loc_store.31
+	loc_load.10
+	loc_load.11
+	loc_load.14
+	loc_load.15
+	if.true
+		repeat.7
+			add
+		end
+
+		dup.0
+		push.2
+		eq
+		if.true
+			push.1
+			loc_store.31
+		end
+
+		push.3
+		eq
+		if.true
+			push.1
+			loc_store.31
+		end
+
+	else
+		repeat.7
+			add
+		end
+
+		push.3
+		eq
+		if.true
+			push.1
+			loc_store.31
+		end
+
+	end
+
+end
+
+
+begin
+	repeat.10
+		exec.storecellsn
+		exec.zero
+		exec.clearstack
+		exec.one
+		exec.clearstack
+		exec.two
+		exec.clearstack
+		exec.three
+		exec.clearstack
+		exec.four
+		exec.clearstack
+		exec.five
+		exec.clearstack
+		exec.six
+		exec.clearstack
+		exec.seven
+		exec.clearstack
+		exec.eight
+		exec.clearstack
+		exec.nine
+		exec.clearstack
+		exec.ten
+		exec.clearstack
+		exec.eleven
+		exec.clearstack
+		exec.twelve
+		exec.clearstack
+		exec.thirteen
+		exec.clearstack
+		exec.fourteen
+		exec.clearstack
+		exec.fifteen
+		exec.clearstack
+		exec.loadcellsnplus1
+	end
+
+end
+
+#stack output : [1, 1, 0, 0, 1, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0] 
