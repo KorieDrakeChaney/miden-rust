@@ -7,51 +7,72 @@ use math::fields::f64::BaseElement;
 use token::Token;
 pub use tokenizer::tokenize;
 
-use crate::{MidenProgram, Operand};
+use crate::{MidenProgram, Operand, Proc};
 
-pub fn parse(tokens: Vec<Token>) -> Result<MidenProgram, String> {
+pub fn parse(tokens: Vec<Token>) -> Result<(VecDeque<Operand>, Vec<Proc>), String> {
     let mut program: MidenProgram;
+
+    let mut procedures: Vec<Proc> = Vec::new();
+
     let mut operands: VecDeque<Operand> = VecDeque::new();
 
     let mut i = 0;
 
     let mut scope = 0;
+    let mut in_proc = false;
 
-    match tokens[0] {
-        Token::Proc => {
-            let name = match &tokens[1] {
-                Token::String(name) => {
-                    i += 1;
-                    name
-                }
-                _ => {
-                    return Err(format!("Expected name after proc, found {:?}", tokens[1]));
-                }
-            };
-
-            match &tokens[2] {
-                Token::Number(_) => i += 1,
-                _ => {}
-            };
-
-            program = MidenProgram::proc(name);
-            i += 1;
-        }
-        Token::Begin => {
-            program = MidenProgram::new();
-            i += 1;
-        }
-        _ => program = MidenProgram::new(),
-    }
+    let mut has_begin = false;
 
     while i < tokens.len() {
         let token = &tokens[i];
         match token {
+            Token::Proc => {
+                if i + 1 < tokens.len() {
+                    match &tokens[i + 1] {
+                        Token::String(name) => {
+                            procedures.push(Proc::new(name));
+                            in_proc = true;
+                            scope += 1;
+                            i += 1;
+                        }
+                        _ => {
+                            return Err(format!(
+                                "Expected name after proc, found {:?}",
+                                tokens[i + 1]
+                            ));
+                        }
+                    }
+                    if i + 1 < tokens.len() {
+                        match &tokens[i + 1] {
+                            Token::Number(n) => {
+                                i += 1;
+                            }
+                            _ => {}
+                        }
+                    }
+                } else {
+                    return Err(format!("Expected name after proc, found EOF"));
+                }
+            }
+
+            Token::Begin => {
+                if !has_begin {
+                    has_begin = true;
+                    scope += 1;
+                } else {
+                    return Err(format!("Unexpected begin"));
+                }
+            }
             Token::Print => {
                 if i + 1 < tokens.len() {
                     match &tokens[i + 1] {
                         Token::String(name) => {
-                            operands.push_back(Operand::PRINT(name.to_string()));
+                            if in_proc {
+                                let index = procedures.len() - 1;
+                                procedures[index].add_operand(Operand::PRINT(name.to_string()));
+                            } else {
+                                operands.push_back(Operand::PRINT(name.to_string()));
+                            }
                             i += 1;
                         }
                         _ => {
@@ -67,7 +88,12 @@ pub fn parse(tokens: Vec<Token>) -> Result<MidenProgram, String> {
                     match &tokens[i + 1] {
                         Token::String(statement) => {
                             if statement == "true" {
-                                operands.push_back(Operand::IF);
+                                if in_proc {
+                                    let index = procedures.len() - 1;
+                                    procedures[index].add_operand(Operand::IF);
+                                } else {
+                                    operands.push_back(Operand::IF);
+                                }
                                 scope += 1;
                                 i += 1;
                             } else {
@@ -90,30 +116,60 @@ pub fn parse(tokens: Vec<Token>) -> Result<MidenProgram, String> {
             }
 
             Token::Pow2 => {
-                operands.push_back(Operand::Pow2);
+                if in_proc {
+                    let index = procedures.len() - 1;
+                    procedures[index].add_operand(Operand::Pow2);
+                } else {
+                    operands.push_back(Operand::Pow2);
+                }
             }
 
             Token::Neg => {
-                operands.push_back(Operand::Neg);
+                if in_proc {
+                    let index = procedures.len() - 1;
+                    procedures[index].add_operand(Operand::Neg);
+                } else {
+                    operands.push_back(Operand::Neg);
+                }
             }
 
             Token::Inv => {
-                operands.push_back(Operand::Inv);
+                if in_proc {
+                    let index = procedures.len() - 1;
+                    procedures[index].add_operand(Operand::Inv);
+                } else {
+                    operands.push_back(Operand::Inv);
+                }
             }
 
             Token::Exp => {
                 if i + 1 < tokens.len() {
                     match &tokens[i + 1] {
                         Token::Number(n) => {
-                            operands.push_back(Operand::ExpImm(*n));
+                            if in_proc {
+                                let index = procedures.len() - 1;
+                                procedures[index].add_operand(Operand::ExpImm(*n));
+                            } else {
+                                operands.push_back(Operand::ExpImm(*n));
+                            }
                             i += 1;
                         }
                         _ => {
-                            operands.push_back(Operand::Exp);
+                            if in_proc {
+                                let index = procedures.len() - 1;
+                                procedures[index].add_operand(Operand::Exp);
+                            } else {
+                                operands.push_back(Operand::Exp);
+                            }
                         }
                     }
                 } else {
-                    operands.push_back(Operand::Exp);
+                    if in_proc {
+                        let index = procedures.len() - 1;
+                        procedures[index].add_operand(Operand::Exp);
+                    } else {
+                        operands.push_back(Operand::Exp);
+                    }
                 }
             }
 
@@ -141,7 +197,12 @@ pub fn parse(tokens: Vec<Token>) -> Result<MidenProgram, String> {
                     }
 
                     for n in nums {
-                        operands.push_back(Operand::Push(BaseElement::from(n)));
+                        if in_proc {
+                            let index = procedures.len() - 1;
+                            procedures[index].add_operand(Operand::Push(BaseElement::from(n)));
+                        } else {
+                            operands.push_back(Operand::Push(BaseElement::from(n)));
+                        }
                     }
                 } else {
                     return Err(format!("Expected number after push_back, found EOF"));
@@ -149,20 +210,38 @@ pub fn parse(tokens: Vec<Token>) -> Result<MidenProgram, String> {
             }
 
             Token::Else => {
-                operands.push_back(Operand::ELSE);
+                if in_proc {
+                    let index = procedures.len() - 1;
+                    procedures[index].add_operand(Operand::ELSE);
+                } else {
+                    operands.push_back(Operand::ELSE);
+                }
             }
             Token::End => {
-                if scope > 0 {
-                    operands.push_back(Operand::END);
-                }
                 scope -= 1;
+
+                if scope != 0 {
+                    if in_proc {
+                        let index = procedures.len() - 1;
+                        procedures[index].add_operand(Operand::END);
+                    } else {
+                        operands.push_back(Operand::END);
+                    }
+                } else {
+                    in_proc = false;
+                }
             }
             Token::While => {
                 if i + 1 < tokens.len() {
                     match &tokens[i + 1] {
                         Token::String(statement) => {
                             if statement == "true" {
-                                operands.push_back(Operand::WHILE);
+                                if in_proc {
+                                    let index = procedures.len() - 1;
+                                    procedures[index].add_operand(Operand::WHILE);
+                                } else {
+                                    operands.push_back(Operand::WHILE);
+                                }
                                 scope += 1;
                                 i += 1;
                             } else {
@@ -187,7 +266,12 @@ pub fn parse(tokens: Vec<Token>) -> Result<MidenProgram, String> {
                 if i + 1 < tokens.len() {
                     match &tokens[i + 1] {
                         Token::Number(n) => {
-                            operands.push_back(Operand::REPEAT(*n as usize));
+                            if in_proc {
+                                let index = procedures.len() - 1;
+                                procedures[index].add_operand(Operand::REPEAT(*n as usize));
+                            } else {
+                                operands.push_back(Operand::REPEAT(*n as usize));
+                            }
                             i += 1;
                         }
                         _ => {
@@ -206,67 +290,136 @@ pub fn parse(tokens: Vec<Token>) -> Result<MidenProgram, String> {
                 if i + 1 < tokens.len() {
                     match &tokens[i + 1] {
                         Token::Number(n) => {
-                            operands.push_back(Operand::AddImm(BaseElement::from(*n)));
+                            if in_proc {
+                                let index = procedures.len() - 1;
+                                procedures[index]
+                                    .add_operand(Operand::AddImm(BaseElement::from(*n)));
+                            } else {
+                                operands.push_back(Operand::AddImm(BaseElement::from(*n)));
+                            }
                             i += 1;
                         }
                         _ => {
-                            operands.push_back(Operand::Add);
+                            if in_proc {
+                                let index = procedures.len() - 1;
+                                procedures[index].add_operand(Operand::Add);
+                            } else {
+                                operands.push_back(Operand::Add);
+                            }
                         }
                     }
                 } else {
-                    operands.push_back(Operand::Add);
+                    if in_proc {
+                        let index = procedures.len() - 1;
+                        procedures[index].add_operand(Operand::Add);
+                    } else {
+                        operands.push_back(Operand::Add);
+                    }
                 }
             }
             Token::Sub => {
                 if i + 1 < tokens.len() {
                     match &tokens[i + 1] {
                         Token::Number(n) => {
-                            operands.push_back(Operand::SubImm(BaseElement::from(*n)));
+                            if in_proc {
+                                let index = procedures.len() - 1;
+                                procedures[index]
+                                    .add_operand(Operand::SubImm(BaseElement::from(*n)));
+                            } else {
+                                operands.push_back(Operand::SubImm(BaseElement::from(*n)));
+                            }
                             i += 1;
                         }
                         _ => {
-                            operands.push_back(Operand::Sub);
+                            if in_proc {
+                                let index = procedures.len() - 1;
+                                procedures[index].add_operand(Operand::Sub);
+                            } else {
+                                operands.push_back(Operand::Sub);
+                            }
                         }
                     }
                 } else {
-                    operands.push_back(Operand::Sub);
+                    if in_proc {
+                        let index = procedures.len() - 1;
+                        procedures[index].add_operand(Operand::Sub);
+                    } else {
+                        operands.push_back(Operand::Sub);
+                    }
                 }
             }
             Token::Mul => {
                 if i + 1 < tokens.len() {
                     match &tokens[i + 1] {
                         Token::Number(n) => {
-                            operands.push_back(Operand::MulImm(BaseElement::from(*n)));
+                            if in_proc {
+                                let index = procedures.len() - 1;
+                                procedures[index]
+                                    .add_operand(Operand::MulImm(BaseElement::from(*n)));
+                            } else {
+                                operands.push_back(Operand::MulImm(BaseElement::from(*n)));
+                            }
                             i += 1;
                         }
                         _ => {
-                            operands.push_back(Operand::Mul);
+                            if in_proc {
+                                let index = procedures.len() - 1;
+                                procedures[index].add_operand(Operand::Mul);
+                            } else {
+                                operands.push_back(Operand::Mul);
+                            }
                         }
                     }
                 } else {
-                    operands.push_back(Operand::Mul);
+                    if in_proc {
+                        let index = procedures.len() - 1;
+                        procedures[index].add_operand(Operand::Mul);
+                    } else {
+                        operands.push_back(Operand::Mul);
+                    }
                 }
             }
             Token::Div => {
                 if i + 1 < tokens.len() {
                     match &tokens[i + 1] {
                         Token::Number(n) => {
-                            operands.push_back(Operand::DivImm(BaseElement::from(*n)));
+                            if in_proc {
+                                let index = procedures.len() - 1;
+                                procedures[index]
+                                    .add_operand(Operand::DivImm(BaseElement::from(*n)));
+                            } else {
+                                operands.push_back(Operand::DivImm(BaseElement::from(*n)));
+                            }
                             i += 1;
                         }
                         _ => {
-                            operands.push_back(Operand::Div);
+                            if in_proc {
+                                let index = procedures.len() - 1;
+                                procedures[index].add_operand(Operand::Div);
+                            } else {
+                                operands.push_back(Operand::Div);
+                            }
                         }
                     }
                 } else {
-                    operands.push_back(Operand::Div);
+                    if in_proc {
+                        let index = procedures.len() - 1;
+                        procedures[index].add_operand(Operand::Div);
+                    } else {
+                        operands.push_back(Operand::Div);
+                    }
                 }
             }
             Token::AdvPush => {
                 if i + 1 < tokens.len() {
                     match &tokens[i + 1] {
                         Token::Number(n) => {
-                            operands.push_back(Operand::AdvPush(*n as usize));
+                            if in_proc {
+                                let index = procedures.len() - 1;
+                                procedures[index].add_operand(Operand::AdvPush(*n as usize));
+                            } else {
+                                operands.push_back(Operand::AdvPush(*n as usize));
+                            }
                             i += 1;
                         }
                         _ => {
@@ -285,15 +438,30 @@ pub fn parse(tokens: Vec<Token>) -> Result<MidenProgram, String> {
                 if i + 1 < tokens.len() {
                     match &tokens[i + 1] {
                         Token::Number(n) => {
-                            operands.push_back(Operand::MemLoadImm(*n as u32));
+                            if in_proc {
+                                let index = procedures.len() - 1;
+                                procedures[index].add_operand(Operand::MemLoadImm(*n as u32));
+                            } else {
+                                operands.push_back(Operand::MemLoadImm(*n as u32));
+                            }
                             i += 1;
                         }
                         _ => {
-                            operands.push_back(Operand::MemLoad);
+                            if in_proc {
+                                let index = procedures.len() - 1;
+                                procedures[index].add_operand(Operand::MemLoad);
+                            } else {
+                                operands.push_back(Operand::MemLoad);
+                            }
                         }
                     }
                 } else {
-                    operands.push_back(Operand::MemLoad);
+                    if in_proc {
+                        let index = procedures.len() - 1;
+                        procedures[index].add_operand(Operand::MemLoad);
+                    } else {
+                        operands.push_back(Operand::MemLoad);
+                    }
                 }
             }
 
@@ -301,15 +469,30 @@ pub fn parse(tokens: Vec<Token>) -> Result<MidenProgram, String> {
                 if i + 1 < tokens.len() {
                     match &tokens[i + 1] {
                         Token::Number(n) => {
-                            operands.push_back(Operand::MemStoreImm(*n as u32));
+                            if in_proc {
+                                let index = procedures.len() - 1;
+                                procedures[index].add_operand(Operand::MemStoreImm(*n as u32));
+                            } else {
+                                operands.push_back(Operand::MemStoreImm(*n as u32));
+                            }
                             i += 1;
                         }
                         _ => {
-                            operands.push_back(Operand::MemStore);
+                            if in_proc {
+                                let index = procedures.len() - 1;
+                                procedures[index].add_operand(Operand::MemStore);
+                            } else {
+                                operands.push_back(Operand::MemStore);
+                            }
                         }
                     }
                 } else {
-                    operands.push_back(Operand::MemStore);
+                    if in_proc {
+                        let index = procedures.len() - 1;
+                        procedures[index].add_operand(Operand::MemStore);
+                    } else {
+                        operands.push_back(Operand::MemStore);
+                    }
                 }
             }
 
@@ -317,15 +500,30 @@ pub fn parse(tokens: Vec<Token>) -> Result<MidenProgram, String> {
                 if i + 1 < tokens.len() {
                     match &tokens[i + 1] {
                         Token::Number(n) => {
-                            operands.push_back(Operand::MemLoadWImm(*n as u32));
+                            if in_proc {
+                                let index = procedures.len() - 1;
+                                procedures[index].add_operand(Operand::MemLoadWImm(*n as u32));
+                            } else {
+                                operands.push_back(Operand::MemLoadWImm(*n as u32));
+                            }
                             i += 1;
                         }
                         _ => {
-                            operands.push_back(Operand::MemLoadW);
+                            if in_proc {
+                                let index = procedures.len() - 1;
+                                procedures[index].add_operand(Operand::MemLoadW);
+                            } else {
+                                operands.push_back(Operand::MemLoadW);
+                            }
                         }
                     }
                 } else {
-                    operands.push_back(Operand::MemLoadW);
+                    if in_proc {
+                        let index = procedures.len() - 1;
+                        procedures[index].add_operand(Operand::MemLoadW);
+                    } else {
+                        operands.push_back(Operand::MemLoadW);
+                    }
                 }
             }
 
@@ -333,15 +531,30 @@ pub fn parse(tokens: Vec<Token>) -> Result<MidenProgram, String> {
                 if i + 1 < tokens.len() {
                     match &tokens[i + 1] {
                         Token::Number(n) => {
-                            operands.push_back(Operand::MemStoreWImm(*n as u32));
+                            if in_proc {
+                                let index = procedures.len() - 1;
+                                procedures[index].add_operand(Operand::MemStoreWImm(*n as u32));
+                            } else {
+                                operands.push_back(Operand::MemStoreWImm(*n as u32));
+                            }
                             i += 1;
                         }
                         _ => {
-                            operands.push_back(Operand::MemStoreW);
+                            if in_proc {
+                                let index = procedures.len() - 1;
+                                procedures[index].add_operand(Operand::MemStoreW);
+                            } else {
+                                operands.push_back(Operand::MemStoreW);
+                            }
                         }
                     }
                 } else {
-                    operands.push_back(Operand::MemStoreW);
+                    if in_proc {
+                        let index = procedures.len() - 1;
+                        procedures[index].add_operand(Operand::MemStoreW);
+                    } else {
+                        operands.push_back(Operand::MemStoreW);
+                    }
                 }
             }
 
@@ -349,7 +562,15 @@ pub fn parse(tokens: Vec<Token>) -> Result<MidenProgram, String> {
                 if i + 1 < tokens.len() {
                     match &tokens[i + 1] {
                         Token::Number(n) => {
-                            operands.push_back(Operand::LocLoad(*n as u16));
+                            if in_proc {
+                                let index = procedures.len() - 1;
+                                procedures[index].add_operand(Operand::LocLoad(*n as u16));
+                            } else {
+                                return Err(format!(
+                                    "Unexpected loc_load with value: {:?}",
+                                    tokens[i + 1]
+                                ));
+                            }
                             i += 1;
                         }
                         _ => {
@@ -368,7 +589,15 @@ pub fn parse(tokens: Vec<Token>) -> Result<MidenProgram, String> {
                 if i + 1 < tokens.len() {
                     match &tokens[i + 1] {
                         Token::Number(n) => {
-                            operands.push_back(Operand::LocLoadW(*n as u16));
+                            if in_proc {
+                                let index = procedures.len() - 1;
+                                procedures[index].add_operand(Operand::LocLoadW(*n as u16));
+                            } else {
+                                return Err(format!(
+                                    "Unexpected loc_loadw with value: {:?}",
+                                    tokens[i + 1]
+                                ));
+                            }
                             i += 1;
                         }
                         _ => {
@@ -387,7 +616,15 @@ pub fn parse(tokens: Vec<Token>) -> Result<MidenProgram, String> {
                 if i + 1 < tokens.len() {
                     match &tokens[i + 1] {
                         Token::Number(n) => {
-                            operands.push_back(Operand::LocStore(*n as u16));
+                            if in_proc {
+                                let index = procedures.len() - 1;
+                                procedures[index].add_operand(Operand::LocStore(*n as u16));
+                            } else {
+                                return Err(format!(
+                                    "Unexpected loc_store with value: {:?}",
+                                    tokens[i + 1]
+                                ));
+                            }
                             i += 1;
                         }
                         _ => {
@@ -406,7 +643,15 @@ pub fn parse(tokens: Vec<Token>) -> Result<MidenProgram, String> {
                 if i + 1 < tokens.len() {
                     match &tokens[i + 1] {
                         Token::Number(n) => {
-                            operands.push_back(Operand::LocStoreW(*n as u16));
+                            if in_proc {
+                                let index = procedures.len() - 1;
+                                procedures[index].add_operand(Operand::LocStoreW(*n as u16));
+                            } else {
+                                return Err(format!(
+                                    "Unexpected loc_storew with value: {:?}",
+                                    tokens[i + 1]
+                                ));
+                            }
                             i += 1;
                         }
                         _ => {
@@ -425,7 +670,12 @@ pub fn parse(tokens: Vec<Token>) -> Result<MidenProgram, String> {
                 if i + 1 < tokens.len() {
                     match &tokens[i + 1] {
                         Token::String(name) => {
-                            operands.push_back(Operand::Exec(name.to_string()));
+                            if in_proc {
+                                let index = procedures.len() - 1;
+                                procedures[index].add_operand(Operand::Exec(name.to_string()));
+                            } else {
+                                operands.push_back(Operand::Exec(name.to_string()));
+                            }
                             i += 1;
                         }
                         _ => {
@@ -444,14 +694,30 @@ pub fn parse(tokens: Vec<Token>) -> Result<MidenProgram, String> {
                 if i + 1 < tokens.len() {
                     match &tokens[i + 1] {
                         Token::Number(n) => {
-                            operands.push_back(Operand::Dup(*n as usize));
+                            if in_proc {
+                                let index = procedures.len() - 1;
+                                procedures[index].add_operand(Operand::Dup(*n as usize));
+                            } else {
+                                operands.push_back(Operand::Dup(*n as usize));
+                            }
                             i += 1;
                         }
                         _ => {
-                            operands.push_back(Operand::Dup(0));
+                            if in_proc {
+                                let index = procedures.len() - 1;
+                                procedures[index].add_operand(Operand::Dup(0));
+                            } else {
+                                operands.push_back(Operand::Dup(0));
+                            }
                         }
                     }
                 } else {
+                    if in_proc {
+                        let index = procedures.len() - 1;
+                        procedures[index].add_operand(Operand::Dup(0));
+                    } else {
+                        operands.push_back(Operand::Dup(0));
+                    }
                     operands.push_back(Operand::Dup(0));
                 }
             }
@@ -460,15 +726,30 @@ pub fn parse(tokens: Vec<Token>) -> Result<MidenProgram, String> {
                 if i + 1 < tokens.len() {
                     match &tokens[i + 1] {
                         Token::Number(n) => {
-                            operands.push_back(Operand::Swap(*n as usize));
+                            if in_proc {
+                                let index = procedures.len() - 1;
+                                procedures[index].add_operand(Operand::Swap(*n as usize));
+                            } else {
+                                operands.push_back(Operand::Swap(*n as usize));
+                            }
                             i += 1;
                         }
                         _ => {
-                            operands.push_back(Operand::Swap(1));
+                            if in_proc {
+                                let index = procedures.len() - 1;
+                                procedures[index].add_operand(Operand::Swap(1));
+                            } else {
+                                operands.push_back(Operand::Swap(1));
+                            }
                         }
                     }
                 } else {
-                    operands.push_back(Operand::Swap(1));
+                    if in_proc {
+                        let index = procedures.len() - 1;
+                        procedures[index].add_operand(Operand::Swap(1));
+                    } else {
+                        operands.push_back(Operand::Swap(1));
+                    }
                 }
             }
 
@@ -476,15 +757,30 @@ pub fn parse(tokens: Vec<Token>) -> Result<MidenProgram, String> {
                 if i + 1 < tokens.len() {
                     match &tokens[i + 1] {
                         Token::Number(n) => {
-                            operands.push_back(Operand::SwapW(*n as usize));
+                            if in_proc {
+                                let index = procedures.len() - 1;
+                                procedures[index].add_operand(Operand::SwapW(*n as usize));
+                            } else {
+                                operands.push_back(Operand::SwapW(*n as usize));
+                            }
                             i += 1;
                         }
                         _ => {
-                            operands.push_back(Operand::SwapW(1));
+                            if in_proc {
+                                let index = procedures.len() - 1;
+                                procedures[index].add_operand(Operand::SwapW(1));
+                            } else {
+                                operands.push_back(Operand::SwapW(1));
+                            }
                         }
                     }
                 } else {
-                    operands.push_back(Operand::SwapW(1));
+                    if in_proc {
+                        let index = procedures.len() - 1;
+                        procedures[index].add_operand(Operand::SwapW(1));
+                    } else {
+                        operands.push_back(Operand::SwapW(1));
+                    }
                 }
             }
 
@@ -492,35 +788,52 @@ pub fn parse(tokens: Vec<Token>) -> Result<MidenProgram, String> {
                 if i + 1 < tokens.len() {
                     match &tokens[i + 1] {
                         Token::Number(n) => {
-                            operands.push_back(Operand::SwapDw(*n as usize));
+                            if in_proc {
+                                let index = procedures.len() - 1;
+                                procedures[index].add_operand(Operand::SwapDw(*n as usize));
+                            } else {
+                                operands.push_back(Operand::SwapDw(*n as usize));
+                            }
                             i += 1;
                         }
                         _ => {
-                            operands.push_back(Operand::SwapDw(1));
+                            if in_proc {
+                                let index = procedures.len() - 1;
+                                procedures[index].add_operand(Operand::SwapDw(1));
+                            } else {
+                                operands.push_back(Operand::SwapDw(1));
+                            }
                         }
                     }
                 } else {
-                    operands.push_back(Operand::SwapDw(1));
+                    if in_proc {
+                        let index = procedures.len() - 1;
+                        procedures[index].add_operand(Operand::SwapDw(1));
+                    } else {
+                        operands.push_back(Operand::SwapDw(1));
+                    }
                 }
             }
 
-            Token::Proc => {
-                return Err(format!("Unexpected proc: {:?}", token));
-            }
-
-            Token::Begin => {
-                return Err(format!("Unexpected begin: {:?}", token));
-            }
-
             Token::PadW => {
-                operands.push_back(Operand::PadW);
+                if in_proc {
+                    let index = procedures.len() - 1;
+                    procedures[index].add_operand(Operand::PadW);
+                } else {
+                    operands.push_back(Operand::PadW);
+                }
             }
 
             Token::MovUp => {
                 if i + 1 < tokens.len() {
                     match &tokens[i + 1] {
                         Token::Number(n) => {
-                            operands.push_back(Operand::MovUp(*n as usize));
+                            if in_proc {
+                                let index = procedures.len() - 1;
+                                procedures[index].add_operand(Operand::MovUp(*n as usize));
+                            } else {
+                                operands.push_back(Operand::MovUp(*n as usize));
+                            }
                             i += 1;
                         }
                         _ => {
@@ -539,7 +852,12 @@ pub fn parse(tokens: Vec<Token>) -> Result<MidenProgram, String> {
                 if i + 1 < tokens.len() {
                     match &tokens[i + 1] {
                         Token::Number(n) => {
-                            operands.push_back(Operand::MovUpW(*n as usize));
+                            if in_proc {
+                                let index = procedures.len() - 1;
+                                procedures[index].add_operand(Operand::MovUpW(*n as usize));
+                            } else {
+                                operands.push_back(Operand::MovUpW(*n as usize));
+                            }
                             i += 1;
                         }
                         _ => {
@@ -558,7 +876,12 @@ pub fn parse(tokens: Vec<Token>) -> Result<MidenProgram, String> {
                 if i + 1 < tokens.len() {
                     match &tokens[i + 1] {
                         Token::Number(n) => {
-                            operands.push_back(Operand::MovDn(*n as usize));
+                            if in_proc {
+                                let index = procedures.len() - 1;
+                                procedures[index].add_operand(Operand::MovDn(*n as usize));
+                            } else {
+                                operands.push_back(Operand::MovDn(*n as usize));
+                            }
                             i += 1;
                         }
                         _ => {
@@ -577,7 +900,12 @@ pub fn parse(tokens: Vec<Token>) -> Result<MidenProgram, String> {
                 if i + 1 < tokens.len() {
                     match &tokens[i + 1] {
                         Token::Number(n) => {
-                            operands.push_back(Operand::MovDnW(*n as usize));
+                            if in_proc {
+                                let index = procedures.len() - 1;
+                                procedures[index].add_operand(Operand::MovDnW(*n as usize));
+                            } else {
+                                operands.push_back(Operand::MovDnW(*n as usize));
+                            }
                             i += 1;
                         }
                         _ => {
@@ -593,66 +921,142 @@ pub fn parse(tokens: Vec<Token>) -> Result<MidenProgram, String> {
             }
 
             Token::Drop => {
-                operands.push_back(Operand::Drop);
+                if in_proc {
+                    let index = procedures.len() - 1;
+                    procedures[index].add_operand(Operand::Drop);
+                } else {
+                    operands.push_back(Operand::Drop);
+                }
             }
 
             Token::Ext2Add => {
-                operands.push_back(Operand::Ext2Add);
+                if in_proc {
+                    let index = procedures.len() - 1;
+                    procedures[index].add_operand(Operand::Ext2Add);
+                } else {
+                    operands.push_back(Operand::Ext2Add);
+                }
             }
 
             Token::Ext2Sub => {
-                operands.push_back(Operand::Ext2Sub);
+                if in_proc {
+                    let index = procedures.len() - 1;
+                    procedures[index].add_operand(Operand::Ext2Sub);
+                } else {
+                    operands.push_back(Operand::Ext2Sub);
+                }
             }
 
             Token::Ext2Mul => {
-                operands.push_back(Operand::Ext2Mul);
+                if in_proc {
+                    let index = procedures.len() - 1;
+                    procedures[index].add_operand(Operand::Ext2Mul);
+                } else {
+                    operands.push_back(Operand::Ext2Mul);
+                }
             }
 
             Token::Ext2Div => {
-                operands.push_back(Operand::Ext2Div);
+                if in_proc {
+                    let index = procedures.len() - 1;
+                    procedures[index].add_operand(Operand::Ext2Div);
+                } else {
+                    operands.push_back(Operand::Ext2Div);
+                }
             }
 
             Token::Ext2Neg => {
-                operands.push_back(Operand::Ext2Neg);
+                if in_proc {
+                    let index = procedures.len() - 1;
+                    procedures[index].add_operand(Operand::Ext2Neg);
+                } else {
+                    operands.push_back(Operand::Ext2Neg);
+                }
             }
 
             Token::Ext2Inv => {
-                operands.push_back(Operand::Ext2Inv);
+                if in_proc {
+                    let index = procedures.len() - 1;
+                    procedures[index].add_operand(Operand::Ext2Inv);
+                } else {
+                    operands.push_back(Operand::Ext2Inv);
+                }
             }
 
             Token::And => {
-                operands.push_back(Operand::And);
+                if in_proc {
+                    let index = procedures.len() - 1;
+                    procedures[index].add_operand(Operand::And);
+                } else {
+                    operands.push_back(Operand::And);
+                }
             }
 
             Token::Or => {
-                operands.push_back(Operand::Or);
+                if in_proc {
+                    let index = procedures.len() - 1;
+                    procedures[index].add_operand(Operand::Or);
+                } else {
+                    operands.push_back(Operand::Or);
+                }
             }
 
             Token::Xor => {
-                operands.push_back(Operand::Xor);
+                if in_proc {
+                    let index = procedures.len() - 1;
+                    procedures[index].add_operand(Operand::Xor);
+                } else {
+                    operands.push_back(Operand::Xor);
+                }
             }
 
             Token::Not => {
-                operands.push_back(Operand::Not);
+                if in_proc {
+                    let index = procedures.len() - 1;
+                    procedures[index].add_operand(Operand::Not);
+                } else {
+                    operands.push_back(Operand::Not);
+                }
             }
 
             Token::IsOdd => {
-                operands.push_back(Operand::IsOdd);
+                if in_proc {
+                    let index = procedures.len() - 1;
+                    procedures[index].add_operand(Operand::IsOdd);
+                } else {
+                    operands.push_back(Operand::IsOdd);
+                }
             }
 
             Token::Eq => {
                 if i + 1 < tokens.len() {
                     match &tokens[i + 1] {
                         Token::Number(n) => {
-                            operands.push_back(Operand::EqImm(BaseElement::from(*n)));
+                            if in_proc {
+                                let index = procedures.len() - 1;
+                                procedures[index]
+                                    .add_operand(Operand::EqImm(BaseElement::from(*n)));
+                            } else {
+                                operands.push_back(Operand::EqImm(BaseElement::from(*n)));
+                            }
                             i += 1;
                         }
                         _ => {
-                            operands.push_back(Operand::Eq);
+                            if in_proc {
+                                let index = procedures.len() - 1;
+                                procedures[index].add_operand(Operand::Eq);
+                            } else {
+                                operands.push_back(Operand::Eq);
+                            }
                         }
                     }
                 } else {
-                    operands.push_back(Operand::Eq);
+                    if in_proc {
+                        let index = procedures.len() - 1;
+                        procedures[index].add_operand(Operand::Eq);
+                    } else {
+                        operands.push_back(Operand::Eq);
+                    }
                 }
             }
 
@@ -660,50 +1064,108 @@ pub fn parse(tokens: Vec<Token>) -> Result<MidenProgram, String> {
                 if i + 1 < tokens.len() {
                     match &tokens[i + 1] {
                         Token::Number(n) => {
-                            operands.push_back(Operand::NeqImm(BaseElement::from(*n)));
+                            if in_proc {
+                                let index = procedures.len() - 1;
+                                procedures[index]
+                                    .add_operand(Operand::NeqImm(BaseElement::from(*n)));
+                            } else {
+                                operands.push_back(Operand::NeqImm(BaseElement::from(*n)));
+                            }
                         }
                         _ => {
-                            operands.push_back(Operand::Neq);
+                            if in_proc {
+                                let index = procedures.len() - 1;
+                                procedures[index].add_operand(Operand::Neq);
+                            } else {
+                                operands.push_back(Operand::Neq);
+                            }
                         }
                     }
                 } else {
-                    operands.push_back(Operand::Eq);
+                    if in_proc {
+                        let index = procedures.len() - 1;
+                        procedures[index].add_operand(Operand::Neq);
+                    } else {
+                        operands.push_back(Operand::Neq);
+                    }
                 }
             }
 
             Token::Lt => {
-                operands.push_back(Operand::Lt);
+                if in_proc {
+                    let index = procedures.len() - 1;
+                    procedures[index].add_operand(Operand::Lt);
+                } else {
+                    operands.push_back(Operand::Lt);
+                }
             }
 
             Token::Lte => {
-                operands.push_back(Operand::Lte);
+                if in_proc {
+                    let index = procedures.len() - 1;
+                    procedures[index].add_operand(Operand::Lte);
+                } else {
+                    operands.push_back(Operand::Lte);
+                }
             }
 
             Token::Gt => {
-                operands.push_back(Operand::Gt);
+                if in_proc {
+                    let index = procedures.len() - 1;
+                    procedures[index].add_operand(Operand::Gt);
+                } else {
+                    operands.push_back(Operand::Gt);
+                }
             }
 
             Token::Gte => {
-                operands.push_back(Operand::Gte);
+                if in_proc {
+                    let index = procedures.len() - 1;
+                    procedures[index].add_operand(Operand::Gte);
+                } else {
+                    operands.push_back(Operand::Gte);
+                }
             }
 
             Token::EqW => {
-                operands.push_back(Operand::EqW);
+                if in_proc {
+                    let index = procedures.len() - 1;
+                    procedures[index].add_operand(Operand::EqW);
+                } else {
+                    operands.push_back(Operand::EqW);
+                }
             }
 
             Token::U32CheckedAdd => {
                 if i + 1 < tokens.len() {
                     match &tokens[i + 1] {
                         Token::Number(n) => {
-                            operands.push_back(Operand::U32CheckedAddImm(*n as u32));
+                            if in_proc {
+                                let index = procedures.len() - 1;
+                                let n = *n as u32;
+                                procedures[index].add_operand(Operand::U32CheckedAddImm(n));
+                            } else {
+                                let n = *n as u32;
+                                operands.push_back(Operand::U32CheckedAddImm(n));
+                            }
                             i += 1;
                         }
                         _ => {
-                            operands.push_back(Operand::U32CheckedAdd);
+                            if in_proc {
+                                let index = procedures.len() - 1;
+                                procedures[index].add_operand(Operand::U32CheckedAdd);
+                            } else {
+                                operands.push_back(Operand::U32CheckedAdd);
+                            }
                         }
                     }
                 } else {
-                    operands.push_back(Operand::U32CheckedAdd);
+                    if in_proc {
+                        let index = procedures.len() - 1;
+                        procedures[index].add_operand(Operand::U32CheckedAdd);
+                    } else {
+                        operands.push_back(Operand::U32CheckedAdd);
+                    }
                 }
             }
 
@@ -711,15 +1173,32 @@ pub fn parse(tokens: Vec<Token>) -> Result<MidenProgram, String> {
                 if i + 1 < tokens.len() {
                     match &tokens[i + 1] {
                         Token::Number(n) => {
-                            operands.push_back(Operand::U32OverflowingAddImm(*n as u32));
+                            if in_proc {
+                                let index = procedures.len() - 1;
+                                let n = *n as u32;
+                                procedures[index].add_operand(Operand::U32OverflowingAddImm(n));
+                            } else {
+                                let n = *n as u32;
+                                operands.push_back(Operand::U32OverflowingAddImm(n));
+                            }
                             i += 1;
                         }
                         _ => {
-                            operands.push_back(Operand::U32OverflowingAdd);
+                            if in_proc {
+                                let index = procedures.len() - 1;
+                                procedures[index].add_operand(Operand::U32OverflowingAdd);
+                            } else {
+                                operands.push_back(Operand::U32OverflowingAdd);
+                            }
                         }
                     }
                 } else {
-                    operands.push_back(Operand::U32OverflowingAdd);
+                    if in_proc {
+                        let index = procedures.len() - 1;
+                        procedures[index].add_operand(Operand::U32OverflowingAdd);
+                    } else {
+                        operands.push_back(Operand::U32OverflowingAdd);
+                    }
                 }
             }
 
@@ -727,15 +1206,32 @@ pub fn parse(tokens: Vec<Token>) -> Result<MidenProgram, String> {
                 if i + 1 < tokens.len() {
                     match &tokens[i + 1] {
                         Token::Number(n) => {
-                            operands.push_back(Operand::U32WrappingAddImm(*n as u32));
+                            if in_proc {
+                                let index = procedures.len() - 1;
+                                let n = *n as u32;
+                                procedures[index].add_operand(Operand::U32WrappingAddImm(n));
+                            } else {
+                                let n = *n as u32;
+                                operands.push_back(Operand::U32WrappingAddImm(n));
+                            }
                             i += 1;
                         }
                         _ => {
-                            operands.push_back(Operand::U32WrappingAdd);
+                            if in_proc {
+                                let index = procedures.len() - 1;
+                                procedures[index].add_operand(Operand::U32WrappingAdd);
+                            } else {
+                                operands.push_back(Operand::U32WrappingAdd);
+                            }
                         }
                     }
                 } else {
-                    operands.push_back(Operand::U32WrappingAdd);
+                    if in_proc {
+                        let index = procedures.len() - 1;
+                        procedures[index].add_operand(Operand::U32WrappingAdd);
+                    } else {
+                        operands.push_back(Operand::U32WrappingAdd);
+                    }
                 }
             }
 
@@ -743,15 +1239,32 @@ pub fn parse(tokens: Vec<Token>) -> Result<MidenProgram, String> {
                 if i + 1 < tokens.len() {
                     match &tokens[i + 1] {
                         Token::Number(n) => {
-                            operands.push_back(Operand::U32CheckedSubImm(*n as u32));
+                            if in_proc {
+                                let n = *n as u32;
+                                let index = procedures.len() - 1;
+                                procedures[index].add_operand(Operand::U32CheckedSubImm(n));
+                            } else {
+                                let n = *n as u32;
+                                operands.push_back(Operand::U32CheckedSubImm(n));
+                            }
                             i += 1;
                         }
                         _ => {
-                            operands.push_back(Operand::U32CheckedSub);
+                            if in_proc {
+                                let index = procedures.len() - 1;
+                                procedures[index].add_operand(Operand::U32CheckedSub);
+                            } else {
+                                operands.push_back(Operand::U32CheckedSub);
+                            }
                         }
                     }
                 } else {
-                    operands.push_back(Operand::U32CheckedSub);
+                    if in_proc {
+                        let index = procedures.len() - 1;
+                        procedures[index].add_operand(Operand::U32CheckedSub);
+                    } else {
+                        operands.push_back(Operand::U32CheckedSub);
+                    }
                 }
             }
 
@@ -759,15 +1272,32 @@ pub fn parse(tokens: Vec<Token>) -> Result<MidenProgram, String> {
                 if i + 1 < tokens.len() {
                     match &tokens[i + 1] {
                         Token::Number(n) => {
-                            operands.push_back(Operand::U32OverflowingSubImm(*n as u32));
+                            if in_proc {
+                                let n = *n as u32;
+                                let index = procedures.len() - 1;
+                                procedures[index].add_operand(Operand::U32OverflowingSubImm(n));
+                            } else {
+                                let n = *n as u32;
+                                operands.push_back(Operand::U32OverflowingSubImm(n));
+                            }
                             i += 1;
                         }
                         _ => {
-                            operands.push_back(Operand::U32OverflowingSub);
+                            if in_proc {
+                                let index = procedures.len() - 1;
+                                procedures[index].add_operand(Operand::U32OverflowingSub);
+                            } else {
+                                operands.push_back(Operand::U32OverflowingSub);
+                            }
                         }
                     }
                 } else {
-                    operands.push_back(Operand::U32OverflowingSub);
+                    if in_proc {
+                        let index = procedures.len() - 1;
+                        procedures[index].add_operand(Operand::U32OverflowingSub);
+                    } else {
+                        operands.push_back(Operand::U32OverflowingSub);
+                    }
                 }
             }
 
@@ -775,15 +1305,32 @@ pub fn parse(tokens: Vec<Token>) -> Result<MidenProgram, String> {
                 if i + 1 < tokens.len() {
                     match &tokens[i + 1] {
                         Token::Number(n) => {
-                            operands.push_back(Operand::U32WrappingSubImm(*n as u32));
+                            if in_proc {
+                                let n = *n as u32;
+                                let index = procedures.len() - 1;
+                                procedures[index].add_operand(Operand::U32WrappingSubImm(n));
+                            } else {
+                                let n = *n as u32;
+                                operands.push_back(Operand::U32WrappingSubImm(n));
+                            }
                             i += 1;
                         }
                         _ => {
-                            operands.push_back(Operand::U32WrappingSub);
+                            if in_proc {
+                                let index = procedures.len() - 1;
+                                procedures[index].add_operand(Operand::U32WrappingSub);
+                            } else {
+                                operands.push_back(Operand::U32WrappingSub);
+                            }
                         }
                     }
                 } else {
-                    operands.push_back(Operand::U32WrappingSub);
+                    if in_proc {
+                        let index = procedures.len() - 1;
+                        procedures[index].add_operand(Operand::U32WrappingSub);
+                    } else {
+                        operands.push_back(Operand::U32WrappingSub);
+                    }
                 }
             }
 
@@ -791,15 +1338,32 @@ pub fn parse(tokens: Vec<Token>) -> Result<MidenProgram, String> {
                 if i + 1 < tokens.len() {
                     match &tokens[i + 1] {
                         Token::Number(n) => {
-                            operands.push_back(Operand::U32CheckedMulImm(*n as u32));
+                            if in_proc {
+                                let n = *n as u32;
+                                let index = procedures.len() - 1;
+                                procedures[index].add_operand(Operand::U32CheckedMulImm(n));
+                            } else {
+                                let n = *n as u32;
+                                operands.push_back(Operand::U32CheckedMulImm(n));
+                            }
                             i += 1;
                         }
                         _ => {
-                            operands.push_back(Operand::U32CheckedMul);
+                            if in_proc {
+                                let index = procedures.len() - 1;
+                                procedures[index].add_operand(Operand::U32CheckedMul);
+                            } else {
+                                operands.push_back(Operand::U32CheckedMul);
+                            }
                         }
                     }
                 } else {
-                    operands.push_back(Operand::U32CheckedMul);
+                    if in_proc {
+                        let index = procedures.len() - 1;
+                        procedures[index].add_operand(Operand::U32CheckedMul);
+                    } else {
+                        operands.push_back(Operand::U32CheckedMul);
+                    }
                 }
             }
 
@@ -807,15 +1371,32 @@ pub fn parse(tokens: Vec<Token>) -> Result<MidenProgram, String> {
                 if i + 1 < tokens.len() {
                     match &tokens[i + 1] {
                         Token::Number(n) => {
-                            operands.push_back(Operand::U32OverflowingMulImm(*n as u32));
+                            if in_proc {
+                                let n = *n as u32;
+                                let index = procedures.len() - 1;
+                                procedures[index].add_operand(Operand::U32OverflowingMulImm(n));
+                            } else {
+                                let n = *n as u32;
+                                operands.push_back(Operand::U32OverflowingMulImm(n));
+                            }
                             i += 1;
                         }
                         _ => {
-                            operands.push_back(Operand::U32OverflowingMul);
+                            if in_proc {
+                                let index = procedures.len() - 1;
+                                procedures[index].add_operand(Operand::U32OverflowingMul);
+                            } else {
+                                operands.push_back(Operand::U32OverflowingMul);
+                            }
                         }
                     }
                 } else {
-                    operands.push_back(Operand::U32OverflowingMul);
+                    if in_proc {
+                        let index = procedures.len() - 1;
+                        procedures[index].add_operand(Operand::U32OverflowingMul);
+                    } else {
+                        operands.push_back(Operand::U32OverflowingMul);
+                    }
                 }
             }
 
@@ -823,16 +1404,32 @@ pub fn parse(tokens: Vec<Token>) -> Result<MidenProgram, String> {
                 if i + 1 < tokens.len() {
                     match &tokens[i + 1] {
                         Token::Number(n) => {
-                            let n = *n as u32;
-                            operands.push_back(Operand::U32WrappingMulImm(n));
+                            if in_proc {
+                                let n = *n as u32;
+                                let index = procedures.len() - 1;
+                                procedures[index].add_operand(Operand::U32WrappingMulImm(n));
+                            } else {
+                                let n = *n as u32;
+                                operands.push_back(Operand::U32WrappingMulImm(n));
+                            }
                             i += 1;
                         }
                         _ => {
-                            operands.push_back(Operand::U32WrappingMul);
+                            if in_proc {
+                                let index = procedures.len() - 1;
+                                procedures[index].add_operand(Operand::U32WrappingMul);
+                            } else {
+                                operands.push_back(Operand::U32WrappingMul);
+                            }
                         }
                     }
                 } else {
-                    operands.push_back(Operand::U32WrappingMul);
+                    if in_proc {
+                        let index = procedures.len() - 1;
+                        procedures[index].add_operand(Operand::U32WrappingMul);
+                    } else {
+                        operands.push_back(Operand::U32WrappingMul);
+                    }
                 }
             }
 
@@ -840,16 +1437,32 @@ pub fn parse(tokens: Vec<Token>) -> Result<MidenProgram, String> {
                 if i + 1 < tokens.len() {
                     match &tokens[i + 1] {
                         Token::Number(n) => {
-                            let n = *n as u32;
-                            operands.push_back(Operand::U32CheckedDivImm(n));
+                            if in_proc {
+                                let n = *n as u32;
+                                let index = procedures.len() - 1;
+                                procedures[index].add_operand(Operand::U32CheckedDivImm(n));
+                            } else {
+                                let n = *n as u32;
+                                operands.push_back(Operand::U32CheckedDivImm(n));
+                            }
                             i += 1;
                         }
                         _ => {
-                            operands.push_back(Operand::U32CheckedDiv);
+                            if in_proc {
+                                let index = procedures.len() - 1;
+                                procedures[index].add_operand(Operand::U32CheckedDiv);
+                            } else {
+                                operands.push_back(Operand::U32CheckedDiv);
+                            }
                         }
                     }
                 } else {
-                    operands.push_back(Operand::U32CheckedDiv);
+                    if in_proc {
+                        let index = procedures.len() - 1;
+                        procedures[index].add_operand(Operand::U32CheckedDiv);
+                    } else {
+                        operands.push_back(Operand::U32CheckedDiv);
+                    }
                 }
             }
 
@@ -857,16 +1470,32 @@ pub fn parse(tokens: Vec<Token>) -> Result<MidenProgram, String> {
                 if i + 1 < tokens.len() {
                     match &tokens[i + 1] {
                         Token::Number(n) => {
-                            let n = *n as u32;
-                            operands.push_back(Operand::U32UncheckedDivImm(n));
+                            if in_proc {
+                                let n = *n as u32;
+                                let index = procedures.len() - 1;
+                                procedures[index].add_operand(Operand::U32UncheckedDivImm(n));
+                            } else {
+                                let n = *n as u32;
+                                operands.push_back(Operand::U32UncheckedDivImm(n));
+                            }
                             i += 1;
                         }
                         _ => {
-                            operands.push_back(Operand::U32UncheckedDiv);
+                            if in_proc {
+                                let index = procedures.len() - 1;
+                                procedures[index].add_operand(Operand::U32UncheckedDiv);
+                            } else {
+                                operands.push_back(Operand::U32UncheckedDiv);
+                            }
                         }
                     }
                 } else {
-                    operands.push_back(Operand::U32UncheckedDiv);
+                    if in_proc {
+                        let index = procedures.len() - 1;
+                        procedures[index].add_operand(Operand::U32UncheckedDiv);
+                    } else {
+                        operands.push_back(Operand::U32UncheckedDiv);
+                    }
                 }
             }
 
@@ -874,16 +1503,32 @@ pub fn parse(tokens: Vec<Token>) -> Result<MidenProgram, String> {
                 if i + 1 < tokens.len() {
                     match &tokens[i + 1] {
                         Token::Number(n) => {
-                            let n = *n as u32;
-                            operands.push_back(Operand::U32CheckedModImm(n));
+                            if in_proc {
+                                let n = *n as u32;
+                                let index = procedures.len() - 1;
+                                procedures[index].add_operand(Operand::U32CheckedModImm(n));
+                            } else {
+                                let n = *n as u32;
+                                operands.push_back(Operand::U32CheckedModImm(n));
+                            }
                             i += 1;
                         }
                         _ => {
-                            operands.push_back(Operand::U32CheckedMod);
+                            if in_proc {
+                                let index = procedures.len() - 1;
+                                procedures[index].add_operand(Operand::U32CheckedMod);
+                            } else {
+                                operands.push_back(Operand::U32CheckedMod);
+                            }
                         }
                     }
                 } else {
-                    operands.push_back(Operand::U32CheckedMod);
+                    if in_proc {
+                        let index = procedures.len() - 1;
+                        procedures[index].add_operand(Operand::U32CheckedMod);
+                    } else {
+                        operands.push_back(Operand::U32CheckedMod);
+                    }
                 }
             }
 
@@ -891,16 +1536,32 @@ pub fn parse(tokens: Vec<Token>) -> Result<MidenProgram, String> {
                 if i + 1 < tokens.len() {
                     match &tokens[i + 1] {
                         Token::Number(n) => {
-                            let n = *n as u32;
-                            operands.push_back(Operand::U32UncheckedModImm(n));
+                            if in_proc {
+                                let n = *n as u32;
+                                let index = procedures.len() - 1;
+                                procedures[index].add_operand(Operand::U32UncheckedModImm(n));
+                            } else {
+                                let n = *n as u32;
+                                operands.push_back(Operand::U32UncheckedModImm(n));
+                            }
                             i += 1;
                         }
                         _ => {
-                            operands.push_back(Operand::U32UncheckedMod);
+                            if in_proc {
+                                let index = procedures.len() - 1;
+                                procedures[index].add_operand(Operand::U32UncheckedMod);
+                            } else {
+                                operands.push_back(Operand::U32UncheckedMod);
+                            }
                         }
                     }
                 } else {
-                    operands.push_back(Operand::U32UncheckedMod);
+                    if in_proc {
+                        let index = procedures.len() - 1;
+                        procedures[index].add_operand(Operand::U32UncheckedMod);
+                    } else {
+                        operands.push_back(Operand::U32UncheckedMod);
+                    }
                 }
             }
 
@@ -908,16 +1569,32 @@ pub fn parse(tokens: Vec<Token>) -> Result<MidenProgram, String> {
                 if i + 1 < tokens.len() {
                     match &tokens[i + 1] {
                         Token::Number(n) => {
-                            let n = *n as u32;
-                            operands.push_back(Operand::U32CheckedDivModImm(n));
+                            if in_proc {
+                                let n = *n as u32;
+                                let index = procedures.len() - 1;
+                                procedures[index].add_operand(Operand::U32CheckedDivModImm(n));
+                            } else {
+                                let n = *n as u32;
+                                operands.push_back(Operand::U32CheckedDivModImm(n));
+                            }
                             i += 1;
                         }
                         _ => {
-                            operands.push_back(Operand::U32CheckedDivMod);
+                            if in_proc {
+                                let index = procedures.len() - 1;
+                                procedures[index].add_operand(Operand::U32CheckedDivMod);
+                            } else {
+                                operands.push_back(Operand::U32CheckedDivMod);
+                            }
                         }
                     }
                 } else {
-                    operands.push_back(Operand::U32CheckedDivMod);
+                    if in_proc {
+                        let index = procedures.len() - 1;
+                        procedures[index].add_operand(Operand::U32CheckedDivMod);
+                    } else {
+                        operands.push_back(Operand::U32CheckedDivMod);
+                    }
                 }
             }
 
@@ -925,64 +1602,137 @@ pub fn parse(tokens: Vec<Token>) -> Result<MidenProgram, String> {
                 if i + 1 < tokens.len() {
                     match &tokens[i + 1] {
                         Token::Number(n) => {
-                            let n = *n as u32;
-                            operands.push_back(Operand::U32UncheckedDivModImm(n));
+                            if in_proc {
+                                let n = *n as u32;
+                                let index = procedures.len() - 1;
+                                procedures[index].add_operand(Operand::U32UncheckedDivModImm(n));
+                            } else {
+                                let n = *n as u32;
+                                operands.push_back(Operand::U32UncheckedDivModImm(n));
+                            }
                             i += 1;
                         }
                         _ => {
-                            operands.push_back(Operand::U32UncheckedDivMod);
+                            if in_proc {
+                                let index = procedures.len() - 1;
+                                procedures[index].add_operand(Operand::U32UncheckedDivMod);
+                            } else {
+                                operands.push_back(Operand::U32UncheckedDivMod);
+                            }
                         }
                     }
                 } else {
-                    operands.push_back(Operand::U32UncheckedDivMod);
+                    if in_proc {
+                        let index = procedures.len() - 1;
+                        procedures[index].add_operand(Operand::U32UncheckedDivMod);
+                    } else {
+                        operands.push_back(Operand::U32UncheckedDivMod);
+                    }
                 }
             }
 
             Token::U32OverflowingAdd3 => {
-                operands.push_back(Operand::U32OverflowingAdd3);
+                if in_proc {
+                    let index = procedures.len() - 1;
+                    procedures[index].add_operand(Operand::U32OverflowingAdd3);
+                } else {
+                    operands.push_back(Operand::U32OverflowingAdd3);
+                }
             }
 
             Token::U32WrappingAdd3 => {
-                operands.push_back(Operand::U32WrappingAdd3);
+                if in_proc {
+                    let index = procedures.len() - 1;
+                    procedures[index].add_operand(Operand::U32WrappingAdd3);
+                } else {
+                    operands.push_back(Operand::U32WrappingAdd3);
+                }
             }
 
             Token::U32OverflowingMadd => {
-                operands.push_back(Operand::U32OverflowingMadd);
+                if in_proc {
+                    let index = procedures.len() - 1;
+                    procedures[index].add_operand(Operand::U32OverflowingMadd);
+                } else {
+                    operands.push_back(Operand::U32OverflowingMadd);
+                }
             }
 
             Token::U32WrappingMadd => {
-                operands.push_back(Operand::U32WrappingMadd);
+                if in_proc {
+                    let index = procedures.len() - 1;
+                    procedures[index].add_operand(Operand::U32WrappingMadd);
+                } else {
+                    operands.push_back(Operand::U32WrappingMadd);
+                }
             }
 
             Token::U32CheckedAnd => {
-                operands.push_back(Operand::U32CheckedAnd);
+                if in_proc {
+                    let index = procedures.len() - 1;
+                    procedures[index].add_operand(Operand::U32CheckedAnd);
+                } else {
+                    operands.push_back(Operand::U32CheckedAnd);
+                }
             }
 
             Token::U32CheckedOr => {
-                operands.push_back(Operand::U32CheckedOr);
+                if in_proc {
+                    let index = procedures.len() - 1;
+                    procedures[index].add_operand(Operand::U32CheckedOr);
+                } else {
+                    operands.push_back(Operand::U32CheckedOr);
+                }
             }
 
             Token::U32CheckedXor => {
-                operands.push_back(Operand::U32CheckedXor);
+                if in_proc {
+                    let index = procedures.len() - 1;
+                    procedures[index].add_operand(Operand::U32CheckedXor);
+                } else {
+                    operands.push_back(Operand::U32CheckedXor);
+                }
             }
 
             Token::U32CheckedNot => {
-                operands.push_back(Operand::U32CheckedNot);
+                if in_proc {
+                    let index = procedures.len() - 1;
+                    procedures[index].add_operand(Operand::U32CheckedNot);
+                } else {
+                    operands.push_back(Operand::U32CheckedNot);
+                }
             }
 
             Token::U32CheckedShl => {
                 if i + 1 < tokens.len() {
                     match &tokens[i + 1] {
                         Token::Number(n) => {
-                            operands.push_back(Operand::U32CheckedShlImm(*n as u32));
+                            if in_proc {
+                                let n = *n as u32;
+                                let index = procedures.len() - 1;
+                                procedures[index].add_operand(Operand::U32CheckedShlImm(n));
+                            } else {
+                                let n = *n as u32;
+                                operands.push_back(Operand::U32CheckedShlImm(n));
+                            }
                             i += 1;
                         }
                         _ => {
-                            operands.push_back(Operand::U32CheckedShl);
+                            if in_proc {
+                                let index = procedures.len() - 1;
+                                procedures[index].add_operand(Operand::U32CheckedShl);
+                            } else {
+                                operands.push_back(Operand::U32CheckedShl);
+                            }
                         }
                     }
                 } else {
-                    operands.push_back(Operand::U32CheckedShl);
+                    if in_proc {
+                        let index = procedures.len() - 1;
+                        procedures[index].add_operand(Operand::U32CheckedShl);
+                    } else {
+                        operands.push_back(Operand::U32CheckedShl);
+                    }
                 }
             }
 
@@ -990,16 +1740,32 @@ pub fn parse(tokens: Vec<Token>) -> Result<MidenProgram, String> {
                 if i + 1 < tokens.len() {
                     match &tokens[i + 1] {
                         Token::Number(n) => {
-                            let n = *n as u32;
-                            operands.push_back(Operand::U32UncheckedShlImm(n));
+                            if in_proc {
+                                let n = *n as u32;
+                                let index = procedures.len() - 1;
+                                procedures[index].add_operand(Operand::U32UncheckedShlImm(n));
+                            } else {
+                                let n = *n as u32;
+                                operands.push_back(Operand::U32UncheckedShlImm(n));
+                            }
                             i += 1;
                         }
                         _ => {
-                            operands.push_back(Operand::U32UncheckedShl);
+                            if in_proc {
+                                let index = procedures.len() - 1;
+                                procedures[index].add_operand(Operand::U32UncheckedShl);
+                            } else {
+                                operands.push_back(Operand::U32UncheckedShl);
+                            }
                         }
                     }
                 } else {
-                    operands.push_back(Operand::U32UncheckedShl);
+                    if in_proc {
+                        let index = procedures.len() - 1;
+                        procedures[index].add_operand(Operand::U32UncheckedShl);
+                    } else {
+                        operands.push_back(Operand::U32UncheckedShl);
+                    }
                 }
             }
 
@@ -1007,16 +1773,32 @@ pub fn parse(tokens: Vec<Token>) -> Result<MidenProgram, String> {
                 if i + 1 < tokens.len() {
                     match &tokens[i + 1] {
                         Token::Number(n) => {
-                            let n = *n as u32;
-                            operands.push_back(Operand::U32CheckedShrImm(n));
+                            if in_proc {
+                                let n = *n as u32;
+                                let index = procedures.len() - 1;
+                                procedures[index].add_operand(Operand::U32CheckedShrImm(n));
+                            } else {
+                                let n = *n as u32;
+                                operands.push_back(Operand::U32CheckedShrImm(n));
+                            }
                             i += 1;
                         }
                         _ => {
-                            operands.push_back(Operand::U32CheckedShr);
+                            if in_proc {
+                                let index = procedures.len() - 1;
+                                procedures[index].add_operand(Operand::U32CheckedShr);
+                            } else {
+                                operands.push_back(Operand::U32CheckedShr);
+                            }
                         }
                     }
                 } else {
-                    operands.push_back(Operand::U32CheckedShr);
+                    if in_proc {
+                        let index = procedures.len() - 1;
+                        procedures[index].add_operand(Operand::U32CheckedShr);
+                    } else {
+                        operands.push_back(Operand::U32CheckedShr);
+                    }
                 }
             }
 
@@ -1024,15 +1806,32 @@ pub fn parse(tokens: Vec<Token>) -> Result<MidenProgram, String> {
                 if i + 1 < tokens.len() {
                     match &tokens[i + 1] {
                         Token::Number(n) => {
-                            operands.push_back(Operand::U32UncheckedShrImm(*n as u32));
+                            if in_proc {
+                                let n = *n as u32;
+                                let index = procedures.len() - 1;
+                                procedures[index].add_operand(Operand::U32UncheckedShrImm(n));
+                            } else {
+                                let n = *n as u32;
+                                operands.push_back(Operand::U32UncheckedShrImm(n));
+                            }
                             i += 1;
                         }
                         _ => {
-                            operands.push_back(Operand::U32UncheckedShr);
+                            if in_proc {
+                                let index = procedures.len() - 1;
+                                procedures[index].add_operand(Operand::U32UncheckedShr);
+                            } else {
+                                operands.push_back(Operand::U32UncheckedShr);
+                            }
                         }
                     }
                 } else {
-                    operands.push_back(Operand::U32UncheckedShr);
+                    if in_proc {
+                        let index = procedures.len() - 1;
+                        procedures[index].add_operand(Operand::U32UncheckedShr);
+                    } else {
+                        operands.push_back(Operand::U32UncheckedShr);
+                    }
                 }
             }
 
@@ -1040,15 +1839,32 @@ pub fn parse(tokens: Vec<Token>) -> Result<MidenProgram, String> {
                 if i + 1 < tokens.len() {
                     match &tokens[i + 1] {
                         Token::Number(n) => {
-                            operands.push_back(Operand::U32CheckedRotlImm(*n as u32));
+                            if in_proc {
+                                let n = *n;
+                                let index = procedures.len() - 1;
+                                procedures[index].add_operand(Operand::U32CheckedRotlImm(n as u32));
+                            } else {
+                                let n = *n;
+                                operands.push_back(Operand::U32CheckedRotlImm(n as u32));
+                            }
                             i += 1;
                         }
                         _ => {
-                            operands.push_back(Operand::U32CheckedRotl);
+                            if in_proc {
+                                let index = procedures.len() - 1;
+                                procedures[index].add_operand(Operand::U32CheckedRotl);
+                            } else {
+                                operands.push_back(Operand::U32CheckedRotl);
+                            }
                         }
                     }
                 } else {
-                    operands.push_back(Operand::U32CheckedRotl);
+                    if in_proc {
+                        let index = procedures.len() - 1;
+                        procedures[index].add_operand(Operand::U32CheckedRotl);
+                    } else {
+                        operands.push_back(Operand::U32CheckedRotl);
+                    }
                 }
             }
 
@@ -1056,15 +1872,33 @@ pub fn parse(tokens: Vec<Token>) -> Result<MidenProgram, String> {
                 if i + 1 < tokens.len() {
                     match &tokens[i + 1] {
                         Token::Number(n) => {
-                            operands.push_back(Operand::U32UncheckedRotlImm(*n as u32));
+                            if in_proc {
+                                let n = *n;
+                                let index = procedures.len() - 1;
+                                procedures[index]
+                                    .add_operand(Operand::U32UncheckedRotlImm(n as u32));
+                            } else {
+                                let n = *n;
+                                operands.push_back(Operand::U32UncheckedRotlImm(n as u32));
+                            }
                             i += 1;
                         }
                         _ => {
-                            operands.push_back(Operand::U32UncheckedRotl);
+                            if in_proc {
+                                let index = procedures.len() - 1;
+                                procedures[index].add_operand(Operand::U32UncheckedRotl);
+                            } else {
+                                operands.push_back(Operand::U32UncheckedRotl);
+                            }
                         }
                     }
                 } else {
-                    operands.push_back(Operand::U32UncheckedRotl);
+                    if in_proc {
+                        let index = procedures.len() - 1;
+                        procedures[index].add_operand(Operand::U32UncheckedRotl);
+                    } else {
+                        operands.push_back(Operand::U32UncheckedRotl);
+                    }
                 }
             }
 
@@ -1072,15 +1906,32 @@ pub fn parse(tokens: Vec<Token>) -> Result<MidenProgram, String> {
                 if i + 1 < tokens.len() {
                     match &tokens[i + 1] {
                         Token::Number(n) => {
-                            operands.push_back(Operand::U32CheckedRotrImm(*n as u32));
+                            if in_proc {
+                                let n = *n;
+                                let index = procedures.len() - 1;
+                                procedures[index].add_operand(Operand::U32CheckedRotrImm(n as u32));
+                            } else {
+                                let n = *n;
+                                operands.push_back(Operand::U32CheckedRotrImm(n as u32));
+                            }
                             i += 1;
                         }
                         _ => {
-                            operands.push_back(Operand::U32CheckedRotr);
+                            if in_proc {
+                                let index = procedures.len() - 1;
+                                procedures[index].add_operand(Operand::U32CheckedRotr);
+                            } else {
+                                operands.push_back(Operand::U32CheckedRotr);
+                            }
                         }
                     }
                 } else {
-                    operands.push_back(Operand::U32CheckedRotr);
+                    if in_proc {
+                        let index = procedures.len() - 1;
+                        procedures[index].add_operand(Operand::U32CheckedRotr);
+                    } else {
+                        operands.push_back(Operand::U32CheckedRotr);
+                    }
                 }
             }
 
@@ -1088,39 +1939,82 @@ pub fn parse(tokens: Vec<Token>) -> Result<MidenProgram, String> {
                 if i + 1 < tokens.len() {
                     match &tokens[i + 1] {
                         Token::Number(n) => {
-                            operands.push_back(Operand::U32UncheckedRotrImm(*n as u32));
+                            if in_proc {
+                                let n = *n;
+                                let index = procedures.len() - 1;
+                                procedures[index]
+                                    .add_operand(Operand::U32UncheckedRotrImm(n as u32));
+                            } else {
+                                let n = *n;
+                                operands.push_back(Operand::U32UncheckedRotrImm(n as u32));
+                            }
                             i += 1;
                         }
                         _ => {
-                            operands.push_back(Operand::U32UncheckedRotr);
+                            if in_proc {
+                                let index = procedures.len() - 1;
+                                procedures[index].add_operand(Operand::U32UncheckedRotr);
+                            } else {
+                                operands.push_back(Operand::U32UncheckedRotr);
+                            }
                         }
                     }
                 } else {
-                    operands.push_back(Operand::U32UncheckedRotr);
+                    if in_proc {
+                        let index = procedures.len() - 1;
+                        procedures[index].add_operand(Operand::U32UncheckedRotr);
+                    } else {
+                        operands.push_back(Operand::U32UncheckedRotr);
+                    }
                 }
             }
 
             Token::U32CheckedPopcnt => {
-                operands.push_back(Operand::U32CheckedPopcnt);
+                if in_proc {
+                    let index = procedures.len() - 1;
+                    procedures[index].add_operand(Operand::U32CheckedPopcnt);
+                } else {
+                    operands.push_back(Operand::U32CheckedPopcnt);
+                }
             }
 
             Token::U32UncheckedPopcnt => {
-                operands.push_back(Operand::U32UncheckedPopcnt);
+                if in_proc {
+                    let index = procedures.len() - 1;
+                    procedures[index].add_operand(Operand::U32UncheckedPopcnt);
+                } else {
+                    operands.push_back(Operand::U32UncheckedPopcnt);
+                }
             }
 
             Token::U32CheckedEq => {
                 if i + 1 < tokens.len() {
                     match &tokens[i + 1] {
                         Token::Number(n) => {
-                            operands.push_back(Operand::U32CheckedEqImm(*n as u32));
+                            if in_proc {
+                                let index = procedures.len() - 1;
+                                procedures[index].add_operand(Operand::U32CheckedEqImm(*n as u32));
+                            } else {
+                                operands.push_back(Operand::U32CheckedEqImm(*n as u32));
+                            }
                             i += 1;
                         }
                         _ => {
-                            operands.push_back(Operand::U32CheckedEq);
+                            if in_proc {
+                                let index = procedures.len() - 1;
+                                procedures[index].add_operand(Operand::U32CheckedEq);
+                            } else {
+                                operands.push_back(Operand::U32CheckedEq);
+                            }
                         }
                     }
                 } else {
-                    operands.push_back(Operand::U32CheckedEq);
+                    if in_proc {
+                        let index = procedures.len() - 1;
+                        procedures[index].add_operand(Operand::U32CheckedEq);
+                    } else {
+                        operands.push_back(Operand::U32CheckedEq);
+                    }
                 }
             }
 
@@ -1128,76 +2022,149 @@ pub fn parse(tokens: Vec<Token>) -> Result<MidenProgram, String> {
                 if i + 1 < tokens.len() {
                     match &tokens[i + 1] {
                         Token::Number(n) => {
-                            operands.push_back(Operand::U32CheckedNeqImm(*n as u32));
+                            if in_proc {
+                                let index = procedures.len() - 1;
+                                procedures[index].add_operand(Operand::U32CheckedNeqImm(*n as u32));
+                            } else {
+                                operands.push_back(Operand::U32CheckedNeqImm(*n as u32));
+                            }
                             i += 1;
                         }
                         _ => {
-                            operands.push_back(Operand::U32CheckedNeq);
+                            if in_proc {
+                                let index = procedures.len() - 1;
+                                procedures[index].add_operand(Operand::U32CheckedNeq);
+                            } else {
+                                operands.push_back(Operand::U32CheckedNeq);
+                            }
                         }
                     }
                 } else {
-                    operands.push_back(Operand::U32CheckedNeq);
+                    if in_proc {
+                        let index = procedures.len() - 1;
+                        procedures[index].add_operand(Operand::U32CheckedNeq);
+                    } else {
+                        operands.push_back(Operand::U32CheckedNeq);
+                    }
                 }
             }
 
             Token::U32CheckedLt => {
-                operands.push_back(Operand::U32CheckedLt);
+                if in_proc {
+                    let index = procedures.len() - 1;
+                    procedures[index].add_operand(Operand::U32CheckedLt);
+                } else {
+                    operands.push_back(Operand::U32CheckedLt);
+                }
             }
 
             Token::U32UncheckedLte => {
-                operands.push_back(Operand::U32UncheckedLte);
+                if in_proc {
+                    let index = procedures.len() - 1;
+                    procedures[index].add_operand(Operand::U32UncheckedLte);
+                } else {
+                    operands.push_back(Operand::U32UncheckedLte);
+                }
             }
 
             Token::U32CheckedLte => {
-                operands.push_back(Operand::U32CheckedLte);
+                if in_proc {
+                    let index = procedures.len() - 1;
+                    procedures[index].add_operand(Operand::U32CheckedLte);
+                } else {
+                    operands.push_back(Operand::U32CheckedLte);
+                }
             }
 
             Token::U32UncheckedLt => {
-                operands.push_back(Operand::U32UncheckedLt);
+                if in_proc {
+                    let index = procedures.len() - 1;
+                    procedures[index].add_operand(Operand::U32UncheckedLt);
+                } else {
+                    operands.push_back(Operand::U32UncheckedLt);
+                }
             }
 
             Token::U32CheckedGt => {
-                operands.push_back(Operand::U32CheckedGt);
+                if in_proc {
+                    let index = procedures.len() - 1;
+                    procedures[index].add_operand(Operand::U32CheckedGt);
+                } else {
+                    operands.push_back(Operand::U32CheckedGt);
+                }
             }
 
             Token::U32UncheckedGte => {
-                operands.push_back(Operand::U32UncheckedGte);
+                if in_proc {
+                    let index = procedures.len() - 1;
+                    procedures[index].add_operand(Operand::U32UncheckedGte);
+                } else {
+                    operands.push_back(Operand::U32UncheckedGte);
+                }
             }
 
             Token::U32CheckedGte => {
-                operands.push_back(Operand::U32CheckedGte);
+                if in_proc {
+                    let index = procedures.len() - 1;
+                    procedures[index].add_operand(Operand::U32CheckedGte);
+                } else {
+                    operands.push_back(Operand::U32CheckedGte);
+                }
             }
 
             Token::U32UncheckedGt => {
-                operands.push_back(Operand::U32UncheckedGt);
+                if in_proc {
+                    let index = procedures.len() - 1;
+                    procedures[index].add_operand(Operand::U32UncheckedGt);
+                } else {
+                    operands.push_back(Operand::U32UncheckedGt);
+                }
             }
 
             Token::U32CheckedMin => {
-                operands.push_back(Operand::U32CheckedMin);
+                if in_proc {
+                    let index = procedures.len() - 1;
+                    procedures[index].add_operand(Operand::U32CheckedMin);
+                } else {
+                    operands.push_back(Operand::U32CheckedMin);
+                }
             }
 
             Token::U32UncheckedMin => {
-                operands.push_back(Operand::U32UncheckedMin);
+                if in_proc {
+                    let index = procedures.len() - 1;
+                    procedures[index].add_operand(Operand::U32UncheckedMin);
+                } else {
+                    operands.push_back(Operand::U32UncheckedMin);
+                }
             }
 
             Token::U32CheckedMax => {
-                operands.push_back(Operand::U32CheckedMax);
+                if in_proc {
+                    let index = procedures.len() - 1;
+                    procedures[index].add_operand(Operand::U32CheckedMax);
+                } else {
+                    operands.push_back(Operand::U32CheckedMax);
+                }
             }
 
             Token::U32UncheckedMax => {
-                operands.push_back(Operand::U32UncheckedMax);
+                if in_proc {
+                    let index = procedures.len() - 1;
+                    procedures[index].add_operand(Operand::U32UncheckedMax);
+                } else {
+                    operands.push_back(Operand::U32UncheckedMax);
+                }
             }
 
             Token::Number(_) => {
                 return Err(format!("Unexpected number: {:?}", token));
             }
 
-            Token::String(_) => {
-                return Err(format!("Unexpected string: {:?}", token));
-            }
+            Token::String(_) => {}
         }
         i += 1;
     }
-    program.add_operands(operands);
-    Ok(program)
+
+    Ok((operands, procedures))
 }

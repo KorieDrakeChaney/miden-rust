@@ -1,6 +1,6 @@
 use math::fields::f64::BaseElement;
 
-use super::{error::MidenProgramError, MidenProgram, Operand, ProgramType};
+use super::{error::MidenProgramError, MidenProgram, Operand};
 
 impl MidenProgram {
     /// Pushes a value onto the stack.
@@ -84,75 +84,5 @@ impl MidenProgram {
     /// * `n` - The address to load onto the stack.
     pub fn mem_load_w_n(&mut self, n: u32) {
         self.add_operand(Operand::MemLoadWImm(n));
-    }
-
-    /// Stores the top value on the stack in local memory at address `n`.
-    ///
-    /// # Arguments
-    ///
-    /// * `n` - The address to store the top value on the stack.
-    ///
-    /// # Errors
-    ///
-    /// Returns `MidenProgramError::LocStoreInBegin` if the program type is `Begin`.
-    pub fn loc_store(&mut self, n: u16) {
-        let op: Operand;
-        match self.program_type {
-            ProgramType::Proc(_) => {
-                op = Operand::LocStore(n);
-            }
-            ProgramType::Begin => {
-                op = Operand::Error(MidenProgramError::LocStoreInBegin);
-            }
-        }
-        self.add_operand(op);
-    }
-
-    /// Stores the first word on the stack in local memory at address `n`.
-    ///
-    /// # Arguments
-    ///
-    /// * `n` - The address to store the top value on the stack.
-    /// # Errors
-    /// Returns `MidenProgramError::LocStoreInBegin` if the program type is `Begin`.
-    pub fn loc_store_w(&mut self, n: u16) {
-        let op: Operand;
-        match self.program_type {
-            ProgramType::Proc(_) => {
-                op = Operand::LocStoreW(n);
-            }
-            ProgramType::Begin => {
-                op = Operand::Error(MidenProgramError::LocStoreInBegin);
-            }
-        }
-        self.add_operand(op);
-    }
-
-    /// Assumes top value on the stack is an address and pops it off, then loads the value at that address onto the stack.
-    pub fn loc_load(&mut self, n: u16) {
-        let op: Operand;
-        match self.program_type {
-            ProgramType::Proc(_) => {
-                op = Operand::LocLoad(n);
-            }
-            ProgramType::Begin => {
-                op = Operand::Error(MidenProgramError::LocLoadInBegin);
-            }
-        }
-        self.add_operand(op);
-    }
-
-    /// Loads the word at address `n` from local memory onto the stack.
-    pub fn loc_load_w(&mut self, n: u16) {
-        let op: Operand;
-        match self.program_type {
-            ProgramType::Proc(_) => {
-                op = Operand::LocLoadW(n);
-            }
-            ProgramType::Begin => {
-                op = Operand::Error(MidenProgramError::LocLoadInBegin);
-            }
-        }
-        self.add_operand(op);
     }
 }

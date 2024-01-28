@@ -1,4 +1,4 @@
-proc.MasmFromRust
+proc.MasmFromRust.9095
 	push.1
 	push.2
 	push.3
@@ -32,3 +32,9 @@ proc.MasmFromRust
 	add.10
 end
 
+
+begin
+	exec.MasmFromRust
+end
+
+#stack output : [211610, 30, 20, 10, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0] 

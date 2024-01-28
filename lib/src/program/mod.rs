@@ -7,6 +7,7 @@ mod io;
 mod manipulation;
 mod operand;
 mod parser;
+mod proc;
 mod u32;
 mod utils;
 
@@ -22,30 +23,24 @@ use miden::{
     prove, AdviceInputs, Assembler, DefaultHost, MemAdviceProvider, ProvingOptions, StackInputs,
 };
 
-#[derive(Debug, Clone, PartialEq, Eq)]
-pub enum ProgramType {
-    Proc(String),
-    Begin,
-}
+pub use self::proc::Proc;
 
 pub struct MidenProgram {
     pub stack: VecDeque<BaseElement>,
     pub advice_stack: VecDeque<u64>,
     pub operand_stack: VecDeque<Operand>,
 
-    internal_programs: HashMap<String, VecDeque<Operand>>,
+    internal_programs: HashMap<String, Proc>,
 
     proc_script: String,
 
-    program_type: ProgramType,
+    runnable: bool,
 
     stack_inputs: StackInputs,
     advice_inputs: AdviceInputs,
     inputs: Inputs,
 
     ram_memory: HashMap<u32, [BaseElement; 4]>,
-    loc_memory: HashMap<u16, [BaseElement; 4]>,
-    loc_count: u16,
 }
 
 impl MidenProgram {
@@ -66,44 +61,11 @@ impl MidenProgram {
 
             inputs: Inputs::default(),
 
-            program_type: ProgramType::Begin,
+            runnable: true,
 
             stack_inputs: StackInputs::default(),
             advice_inputs: AdviceInputs::default(),
             ram_memory: HashMap::new(),
-            loc_memory: HashMap::new(),
-            loc_count: 0,
-        }
-    }
-
-    /// Creates a new `MidenProgram` with a specified procedure name.
-    ///
-    /// # Arguments
-    ///
-    /// * `name` - The name of the procedure.
-    ///
-    /// # Returns
-    ///
-    /// A new `MidenProgram` with the specified procedure name.
-    pub fn proc(name: &str) -> MidenProgram {
-        MidenProgram {
-            stack: VecDeque::from(vec![BaseElement::ZERO; 16]),
-            operand_stack: VecDeque::new(),
-            advice_stack: VecDeque::new(),
-
-            internal_programs: HashMap::new(),
-
-            proc_script: String::new(),
-
-            inputs: Inputs::default(),
-
-            program_type: ProgramType::Proc(name.to_string()),
-
-            stack_inputs: StackInputs::default(),
-            advice_inputs: AdviceInputs::default(),
-            ram_memory: HashMap::new(),
-            loc_memory: HashMap::new(),
-            loc_count: 0,
         }
     }
 
@@ -114,18 +76,7 @@ impl MidenProgram {
     /// A string containing the MASM representation of the program.
     pub fn get_masm(&self) -> String {
         let mut masm: String = self.proc_script.clone();
-        match self.program_type {
-            ProgramType::Begin => {
-                masm.push_str("begin\n");
-            }
-            ProgramType::Proc(ref name) => {
-                masm = format!("proc.{}", name);
-                if self.loc_count > 0 {
-                    masm.push_str(&format!(".{}", self.loc_count));
-                }
-                masm.push_str("\n");
-            }
-        }
+        masm.push_str("begin\n");
 
         let mut scope = 1;
         for op in self.operand_stack.iter() {
@@ -157,9 +108,7 @@ impl MidenProgram {
 
         masm.push_str(&format!("end\n\n"));
 
-        if self.program_type == ProgramType::Begin {
-            masm.push_str(&format!("#stack output : {:?} \n", &self.stack));
-        }
+        masm.push_str(&format!("#stack output : {:?} \n", &self.stack));
 
         masm
     }
@@ -180,15 +129,6 @@ impl MidenProgram {
     /// A reference to the `HashMap` representing the RAM memory.
     pub fn get_ram_memory(&self) -> &HashMap<u32, [BaseElement; 4]> {
         &self.ram_memory
-    }
-
-    /// Returns a reference to the local memory.
-    ///
-    /// # Returns
-    ///
-    /// A reference to the `HashMap` representing the local memory.
-    pub fn get_loc_memory(&self) -> &HashMap<u16, [BaseElement; 4]> {
-        &self.loc_memory
     }
 
     /// Prints the Miden Assembly (MASM) representation of the program.
@@ -218,14 +158,7 @@ impl MidenProgram {
 
     pub fn prove(&mut self) -> Option<u64> {
         let assembler = Assembler::default();
-        let mut masm = self.get_masm();
-
-        match self.program_type {
-            ProgramType::Proc(ref name) => {
-                masm.push_str(&format!("begin\n\texec.{}\nend\n", name));
-            }
-            _ => {}
-        }
+        let masm = self.get_masm();
 
         match assembler.compile(masm) {
             Ok(program) => {
@@ -318,34 +251,16 @@ impl MidenProgram {
     /// # Arguments
     ///
     /// * `operands` - The operands to add.
-    pub fn add_operands(&mut self, operands: VecDeque<Operand>) {
-        for op in &operands {
+    pub fn add_operands(&mut self, operands: &mut VecDeque<Operand>) {
+        for op in operands.clone() {
             self.operand_stack.push_back(op.clone());
         }
-        if self.program_type == ProgramType::Begin {
-            self.execute_block(&operands);
-        }
+        self.execute_block(operands);
     }
 
     pub fn add_operand(&mut self, operand: Operand) {
-        if self.program_type == ProgramType::Begin {
-            println!("executing operand: {:?}", &operand);
-            self.execute_operand(&operand);
-        } else {
-            match &operand {
-                Operand::LocStore(n) => {
-                    if *n >= self.loc_count {
-                        self.loc_count = *n + 1;
-                    }
-                }
-                Operand::LocStoreW(n) => {
-                    if *n >= self.loc_count {
-                        self.loc_count = *n + 1;
-                    }
-                }
-                _ => {}
-            }
-        }
+        println!("executing operand: {:?}", &operand);
+        self.execute_operand(&operand);
         self.operand_stack.push_back(operand);
     }
 
@@ -358,7 +273,7 @@ impl MidenProgram {
     where
         F: FnOnce() -> VecDeque<Operand>,
     {
-        self.add_operands(program());
+        self.add_operands(&mut program());
     }
 
     /// Adds a `PRINT` operand to the operand stack with the specified message.
@@ -376,21 +291,22 @@ impl MidenProgram {
     ///
     /// * `program` - The procedure to append.
     ///
-    pub fn add_proc(&mut self, program: MidenProgram) {
-        if self.program_type == ProgramType::Begin {
-            match program.program_type {
-                ProgramType::Proc(ref name) => {
-                    self.proc_script.push_str(&program.get_masm());
+    pub fn add_proc(&mut self, program: Proc) {
+        self.proc_script.push_str(&program.get_masm());
 
-                    self.proc_script.push_str("\n");
+        self.proc_script.push_str("\n");
 
-                    self.internal_programs
-                        .insert(name.clone(), program.get_operands());
-                }
-                _ => {}
-            }
-        } else {
+        self.internal_programs.insert(program.name.clone(), program);
+    }
+
+    pub fn add_procs(&mut self, programs: Vec<Proc>) {
+        for program in programs {
+            self.add_proc(program);
         }
+    }
+
+    pub fn set_runnable(&mut self, runnable: bool) {
+        self.runnable = runnable;
     }
 
     /// Returns a clone of the operand stack.
