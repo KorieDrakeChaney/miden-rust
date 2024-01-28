@@ -141,7 +141,7 @@ fn main() {
         	push.5
         	push.1
         	add
-    end
+    	end
     "
     ).unwrap();
 
