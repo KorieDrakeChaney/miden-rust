@@ -135,6 +135,7 @@ impl Proc {
 
     pub fn execute_block(&mut self, program: &mut MidenProgram, block: &mut VecDeque<Operand>) {
         while let Some(operand) = block.pop_front() {
+            println!("operand: {:?}{:?}", operand, program.stack);
             match operand {
                 Operand::WHILE => {
                     let mut while_block = VecDeque::new();

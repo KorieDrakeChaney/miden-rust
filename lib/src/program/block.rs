@@ -1,7 +1,5 @@
 use std::collections::VecDeque;
 
-use math::{fields::f64::BaseElement, FieldElement};
-
 use super::{MidenProgram, Operand};
 
 impl MidenProgram {

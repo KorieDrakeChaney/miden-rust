@@ -1,11 +1,12 @@
 use super::{MidenProgram, Operand};
 use math::{fields::f64::BaseElement, FieldElement, StarkField};
 use std::collections::VecDeque;
-use std::ops::Neg;
+use std::ops::{Div, Neg};
 
 impl MidenProgram {
     pub fn execute_block(&mut self, block: &mut VecDeque<Operand>) {
         while let Some(op) = block.pop_front() {
+            println!("op: {:?}{:?}", op, self.stack);
             match op {
                 Operand::IF => {
                     if let Some(n) = self.stack.pop_front() {
@@ -424,6 +425,7 @@ impl MidenProgram {
                         [BaseElement::ZERO, BaseElement::ZERO, BaseElement::ZERO, a],
                     );
                 }
+                println!("ram: {:?}", self.ram_memory);
             }
 
             Operand::MemStoreImm(key) => {
@@ -581,6 +583,20 @@ impl MidenProgram {
                 if let (Some(a), Some(b)) = (self.stack.pop_front(), self.stack.pop_front()) {
                     self.stack
                         .push_front(BaseElement::from(b.as_int() % a.as_int()));
+                }
+            }
+
+            Operand::U32UncheckedDiv => {
+                if let (Some(b), Some(a)) = (self.stack.pop_front(), self.stack.pop_front()) {
+                    self.stack
+                        .push_front(BaseElement::from(a.as_int() as u32 / b.as_int() as u32));
+                }
+            }
+
+            Operand::U32UncheckedDivImm(e) => {
+                if let Some(a) = self.stack.pop_front() {
+                    self.stack
+                        .push_front(BaseElement::from(a.as_int() as u32 / *e));
                 }
             }
 

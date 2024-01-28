@@ -682,3 +682,18 @@ fn test_game_of_life() {
 
     assert_eq!(Some(program.stack[0].into()), program.prove());
 }
+
+#[test]
+fn test_catalan() {
+    let mut program = MidenProgram::parse_from_file_with_inputs(
+        "examples/catalan.masm",
+        Inputs::from_file("inputs/catalan.json"),
+    )
+    .unwrap();
+
+    program.print_masm();
+
+    program.save("programs/catalan.masm");
+
+    assert_eq!(Some(program.stack[0].into()), program.prove());
+}
