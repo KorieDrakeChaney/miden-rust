@@ -329,7 +329,22 @@ impl MidenProgram {
 
     pub fn add_operand(&mut self, operand: Operand) {
         if self.program_type == ProgramType::Begin {
+            println!("executing operand: {:?}", &operand);
             self.execute_operand(&operand);
+        } else {
+            match &operand {
+                Operand::LocStore(n) => {
+                    if *n >= self.loc_count {
+                        self.loc_count = *n + 1;
+                    }
+                }
+                Operand::LocStoreW(n) => {
+                    if *n >= self.loc_count {
+                        self.loc_count = *n + 1;
+                    }
+                }
+                _ => {}
+            }
         }
         self.operand_stack.push_back(operand);
     }

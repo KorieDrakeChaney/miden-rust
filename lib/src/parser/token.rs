@@ -156,6 +156,8 @@ pub enum Token {
     String(String),
 
     Number(u64),
+
+    Print,
 }
 
 impl From<&str> for Token {
@@ -262,6 +264,7 @@ impl From<&str> for Token {
             "u32unchecked_min" => Self::U32UncheckedMin,
             "u32checked_max" => Self::U32CheckedMax,
             "u32unchecked_max" => Self::U32UncheckedMax,
+            "print" => Self::Print,
             _ => {
                 if let Ok(number) = value.parse::<u64>() {
                     Self::Number(number)

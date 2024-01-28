@@ -10,11 +10,17 @@ proc.MasmFromRust
 	push.30
 	push.40
 	mul.2
+	mul.2
 	push.5
 	push.4
 	push.3
 	push.2
 	loc_store.1
+	loc_storew.5
+	loc_storew.9
+	loc_storew.90
+	loc_storew.909
+	loc_storew.9094
 	loc_storew.906
 	loc_storew.9069
 	add

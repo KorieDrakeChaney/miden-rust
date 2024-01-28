@@ -4,6 +4,7 @@ proc.testProc.3
 	loc_load.2
 end
 
+
 begin
 	exec.testProc
 end

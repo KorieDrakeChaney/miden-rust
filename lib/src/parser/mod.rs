@@ -47,6 +47,21 @@ pub fn parse(tokens: Vec<Token>) -> Result<MidenProgram, String> {
     while i < tokens.len() {
         let token = &tokens[i];
         match token {
+            Token::Print => {
+                if i + 1 < tokens.len() {
+                    match &tokens[i + 1] {
+                        Token::String(name) => {
+                            operands.push_back(Operand::PRINT(name.to_string()));
+                            i += 1;
+                        }
+                        _ => {
+                            operands.push_back(Operand::PRINT("test".to_string()));
+                        }
+                    }
+                } else {
+                    operands.push_back(Operand::PRINT("test".to_string()));
+                }
+            }
             Token::If => {
                 if i + 1 < tokens.len() {
                     match &tokens[i + 1] {

@@ -6,6 +6,7 @@ proc.testProc.5
 	loc_loadw.4
 end
 
+
 begin
 	push.5
 	push.2

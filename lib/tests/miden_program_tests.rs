@@ -327,6 +327,8 @@ fn nested_if_else() {
 
     program.add_program(|| program_3.get_operands());
 
+    program.print_masm();
+
     program.save("programs/nested_if_else.masm");
     assert_eq!(Some(program.stack[0].into()), program.prove());
 }
@@ -449,6 +451,8 @@ fn test_loc_store() {
     program.add_proc(local_proc);
 
     program.exec("testProc");
+
+    program.print_masm();
 
     program.save("programs/loc_store.masm");
     assert_eq!(Some(program.stack[0].into()), program.prove());
@@ -757,20 +761,20 @@ fn test_parse2() {
     let is_not_prime = MidenProgram::parse(
         "
         proc.is_not_prime
-        push.0
-    
-        exec.is_not_prime_should_continue
-        while.true
-            drop
-            add.1
-    
+            push.0
+            print.is_not_prime_should_continue
             exec.is_not_prime_should_continue
+            while.true
+                drop
+                add.1
+                print.is_not_prime_should_continue
+                exec.is_not_prime_should_continue
+            end
+        
+            swap
+            drop
+            eq.0
         end
-    
-        swap
-        drop
-        eq.0
-    end
         ",
     )
     .unwrap();
@@ -781,10 +785,11 @@ fn test_parse2() {
     
         dup.2
         add.2
-    
+        print.is_not_prime
         exec.is_not_prime
         while.true
             add.2
+            print.is_not_prime
             exec.is_not_prime
         end
     
@@ -812,10 +817,10 @@ fn test_parse2() {
     program.while_block(|| {
         let mut block = EmptyProgram::new();
 
-        block.exec("next");
         block.print("next");
-        block.exec("should_continue");
+        block.exec("next");
         block.print("should_continue");
+        block.exec("should_continue");
         block.get_operands()
     });
 
@@ -832,11 +837,12 @@ fn test_parse2() {
 #[test]
 fn test_add_parse() {
     let mut program = MidenProgram::parse(
-        "begin
-        push.5
-        push.1
-        add
-    end",
+        "
+        begin
+        
+          push.1.2.3.4.5
+          u32checked_mod
+        end",
     )
     .unwrap();
 

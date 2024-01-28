@@ -9,7 +9,7 @@ impl MidenProgram {
 
         while i < ops.len() {
             let op = &ops[i];
-
+            println!("Executing: {:?} {:?}", op, self.stack);
             match op {
                 Operand::IF => {
                     if let Some(n) = self.stack.pop_front() {
@@ -35,41 +35,53 @@ impl MidenProgram {
                                 }
                                 Operand::END => {
                                     if_scope_count -= 1;
-                                    if_block.push_back(next_op);
-                                }
-                                _ => {
-                                    if_block.push_back(next_op);
-                                }
-                            }
-                            i += 1;
-                        }
-                        'else_block: while i + 1 < ops.len() {
-                            let next_op = ops[i + 1].clone();
-                            match next_op {
-                                Operand::END => {
-                                    else_scope_count -= 1;
-                                    if else_scope_count == 0 {
+                                    if if_scope_count == 0 {
                                         i += 1;
-                                        break 'else_block;
+                                        break 'if_block;
                                     } else {
-                                        else_block.push_back(next_op);
+                                        if_block.push_back(next_op);
                                     }
                                 }
-                                Operand::WHILE | Operand::IF | Operand::REPEAT(_) => {
-                                    else_scope_count += 1;
-                                    else_block.push_back(next_op);
-                                }
                                 _ => {
-                                    else_block.push_back(next_op);
+                                    if_block.push_back(next_op);
                                 }
                             }
                             i += 1;
                         }
 
+                        if if_scope_count > 0 {
+                            'else_block: while i + 1 < ops.len() {
+                                let next_op = ops[i + 1].clone();
+                                match next_op {
+                                    Operand::END => {
+                                        else_scope_count -= 1;
+                                        if else_scope_count == 0 {
+                                            i += 1;
+                                            break 'else_block;
+                                        } else {
+                                            else_block.push_back(next_op);
+                                        }
+                                    }
+                                    Operand::WHILE | Operand::IF | Operand::REPEAT(_) => {
+                                        else_scope_count += 1;
+                                        else_block.push_back(next_op);
+                                    }
+                                    _ => {
+                                        else_block.push_back(next_op);
+                                    }
+                                }
+                                i += 1;
+                            }
+                        }
+
                         if n == BaseElement::ONE {
-                            self.execute_block(&if_block);
+                            if if_block.len() > 0 {
+                                self.execute_block(&if_block);
+                            }
                         } else {
-                            self.execute_block(&else_block);
+                            if else_block.len() > 0 {
+                                self.execute_block(&else_block);
+                            }
                         }
                     }
                 }
@@ -263,6 +275,7 @@ impl MidenProgram {
 
             Operand::Exec(name) => {
                 if let Some(program) = self.internal_programs.get(name).cloned() {
+                    println!("Executing: {:?}", program);
                     self.execute_block(&program);
                 }
             }
@@ -330,7 +343,7 @@ impl MidenProgram {
             // Comparisons
             Operand::Lt => {
                 if let (Some(a), Some(b)) = (self.stack.pop_front(), self.stack.pop_front()) {
-                    if a.as_int() < b.as_int() {
+                    if a.as_int() > b.as_int() {
                         self.stack.push_front(BaseElement::ONE);
                     } else {
                         self.stack.push_front(BaseElement::ZERO);
@@ -340,7 +353,7 @@ impl MidenProgram {
 
             Operand::Gt => {
                 if let (Some(a), Some(b)) = (self.stack.pop_front(), self.stack.pop_front()) {
-                    if a.as_int() > b.as_int() {
+                    if a.as_int() < b.as_int() {
                         self.stack.push_front(BaseElement::ONE);
                     } else {
                         self.stack.push_front(BaseElement::ZERO);
@@ -350,7 +363,7 @@ impl MidenProgram {
 
             Operand::Lte => {
                 if let (Some(a), Some(b)) = (self.stack.pop_front(), self.stack.pop_front()) {
-                    if a.as_int() <= b.as_int() {
+                    if a.as_int() >= b.as_int() {
                         self.stack.push_front(BaseElement::ONE);
                     } else {
                         self.stack.push_front(BaseElement::ZERO);
@@ -360,7 +373,7 @@ impl MidenProgram {
 
             Operand::Gte => {
                 if let (Some(a), Some(b)) = (self.stack.pop_front(), self.stack.pop_front()) {
-                    if a.as_int() >= b.as_int() {
+                    if a.as_int() <= b.as_int() {
                         self.stack.push_front(BaseElement::ONE);
                     } else {
                         self.stack.push_front(BaseElement::ZERO);
@@ -390,7 +403,7 @@ impl MidenProgram {
 
             Operand::Xor => {
                 if let (Some(a), Some(b)) = (self.stack.pop_front(), self.stack.pop_front()) {
-                    if a != b {
+                    if a != b && (a == BaseElement::ONE || b == BaseElement::ONE) {
                         self.stack.push_front(BaseElement::ONE);
                     } else {
                         self.stack.push_front(BaseElement::ZERO);
@@ -641,14 +654,14 @@ impl MidenProgram {
             Operand::U32UncheckedMod => {
                 if let (Some(a), Some(b)) = (self.stack.pop_front(), self.stack.pop_front()) {
                     self.stack
-                        .push_front(BaseElement::from(a.as_int() % b.as_int()));
+                        .push_front(BaseElement::from(b.as_int() % a.as_int()));
                 }
             }
 
             Operand::U32CheckedMod => {
                 if let (Some(a), Some(b)) = (self.stack.pop_front(), self.stack.pop_front()) {
                     self.stack
-                        .push_front(BaseElement::from(a.as_int() % b.as_int()));
+                        .push_front(BaseElement::from(b.as_int() % a.as_int()));
                 }
             }
 
