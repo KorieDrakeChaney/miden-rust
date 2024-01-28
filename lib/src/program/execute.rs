@@ -1,4 +1,5 @@
 use super::{MidenProgram, Operand};
+use math::fft::permute_index;
 use math::{fields::f64::BaseElement, FieldElement, StarkField};
 use std::collections::VecDeque;
 use std::ops::{Div, Neg};
@@ -149,43 +150,43 @@ impl MidenProgram {
         match op {
             Operand::Push(x) => self.stack.push_front(*x),
             Operand::Add => {
-                if let (Some(a), Some(b)) = (self.stack.pop_front(), self.stack.pop_front()) {
+                if let (Some(b), Some(a)) = (self.stack.pop_front(), self.stack.pop_front()) {
                     self.stack.push_front(a + b);
                 }
             }
             Operand::Sub => {
-                if let (Some(a), Some(b)) = (self.stack.pop_front(), self.stack.pop_front()) {
+                if let (Some(b), Some(a)) = (self.stack.pop_front(), self.stack.pop_front()) {
                     self.stack.push_front(a - b);
                 }
             }
             Operand::Mul => {
-                if let (Some(a), Some(b)) = (self.stack.pop_front(), self.stack.pop_front()) {
+                if let (Some(b), Some(a)) = (self.stack.pop_front(), self.stack.pop_front()) {
                     self.stack.push_front(a * b);
                 }
             }
             Operand::Div => {
-                if let (Some(a), Some(b)) = (self.stack.pop_front(), self.stack.pop_front()) {
+                if let (Some(b), Some(a)) = (self.stack.pop_front(), self.stack.pop_front()) {
                     self.stack.push_front(a / b);
                 }
             }
-            Operand::AddImm(n) => {
+            Operand::AddImm(b) => {
                 if let Some(a) = self.stack.pop_front() {
-                    self.stack.push_front(a + *n);
+                    self.stack.push_front(a + *b);
                 }
             }
-            Operand::SubImm(n) => {
+            Operand::SubImm(b) => {
                 if let Some(a) = self.stack.pop_front() {
-                    self.stack.push_front(a - *n);
+                    self.stack.push_front(a - *b);
                 }
             }
-            Operand::MulImm(n) => {
+            Operand::MulImm(b) => {
                 if let Some(a) = self.stack.pop_front() {
-                    self.stack.push_front(a * *n);
+                    self.stack.push_front(a * *b);
                 }
             }
-            Operand::DivImm(n) => {
+            Operand::DivImm(b) => {
                 if let Some(a) = self.stack.pop_front() {
-                    self.stack.push_front(a / *n);
+                    self.stack.push_front(a / *b);
                 }
             }
             Operand::Neg => {
@@ -212,11 +213,18 @@ impl MidenProgram {
             }
             Operand::AdvPush(x) => {
                 if *x >= 1 && *x <= 16 {
-                    if let Some(a) = self.advice_stack.get((*x - 1) as usize) {
-                        self.stack.push_front(BaseElement::from(*a));
+                    for _ in 0..*x {
+                        if let Some(a) = self.advice_stack.pop_front() {
+                            self.stack.push_front(BaseElement::from(a));
+                        }
                     }
                 }
             }
+
+            Operand::AdvPipe => {
+                todo!()
+            }
+
             Operand::Not => {
                 if let Some(a) = self.stack.pop_front() {
                     if a == BaseElement::ZERO {
@@ -573,30 +581,231 @@ impl MidenProgram {
             }
 
             Operand::U32UncheckedMod => {
-                if let (Some(a), Some(b)) = (self.stack.pop_front(), self.stack.pop_front()) {
+                if let (Some(b), Some(a)) = (self.stack.pop_front(), self.stack.pop_front()) {
                     self.stack
-                        .push_front(BaseElement::from(b.as_int() % a.as_int()));
+                        .push_front(BaseElement::from(a.as_int() % b.as_int()));
                 }
             }
 
             Operand::U32CheckedMod => {
-                if let (Some(a), Some(b)) = (self.stack.pop_front(), self.stack.pop_front()) {
+                if let (Some(b), Some(a)) = (self.stack.pop_front(), self.stack.pop_front()) {
                     self.stack
-                        .push_front(BaseElement::from(b.as_int() % a.as_int()));
+                        .push_front(BaseElement::from(a.as_int() % b.as_int()));
                 }
             }
 
             Operand::U32UncheckedDiv => {
+                if let (Some(a), Some(b)) = (self.stack.pop_front(), self.stack.pop_front()) {
+                    self.stack
+                        .push_front(BaseElement::from(b.as_int() as u32 / a.as_int() as u32));
+                }
+            }
+
+            Operand::U32UncheckedDivImm(b) => {
+                if let Some(a) = self.stack.pop_front() {
+                    self.stack
+                        .push_front(BaseElement::from(a.as_int() as u32 / *b));
+                }
+            }
+
+            Operand::U32CheckedDiv => {
                 if let (Some(b), Some(a)) = (self.stack.pop_front(), self.stack.pop_front()) {
                     self.stack
                         .push_front(BaseElement::from(a.as_int() as u32 / b.as_int() as u32));
                 }
             }
 
-            Operand::U32UncheckedDivImm(e) => {
+            Operand::U32CheckedDivImm(b) => {
                 if let Some(a) = self.stack.pop_front() {
                     self.stack
-                        .push_front(BaseElement::from(a.as_int() as u32 / *e));
+                        .push_front(BaseElement::from(a.as_int() as u32 / *b));
+                }
+            }
+
+            Operand::U32CheckedDivMod => {
+                if let (Some(b), Some(a)) = (self.stack.pop_front(), self.stack.pop_front()) {
+                    self.stack
+                        .push_front(BaseElement::from(a.as_int() as u32 / b.as_int() as u32));
+                    self.stack
+                        .push_front(BaseElement::from(a.as_int() as u32 % b.as_int() as u32));
+                }
+            }
+
+            Operand::U32CheckedDivModImm(b) => {
+                if let Some(a) = self.stack.pop_front() {
+                    self.stack
+                        .push_front(BaseElement::from(a.as_int() as u32 / *b));
+                    self.stack
+                        .push_front(BaseElement::from(a.as_int() as u32 % *b));
+                }
+            }
+
+            Operand::U32UncheckedDivMod => {
+                if let (Some(b), Some(a)) = (self.stack.pop_front(), self.stack.pop_front()) {
+                    self.stack
+                        .push_front(BaseElement::from(a.as_int() as u32 / b.as_int() as u32));
+                    self.stack
+                        .push_front(BaseElement::from(a.as_int() as u32 % b.as_int() as u32));
+                }
+            }
+
+            Operand::U32UncheckedDivModImm(b) => {
+                if let Some(a) = self.stack.pop_front() {
+                    self.stack
+                        .push_front(BaseElement::from(a.as_int() as u32 / *b));
+                    self.stack
+                        .push_front(BaseElement::from(a.as_int() as u32 % *b));
+                }
+            }
+
+            Operand::U32CheckedShl => {
+                if let (Some(b), Some(a)) = (self.stack.pop_front(), self.stack.pop_front()) {
+                    self.stack
+                        .push_front(BaseElement::from(a.as_int() << b.as_int()));
+                }
+            }
+
+            Operand::U32CheckedShlImm(b) => {
+                if let Some(a) = self.stack.pop_front() {
+                    self.stack.push_front(BaseElement::from(a.as_int() << *b));
+                }
+            }
+
+            Operand::U32UncheckedShl => {
+                if let (Some(b), Some(a)) = (self.stack.pop_front(), self.stack.pop_front()) {
+                    self.stack
+                        .push_front(BaseElement::from(a.as_int() << b.as_int()));
+                }
+            }
+
+            Operand::U32UncheckedShlImm(b) => {
+                if let Some(a) = self.stack.pop_front() {
+                    self.stack.push_front(BaseElement::from(a.as_int() << *b));
+                }
+            }
+
+            Operand::U32CheckedShr => {
+                if let (Some(b), Some(a)) = (self.stack.pop_front(), self.stack.pop_front()) {
+                    self.stack
+                        .push_front(BaseElement::from(a.as_int() >> b.as_int()));
+                }
+            }
+
+            Operand::U32CheckedShrImm(b) => {
+                if let Some(a) = self.stack.pop_front() {
+                    self.stack.push_front(BaseElement::from(a.as_int() >> *b));
+                }
+            }
+
+            Operand::U32UncheckedShr => {
+                if let (Some(b), Some(a)) = (self.stack.pop_front(), self.stack.pop_front()) {
+                    self.stack
+                        .push_front(BaseElement::from(a.as_int() >> b.as_int()));
+                }
+            }
+
+            Operand::U32UncheckedShrImm(b) => {
+                if let Some(a) = self.stack.pop_front() {
+                    self.stack.push_front(BaseElement::from(a.as_int() >> *b));
+                }
+            }
+
+            Operand::U32CheckedRotl => {
+                if let (Some(b), Some(a)) = (self.stack.pop_front(), self.stack.pop_front()) {
+                    let a = a.as_int();
+                    let b = b.as_int();
+                    self.stack
+                        .push_front(BaseElement::from((a << b) | (a >> (32 - b))));
+                }
+            }
+
+            Operand::U32CheckedRotlImm(b) => {
+                if let Some(a) = self.stack.pop_front() {
+                    let a = a.as_int();
+                    let b = *b;
+                    self.stack
+                        .push_front(BaseElement::from((a << b) | (a >> (32 - b))));
+                }
+            }
+
+            Operand::U32UncheckedRotl => {
+                if let (Some(b), Some(a)) = (self.stack.pop_front(), self.stack.pop_front()) {
+                    let a = a.as_int();
+                    let b = b.as_int();
+                    self.stack
+                        .push_front(BaseElement::from((a << b) | (a >> (32 - b))));
+                }
+            }
+
+            Operand::U32UncheckedRotlImm(b) => {
+                if let Some(a) = self.stack.pop_front() {
+                    let a = a.as_int();
+                    let b = *b;
+                    self.stack
+                        .push_front(BaseElement::from((a << b) | (a >> (32 - b))));
+                }
+            }
+
+            Operand::U32CheckedRotr => {
+                if let (Some(b), Some(a)) = (self.stack.pop_front(), self.stack.pop_front()) {
+                    let a = a.as_int();
+                    let b = b.as_int();
+                    self.stack
+                        .push_front(BaseElement::from((a >> b) | (a << (32 - b))));
+                }
+            }
+
+            Operand::U32CheckedRotrImm(b) => {
+                if let Some(a) = self.stack.pop_front() {
+                    let a = a.as_int();
+                    let b = *b;
+                    self.stack
+                        .push_front(BaseElement::from((a >> b) | (a << (32 - b))));
+                }
+            }
+
+            Operand::U32UncheckedRotr => {
+                if let (Some(b), Some(a)) = (self.stack.pop_front(), self.stack.pop_front()) {
+                    let a = a.as_int();
+                    let b = b.as_int();
+                    self.stack
+                        .push_front(BaseElement::from((a >> b) | (a << (32 - b))));
+                }
+            }
+
+            Operand::U32UncheckedRotrImm(b) => {
+                if let Some(a) = self.stack.pop_front() {
+                    let a = a.as_int();
+                    let b = *b;
+                    self.stack
+                        .push_front(BaseElement::from((a >> b) | (a << (32 - b))));
+                }
+            }
+
+            Operand::U32CheckedAnd => {
+                if let (Some(b), Some(a)) = (self.stack.pop_front(), self.stack.pop_front()) {
+                    self.stack
+                        .push_front(BaseElement::from(a.as_int() & b.as_int()));
+                }
+            }
+
+            Operand::U32CheckedOr => {
+                if let (Some(b), Some(a)) = (self.stack.pop_front(), self.stack.pop_front()) {
+                    self.stack
+                        .push_front(BaseElement::from(a.as_int() | b.as_int()));
+                }
+            }
+
+            Operand::U32CheckedXor => {
+                if let (Some(b), Some(a)) = (self.stack.pop_front(), self.stack.pop_front()) {
+                    self.stack
+                        .push_front(BaseElement::from(a.as_int() ^ b.as_int()));
+                }
+            }
+
+            Operand::U32CheckedNot => {
+                if let Some(a) = self.stack.pop_front() {
+                    self.stack.push_front(BaseElement::from(!a.as_int()));
                 }
             }
 

@@ -62,6 +62,8 @@ pub enum Operand {
     Ext2Div,
 
     AdvPush(usize),
+    AdvLoadW,
+    AdvPipe,
 
     WHILE,
     IF,
@@ -280,6 +282,8 @@ impl std::fmt::Display for Operand {
             Self::LocStoreW(value) => write!(f, "loc_storew.{value}"),
 
             Self::AdvPush(value) => write!(f, "adv_push.{value}"),
+            Self::AdvLoadW => write!(f, "adv_loadw"),
+            Self::AdvPipe => write!(f, "adv_pipe"),
 
             Self::WHILE => write!(f, "while.true"),
             Self::IF => write!(f, "if.true"),

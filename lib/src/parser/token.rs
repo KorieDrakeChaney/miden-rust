@@ -51,6 +51,9 @@ pub enum Token {
 
     // Manipulation operations
     AdvPush,
+    AdvLoadW,
+    AdvPipe,
+
     Push,
     Drop,
     Dup,
@@ -202,7 +205,9 @@ impl From<&str> for Token {
             "loc_store" => Self::LocStore,
             "loc_loadw" => Self::LocLoadW,
             "loc_storew" => Self::LocStoreW,
-            "advpush" => Self::AdvPush,
+            "adv_push" => Self::AdvPush,
+            "adv_loadw" => Self::AdvLoadW,
+            "adv_pipe" => Self::AdvPipe,
             "push" => Self::Push,
             "drop" => Self::Drop,
             "dup" => Self::Dup,

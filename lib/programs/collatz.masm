@@ -1,0 +1,33 @@
+begin
+	push.0
+	adv_push.1
+	dup.0
+	push.1
+	neq
+	while.true
+		swap.1
+		push.1
+		add
+		swap.1
+		dup.0
+		push.2
+		u32checked_mod
+		if.true
+			push.3
+			mul
+			push.1
+			add
+		else
+			push.2
+			u32checked_div
+		end
+
+		dup.0
+		push.1
+		neq
+	end
+
+	swap.1
+end
+
+#stack output : [132, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0] 

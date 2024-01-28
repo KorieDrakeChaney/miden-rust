@@ -228,11 +228,11 @@ impl Proc {
 
                         if n == BaseElement::ONE {
                             if if_block.len() > 0 {
-                                self.execute_block(program, &mut if_block.clone());
+                                self.execute_block(program, &mut if_block);
                             }
                         } else {
                             if else_block.len() > 0 {
-                                self.execute_block(program, &mut else_block.clone());
+                                self.execute_block(program, &mut else_block);
                             }
                         }
                     }

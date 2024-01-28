@@ -127,23 +127,6 @@ fn test_repeat() {
 }
 
 #[test]
-fn test_conditional() {
-    let mut program = MidenProgram::new().with_inputs(Inputs::from_file("inputs/conditional.json"));
-    program.push(3);
-    program.push(5);
-
-    program.adv_push(1);
-    let mut if_program = MidenProgram::new();
-    if_program.add();
-    let mut else_program = MidenProgram::new();
-    else_program.mul();
-    program.if_else(|| if_program.get_operands(), || else_program.get_operands());
-
-    program.save("programs/conditional.masm");
-    assert_eq!(Some(program.stack[0].into()), program.prove());
-}
-
-#[test]
 fn test_not() {
     let mut program = MidenProgram::new();
 
@@ -432,21 +415,6 @@ fn test_mem_store_w_n() {
 }
 
 #[test]
-fn test_refresh() {
-    let mut program = MidenProgram::new();
-
-    program.push(5);
-    program.push(2);
-    program.push(3);
-    program.push(4);
-
-    program.print("test stack");
-
-    program.save("programs/refresh.masm");
-    assert_eq!(Some(program.stack[0].into()), program.prove());
-}
-
-#[test]
 fn test_empty_program() {
     let mut add_program = EmptyProgram::new();
 
@@ -694,6 +662,83 @@ fn test_catalan() {
     program.print_masm();
 
     program.save("programs/catalan.masm");
+
+    assert_eq!(Some(program.stack[0].into()), program.prove());
+}
+
+#[test]
+
+fn test_collatz() {
+    let mut program = MidenProgram::parse_from_file_with_inputs(
+        "examples/collatz.masm",
+        Inputs::from_file("inputs/collatz.json"),
+    )
+    .unwrap();
+
+    program.print_masm();
+
+    program.save("programs/collatz.masm");
+
+    assert_eq!(Some(program.stack[0].into()), program.prove());
+}
+
+#[test]
+fn test_comparison() {
+    let mut program = MidenProgram::parse_from_file_with_inputs(
+        "examples/comparison.masm",
+        Inputs::from_file("inputs/comparison.json"),
+    )
+    .unwrap();
+
+    program.print_masm();
+
+    program.save("programs/comparison.masm");
+
+    assert_eq!(Some(program.stack[0].into()), program.prove());
+}
+
+#[test]
+fn test_conditional() {
+    let mut program = MidenProgram::parse_from_file_with_inputs(
+        "examples/conditional.masm",
+        Inputs::from_file("inputs/conditional.json"),
+    )
+    .unwrap();
+
+    program.print_masm();
+
+    program.save("programs/conditional.masm");
+
+    assert_eq!(Some(program.stack[0].into()), program.prove());
+}
+
+#[test]
+fn fibonacci() {
+    let mut program = MidenProgram::parse_from_file_with_inputs(
+        "examples/fibonacci.masm",
+        Inputs::from_file("inputs/fibonacci.json"),
+    )
+    .unwrap();
+
+    program.print_masm();
+
+    program.save("programs/fibonacci.masm");
+
+    assert_eq!(Some(program.stack[0].into()), program.prove());
+}
+
+#[test]
+fn matrix_mul() {
+    //todo: fix this
+    let mut program = MidenProgram::parse_from_file_with_inputs(
+        "examples/matrix_mul.masm",
+        Inputs::from_file("inputs/matrix_mul.json"),
+    )
+    .unwrap();
+
+    program.print_masm();
+
+    program.save("programs/matrix_mul.masm");
 
     assert_eq!(Some(program.stack[0].into()), program.prove());
 }

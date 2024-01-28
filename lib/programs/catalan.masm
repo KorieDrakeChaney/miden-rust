@@ -26,7 +26,8 @@ proc.catalan_i
 		sub.1
 		push.0
 		dup.1
-		u32unchecked_div.2
+		push.2
+		u32unchecked_div
 		push.0
 		exec.check_continue_neq
 		while.true
@@ -82,4 +83,4 @@ begin
 	mem_load
 end
 
-#stack output : [2, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0] 
+#stack output : [4862, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0] 

@@ -435,6 +435,24 @@ pub fn parse(tokens: Vec<Token>) -> Result<(VecDeque<Operand>, Vec<Proc>), Strin
                 }
             }
 
+            Token::AdvLoadW => {
+                if in_proc {
+                    let index = procedures.len() - 1;
+                    procedures[index].add_operand(Operand::AdvLoadW);
+                } else {
+                    operands.push_back(Operand::AdvLoadW);
+                }
+            }
+
+            Token::AdvPipe => {
+                if in_proc {
+                    let index = procedures.len() - 1;
+                    procedures[index].add_operand(Operand::AdvPipe);
+                } else {
+                    operands.push_back(Operand::AdvPipe);
+                }
+            }
+
             Token::MemLoad => {
                 if i + 1 < tokens.len() {
                     match &tokens[i + 1] {
