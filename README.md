@@ -32,19 +32,19 @@ You can do more complex things like:
 use rust_masm::{MidenProgram, EmptyProgram};
 
 fn main() {
-  let mut add_program = EmptyProgram::new();
+    let mut add_program = EmptyProgram::new();
 
     add_program.add_n(5);
 
     let mut if_program = EmptyProgram::new();
 
     if_program.if_else(
-        || add_program,
+        || add_program.get_operands(),
         || {
             let mut else_program = EmptyProgram::new();
             else_program.push(1);
             else_program.add_n(2);
-            else_program
+            else_program.get_operands()
         },
     );
 
@@ -64,18 +64,17 @@ fn main() {
 
     let mut program = MidenProgram::new();
 
-    program.add_program(&rand_program);
+    program.add_program(|| rand_program.get_operands());
 
-    program.add_program(&if_program);
+    program.add_program(|| if_program.get_operands());
 
     program.repeat(5, || {
         let mut repeat_program = EmptyProgram::new();
 
         repeat_program.exp_n(2);
 
-        repeat_program
+        repeat_program.get_operands()
     });
-
 }
 ```
 
@@ -142,8 +141,9 @@ fn main() {
         	push.5
         	push.1
         	add
-    	end
-").unwrap();
+    end
+    "
+    ).unwrap();
 
     program.print("add 5 and 1");
 }
