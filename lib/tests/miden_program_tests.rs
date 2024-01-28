@@ -1,4 +1,4 @@
-use rust_masm::{tokenize, EmptyProgram, Inputs, MidenProgram};
+use rust_masm::{tokenize, EmptyProgram, Inputs, Methods, MidenProgram};
 
 #[test]
 fn test_inv() {
@@ -119,6 +119,8 @@ fn test_repeat() {
     fib.add();
 
     program.repeat(10, || fib.get_operands());
+
+    program.print_masm();
 
     program.save("programs/repeat.masm");
     assert_eq!(Some(program.stack[0].into()), program.prove());

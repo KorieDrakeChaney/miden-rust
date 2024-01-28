@@ -9,7 +9,7 @@ use std::ops::Neg;
 impl MidenProgram {
     pub fn execute_block(&mut self, block: &mut VecDeque<Operand>) {
         while let Some(op) = block.pop_front() {
-            // println!("op: {:?} {:?}", op, self.stack);
+            println!("op: {:?} {:?}", op, self.stack);
             match op {
                 Operand::IF => execute_if_else(self, block),
                 Operand::WHILE => execute_while(self, block),

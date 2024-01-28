@@ -218,7 +218,7 @@ pub fn execute_if_else(program: &mut MidenProgram, block: &mut VecDeque<Operand>
     }
 }
 
-pub fn execute_repeat(n: usize, program: &mut MidenProgram, mut block: &mut VecDeque<Operand>) {
+pub fn execute_repeat(n: usize, program: &mut MidenProgram, block: &mut VecDeque<Operand>) {
     let mut repeat_operands = VecDeque::new();
     let mut scope_count = 1;
     'outer: while let Some(next_op) = block.pop_front() {
@@ -242,6 +242,7 @@ pub fn execute_repeat(n: usize, program: &mut MidenProgram, mut block: &mut VecD
     }
 
     for _ in 0..n {
+        println!("repeating {:?} ", repeat_operands);
         program.execute_block(&mut repeat_operands.clone());
     }
 }

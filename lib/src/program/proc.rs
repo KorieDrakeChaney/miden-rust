@@ -2,7 +2,7 @@ use std::collections::{HashMap, VecDeque};
 
 use math::{fields::f64::BaseElement, FieldElement};
 
-use crate::{MidenProgram, Operand};
+use crate::{Methods, MidenProgram, Operand};
 
 use super::block::{execute_if_else, execute_repeat, execute_while};
 #[derive(Clone, Debug, PartialEq)]
@@ -172,5 +172,22 @@ impl Proc {
 
     pub fn get_operands(&mut self) -> VecDeque<Operand> {
         std::mem::take(&mut self.operands)
+    }
+}
+
+impl Methods for Proc {
+    fn add_operand(&mut self, operand: Operand) {
+        self.operands.push_back(operand);
+    }
+
+    fn get_operands(&self) -> VecDeque<Operand> {
+        self.operands.clone()
+    }
+
+    fn add_program<F>(&mut self, program: F)
+    where
+        F: FnOnce() -> VecDeque<Operand>,
+    {
+        self.add_operands(program());
     }
 }

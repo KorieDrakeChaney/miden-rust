@@ -5,15 +5,16 @@ mod execute;
 mod field;
 mod io;
 mod manipulation;
+mod methods;
 mod operand;
 mod parser;
 mod proc;
 mod u32;
 mod utils;
-
 use crate::Inputs;
 
 pub use empty::*;
+pub use methods::Methods;
 pub use operand::Operand;
 
 use std::collections::{HashMap, VecDeque};
@@ -38,7 +39,6 @@ pub struct MidenProgram {
 
     stack_inputs: StackInputs,
     advice_inputs: AdviceInputs,
-    inputs: Inputs,
 
     ram_memory: HashMap<u32, [BaseElement; 4]>,
 }
@@ -58,8 +58,6 @@ impl MidenProgram {
             internal_programs: HashMap::new(),
 
             proc_script: String::new(),
-
-            inputs: Inputs::default(),
 
             runnable: true,
 
@@ -197,17 +195,23 @@ impl MidenProgram {
     ///
     /// The program with the specified inputs.
     pub fn with_inputs(mut self, inputs: Inputs) -> Self {
-        if let Some(operand_stack) = inputs.operand_stack {
-            self.stack = VecDeque::from(operand_stack.clone());
-            self.inputs.operand_stack = Some(operand_stack.clone());
+        if let Some(mut operand_stack) = inputs.operand_stack {
             self.stack_inputs =
-                StackInputs::try_from_values(operand_stack.iter().map(|n| n.as_int())).unwrap();
+                StackInputs::try_from_values(operand_stack.clone().iter().map(|n| n.as_int()))
+                    .unwrap();
+
+            while let Some(op) = operand_stack.pop() {
+                self.stack.push_front(op);
+            }
         }
-        if let Some(advice_stack) = inputs.advice_stack {
-            self.advice_stack = VecDeque::from(advice_stack.clone());
-            self.inputs.advice_stack = Some(advice_stack.clone());
+        if let Some(mut advice_stack) = inputs.advice_stack {
             self.advice_inputs =
-                AdviceInputs::with_stack_values(AdviceInputs::default(), advice_stack).unwrap();
+                AdviceInputs::with_stack_values(AdviceInputs::default(), advice_stack.clone())
+                    .unwrap();
+
+            while let Some(op) = advice_stack.pop() {
+                self.advice_stack.push_front(op);
+            }
         }
         self
     }
@@ -221,11 +225,13 @@ impl MidenProgram {
     /// # Returns
     ///
     /// The program with the specified operand stack.
-    pub fn with_operand_stack(mut self, operand_stack: Vec<BaseElement>) -> Self {
-        self.stack = VecDeque::from(operand_stack.clone());
-        self.inputs.operand_stack = Some(operand_stack.clone());
+    pub fn with_operand_stack(mut self, mut operand_stack: Vec<BaseElement>) -> Self {
         self.stack_inputs =
-            StackInputs::try_from_values(operand_stack.iter().map(|n| n.as_int())).unwrap();
+            StackInputs::try_from_values(operand_stack.clone().iter().map(|n| n.as_int())).unwrap();
+
+        while let Some(op) = operand_stack.pop() {
+            self.stack.push_front(op);
+        }
         self
     }
 
@@ -238,11 +244,13 @@ impl MidenProgram {
     /// # Returns
     ///
     /// The program with the specified advice stack.
-    pub fn with_advice_stack(mut self, advice_stack: Vec<u64>) -> Self {
-        self.advice_stack = VecDeque::from(advice_stack.clone());
-        self.inputs.advice_stack = Some(advice_stack.clone());
+    pub fn with_advice_stack(mut self, mut advice_stack: Vec<u64>) -> Self {
         self.advice_inputs =
-            AdviceInputs::with_stack_values(AdviceInputs::default(), advice_stack).unwrap();
+            AdviceInputs::with_stack_values(AdviceInputs::default(), advice_stack.clone()).unwrap();
+
+        while let Some(op) = advice_stack.pop() {
+            self.advice_stack.push_front(op);
+        }
         self
     }
 
