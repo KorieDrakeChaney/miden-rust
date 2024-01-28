@@ -137,11 +137,13 @@ You can also parse MASM code into Rust code:
 use rust_masm::{MidenProgram};
 
 fn main() {
-    let mut program = MidenProgram::parse("begin
-        push.5
-        push.1
-        add
-    end").unwrap();
+    let mut program = MidenProgram::parse("
+	begin
+        	push.5
+        	push.1
+        	add
+    	end
+").unwrap();
 
     program.print("add 5 and 1");
 }
