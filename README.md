@@ -32,49 +32,49 @@ You can do more complex things like:
 use rust_masm::{MidenProgram, EmptyProgram};
 
 fn main() {
-    let mut add_program = EmptyProgram::new();
+	let mut add_program = EmptyProgram::new();
 
-    add_program.add_n(5);
+	add_program.add_n(5);
 
-    let mut if_program = EmptyProgram::new();
+	let mut if_program = EmptyProgram::new();
 
-    if_program.if_else(
-        || add_program.get_operands(),
-        || {
-            let mut else_program = EmptyProgram::new();
-            else_program.push(1);
-            else_program.add_n(2);
-            else_program.get_operands()
-        },
-    );
+	if_program.if_else(
+	|| add_program.get_operands(),
+	|| {
+	    let mut else_program = EmptyProgram::new();
+	    else_program.push(1);
+	    else_program.add_n(2);
+	    else_program.get_operands()
+	},
+	);
 
-    let mut rand_program = EmptyProgram::new();
-
-    rand_program.push(5);
-
-    rand_program.push(1);
-
-    rand_program.mem_store();
-
-    rand_program.mem_load_n(1);
-
-    rand_program.mul_n(2);
-
-    rand_program.eq_n(10);
-
-    let mut program = MidenProgram::new();
-
-    program.add_program(|| rand_program.get_operands());
-
-    program.add_program(|| if_program.get_operands());
-
-    program.repeat(5, || {
-        let mut repeat_program = EmptyProgram::new();
-
-        repeat_program.exp_n(2);
-
-        repeat_program.get_operands()
-    });
+	let mut rand_program = EmptyProgram::new();
+	
+	rand_program.push(5);
+	
+	rand_program.push(1);
+	
+	rand_program.mem_store();
+	
+	rand_program.mem_load_n(1);
+	
+	rand_program.mul_n(2);
+	
+	rand_program.eq_n(10);
+	
+	let mut program = MidenProgram::new();
+	
+	program.add_program(|| rand_program.get_operands());
+	
+	program.add_program(|| if_program.get_operands());
+	
+	program.repeat(5, || {
+	let mut repeat_program = EmptyProgram::new();
+	
+	repeat_program.exp_n(2);
+	
+	repeat_program.get_operands()
+	});
 }
 ```
 
