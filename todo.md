@@ -4,7 +4,7 @@
 - [x] Assertions and tests
 - [x] Arithmetic and Boolean operations
 - [x] Comparison operations
-- [?] Extension Field Operations
+- [ ] Extension Field Operations
 - [x] Constant inputs
 - [x] RAM
 - [x] Stack Manipulation
