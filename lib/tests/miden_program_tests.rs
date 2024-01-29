@@ -772,3 +772,19 @@ fn test_masm() {
 
     assert_eq!(Some(program.stack[0].into()), program.prove());
 }
+
+#[test]
+fn test_error_handling() {
+    let mut program = MidenProgram::new();
+
+    program.push(1);
+    program.push(2);
+
+    program.and();
+
+    program.print_masm();
+
+    program.save("programs/test.masm");
+
+    assert_eq!(Some(program.stack[0].into()), program.prove());
+}

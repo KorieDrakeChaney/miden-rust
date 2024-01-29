@@ -278,8 +278,6 @@ impl MidenProgram {
     }
 
     pub fn add_operand(&mut self, operand: Operand) {
-        self.execute_operand(&operand);
-
         match operand {
             Operand::Error(e) => {
                 if let Some(operand) = self.operand_stack.pop_back() {
@@ -289,7 +287,10 @@ impl MidenProgram {
                 }
             }
             _ => {
-                self.operand_stack.push_back(operand);
+                self.operand_stack.push_back(operand.clone());
+                if self.is_valid(&operand) {
+                    self.execute_operand(&operand);
+                }
             }
         }
     }

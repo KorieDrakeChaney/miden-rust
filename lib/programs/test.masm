@@ -1,0 +1,8 @@
+begin
+	push.1
+	push.2
+	#ERROR: NotBinaryValue(2), 2 is not binary
+	#and
+end
+
+#stack output : [2, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0] 

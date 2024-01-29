@@ -9,7 +9,7 @@ impl MidenProgram {
         match operand {
             // Manipulation
             Operand::Dup(n) => {
-                if *n > 0 && *n <= 15 {
+                if *n <= 15 {
                     true
                 } else {
                     self.add_operand(Operand::Error(MidenProgramError::InvalidParameter(

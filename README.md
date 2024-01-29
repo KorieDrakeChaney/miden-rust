@@ -126,7 +126,34 @@ fn main() {
 }
 ```
 
-Which is beneficial for debugging
+### See errors in your MASM code
+
+```rust
+use rust_masm::{MidenProgram};
+
+fn main() {
+    let mut program = MidenProgram::new();
+
+    program.push(1);
+    program.push(2);
+
+    program.and();
+
+    program.print_masm();
+}
+
+```
+
+This will generate the following MASM code:
+
+```masm
+begin
+        push.1
+        push.2
+        #ERROR: NotBinaryValue(2), 2 is not binary
+        #and
+end
+```
 
 # Parse from MASM to Rust
 
