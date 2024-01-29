@@ -8,11 +8,11 @@ pub fn execute_boolean(program: &mut MidenProgram, operand: &Operand) {
             if let (Some(b), Some(a)) = (program.stack.get(0), program.stack.get(1)) {
                 let a_int = a.as_int();
                 let b_int = b.as_int();
-                if a_int != 1 || a_int != 0 {
+                if a_int != 1 && a_int != 0 {
                     program.add_operand(Operand::Error(MidenProgramError::NotBinaryValue(
                         a.as_int(),
                     )));
-                } else if b_int != 1 || b_int != 0 {
+                } else if b_int != 1 && b_int != 0 {
                     program.add_operand(Operand::Error(MidenProgramError::NotBinaryValue(
                         b.as_int(),
                     )));
@@ -32,11 +32,11 @@ pub fn execute_boolean(program: &mut MidenProgram, operand: &Operand) {
             if let (Some(b), Some(a)) = (program.stack.get(0), program.stack.get(1)) {
                 let a_int = a.as_int();
                 let b_int = b.as_int();
-                if a_int != 1 || a_int != 0 {
+                if a_int != 1 && a_int != 0 {
                     program.add_operand(Operand::Error(MidenProgramError::NotBinaryValue(
                         a.as_int(),
                     )));
-                } else if b_int != 1 || b_int != 0 {
+                } else if b_int != 1 && b_int != 0 {
                     program.add_operand(Operand::Error(MidenProgramError::NotBinaryValue(
                         b.as_int(),
                     )));
@@ -56,11 +56,11 @@ pub fn execute_boolean(program: &mut MidenProgram, operand: &Operand) {
             if let (Some(b), Some(a)) = (program.stack.get(0), program.stack.get(1)) {
                 let a_int = a.as_int();
                 let b_int = b.as_int();
-                if a_int != 1 || a_int != 0 {
+                if a_int != 1 && a_int != 0 {
                     program.add_operand(Operand::Error(MidenProgramError::NotBinaryValue(
                         a.as_int(),
                     )));
-                } else if b_int != 1 || b_int != 0 {
+                } else if b_int != 1 && b_int != 0 {
                     program.add_operand(Operand::Error(MidenProgramError::NotBinaryValue(
                         b.as_int(),
                     )));
@@ -79,7 +79,7 @@ pub fn execute_boolean(program: &mut MidenProgram, operand: &Operand) {
         Operand::Not => {
             if let Some(a) = program.stack.get(0) {
                 let a_int = a.as_int();
-                if a_int != 1 || a_int != 0 {
+                if a_int != 1 && a_int != 0 {
                     program.add_operand(Operand::Error(MidenProgramError::NotBinaryValue(
                         a.as_int(),
                     )));
