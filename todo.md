@@ -1,6 +1,7 @@
 # Upcoming Features
 
 - [x] MASM -> RUST
+- [x] MASM error handling
 - [x] Assertions and tests
 - [x] Arithmetic and Boolean operations
 - [x] Comparison operations
