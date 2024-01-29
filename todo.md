@@ -1,10 +1,26 @@
 # Upcoming Features
 
 - [x] MASM -> RUST
+- [x] Assertions and tests
+- [x] Arithmetic and Boolean operations
+- [x] Comparison operations
+- [?] Extension Field Operations
+- [x] Constant inputs
+- [x] RAM
+- [x] Stack Manipulation
+- [ ] Conditional manipulation
+- [ ] Conversions and tests
+- [x] u32 Arithmetic operations
+- [x] u32 Bitwise operations
+- [x] u32 Comparison operations
+- [ ] Hashing and Merkle trees
+- [ ] Environment inputs
+- [ ] Extension Field Operations Documentation
+- [ ] Extension Field Operations for CLI
 - [ ] U32 documentation
 - [ ] Better documentation
 - [ ] U32 error handling
-- [ ] AdvPipe and AdvLoadW
+- [x] AdvPipe and AdvLoadW
 - [ ] U32 for CLI
 - [ ] Performance improvements
 - [ ] Better componentization
