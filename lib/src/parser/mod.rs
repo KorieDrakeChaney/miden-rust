@@ -27,6 +27,38 @@ pub fn parse(tokens: Vec<Token>) -> Result<(VecDeque<Operand>, Vec<Proc>), Strin
     while i < tokens.len() {
         let token = &tokens[i];
         match token {
+            Token::Assert => {
+                if in_proc {
+                    let index = procedures.len() - 1;
+                    procedures[index].add_operand(Operand::Assert);
+                } else {
+                    operands.push_back(Operand::Assert);
+                }
+            }
+            Token::AssertZ => {
+                if in_proc {
+                    let index = procedures.len() - 1;
+                    procedures[index].add_operand(Operand::AssertZ);
+                } else {
+                    operands.push_back(Operand::AssertZ);
+                }
+            }
+            Token::AssertEq => {
+                if in_proc {
+                    let index = procedures.len() - 1;
+                    procedures[index].add_operand(Operand::AssertEq);
+                } else {
+                    operands.push_back(Operand::AssertEq);
+                }
+            }
+            Token::AssertEqW => {
+                if in_proc {
+                    let index = procedures.len() - 1;
+                    procedures[index].add_operand(Operand::AssertEqW);
+                } else {
+                    operands.push_back(Operand::AssertEqW);
+                }
+            }
             Token::Proc => {
                 if i + 1 < tokens.len() {
                     match &tokens[i + 1] {
@@ -945,6 +977,15 @@ pub fn parse(tokens: Vec<Token>) -> Result<(VecDeque<Operand>, Vec<Proc>), Strin
                     procedures[index].add_operand(Operand::Drop);
                 } else {
                     operands.push_back(Operand::Drop);
+                }
+            }
+
+            Token::DropW => {
+                if in_proc {
+                    let index = procedures.len() - 1;
+                    procedures[index].add_operand(Operand::DropW);
+                } else {
+                    operands.push_back(Operand::DropW);
                 }
             }
 

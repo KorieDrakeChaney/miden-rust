@@ -1,0 +1,13 @@
+begin
+  repeat.12
+    push.1
+  end
+  adv_pipe
+  repeat.8
+    drop
+  end
+  mem_loadw.0
+  padw
+  mem_loadw.1
+
+end

@@ -728,7 +728,7 @@ fn fibonacci() {
 }
 
 #[test]
-fn matrix_mul() {
+fn test_matrix_mul() {
     //todo: fix this
     let mut program = MidenProgram::parse_from_file_with_inputs(
         "examples/matrix_mul.masm",
@@ -739,6 +739,36 @@ fn matrix_mul() {
     program.print_masm();
 
     program.save("programs/matrix_mul.masm");
+
+    assert_eq!(Some(program.stack[0].into()), program.prove());
+}
+
+#[test]
+fn test_adv_pipe() {
+    let mut program = MidenProgram::parse_from_file_with_inputs(
+        "examples/adv_pipe.masm",
+        Inputs::from_file("inputs/adv_pipe.json"),
+    )
+    .unwrap();
+
+    program.print_masm();
+
+    program.save("programs/adv_pipe.masm");
+
+    assert_eq!(Some(program.stack[0].into()), program.prove());
+}
+
+#[test]
+fn test_masm() {
+    let mut program = MidenProgram::parse_from_file_with_inputs(
+        "examples/example.masm",
+        Inputs::from_file("inputs/matrix_mul.json"),
+    )
+    .unwrap();
+
+    program.print_masm();
+
+    program.save("programs/example.masm");
 
     assert_eq!(Some(program.stack[0].into()), program.prove());
 }

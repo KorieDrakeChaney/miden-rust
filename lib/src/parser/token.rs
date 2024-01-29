@@ -1,5 +1,10 @@
 #[derive(Debug, Clone, PartialEq)]
 pub enum Token {
+    // Assertions and tests
+    Assert,
+    AssertZ,
+    AssertEq,
+    AssertEqW,
     // Arithmetic and boolean operations
     Add,
     Sub,
@@ -56,6 +61,7 @@ pub enum Token {
 
     Push,
     Drop,
+    DropW,
     Dup,
     Swap,
     SwapW,
@@ -166,6 +172,10 @@ pub enum Token {
 impl From<&str> for Token {
     fn from(value: &str) -> Self {
         match value {
+            "assert" => Self::Assert,
+            "assertz" => Self::AssertZ,
+            "assert_eq" => Self::AssertEq,
+            "assert_eqw" => Self::AssertEqW,
             "proc" => Self::Proc,
             "add" => Self::Add,
             "sub" => Self::Sub,
@@ -210,6 +220,7 @@ impl From<&str> for Token {
             "adv_pipe" => Self::AdvPipe,
             "push" => Self::Push,
             "drop" => Self::Drop,
+            "dropw" => Self::DropW,
             "dup" => Self::Dup,
             "swap" => Self::Swap,
             "swapw" => Self::SwapW,

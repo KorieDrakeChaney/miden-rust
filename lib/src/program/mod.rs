@@ -204,17 +204,16 @@ impl MidenProgram {
                 i += 1;
             }
         }
-        if let Some(advice_stack) = inputs.advice_stack {
+        if let Some(mut advice_stack) = inputs.advice_stack {
             self.advice_inputs =
                 AdviceInputs::with_stack_values(AdviceInputs::default(), advice_stack.clone())
                     .unwrap();
 
-            let mut i = 0;
-
-            while i < advice_stack.len() {
-                self.advice_stack.push_front(advice_stack[i]);
-                i += 1;
+            while let Some(a) = advice_stack.pop() {
+                self.advice_stack.push_front(a);
             }
+
+            println!("advice stack: {:?}", self.advice_stack);
         }
         self
     }

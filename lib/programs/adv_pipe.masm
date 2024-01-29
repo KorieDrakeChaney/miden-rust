@@ -1,0 +1,16 @@
+begin
+	repeat.12
+		push.1
+	end
+
+	adv_pipe
+	repeat.8
+		drop
+	end
+
+	mem_loadw.0
+	padw
+	mem_loadw.1
+end
+
+#stack output : [7, 6, 5, 4, 3, 2, 1, 0, 2, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0] 

@@ -1,13 +1,11 @@
 use super::{MidenProgram, Operand};
-use math::fft::permute_index;
 use math::{fields::f64::BaseElement, FieldElement, StarkField};
 use std::collections::VecDeque;
-use std::ops::{Div, Neg};
+use std::ops::Neg;
 
 impl MidenProgram {
     pub fn execute_block(&mut self, block: &mut VecDeque<Operand>) {
         while let Some(op) = block.pop_front() {
-            println!("op: {:?}{:?}", op, self.stack);
             match op {
                 Operand::IF => {
                     if let Some(n) = self.stack.pop_front() {
@@ -206,6 +204,15 @@ impl MidenProgram {
             }
             Operand::Drop => if let Some(_) = self.stack.pop_front() {},
 
+            Operand::DropW => {
+                for _ in 0..4 {
+                    self.stack.pop_front();
+                    self.stack.pop_front();
+                    self.stack.pop_front();
+                    self.stack.pop_front();
+                }
+            }
+
             Operand::Swap(n) => {
                 if self.stack.len() > 0 {
                     self.stack.swap(0, *n);
@@ -222,7 +229,95 @@ impl MidenProgram {
             }
 
             Operand::AdvPipe => {
-                todo!()
+                if let (s2, s1, s0, Some(a), t1, t0) = (
+                    (
+                        self.stack.pop_front(),
+                        self.stack.pop_front(),
+                        self.stack.pop_front(),
+                        self.stack.pop_front(),
+                    ),
+                    (
+                        self.stack.pop_front(),
+                        self.stack.pop_front(),
+                        self.stack.pop_front(),
+                        self.stack.pop_front(),
+                    ),
+                    (
+                        self.stack.pop_front(),
+                        self.stack.pop_front(),
+                        self.stack.pop_front(),
+                        self.stack.pop_front(),
+                    ),
+                    self.stack.pop_front(),
+                    (
+                        self.advice_stack.pop_front(),
+                        self.advice_stack.pop_front(),
+                        self.advice_stack.pop_front(),
+                        self.advice_stack.pop_front(),
+                    ),
+                    (
+                        self.advice_stack.pop_front(),
+                        self.advice_stack.pop_front(),
+                        self.advice_stack.pop_front(),
+                        self.advice_stack.pop_front(),
+                    ),
+                ) {
+                    self.stack.push_front(a + BaseElement::from(2_u64));
+                    // S0
+                    if let (Some(d), Some(c), Some(b), Some(a)) = s0 {
+                        self.stack.push_front(BaseElement::from(a));
+                        self.stack.push_front(BaseElement::from(b));
+                        self.stack.push_front(BaseElement::from(c));
+                        self.stack.push_front(BaseElement::from(d));
+                    }
+                    // S1
+                    if let (Some(_), Some(_), Some(_), Some(_)) = s1 {
+                        if let (Some(d), Some(c), Some(b), Some(a)) = t0 {
+                            self.stack.push_front(BaseElement::from(a));
+                            self.stack.push_front(BaseElement::from(b));
+                            self.stack.push_front(BaseElement::from(c));
+                            self.stack.push_front(BaseElement::from(d));
+                            self.ram_memory.insert(
+                                1,
+                                [
+                                    BaseElement::from(a),
+                                    BaseElement::from(b),
+                                    BaseElement::from(c),
+                                    BaseElement::from(d),
+                                ],
+                            );
+                        }
+                    }
+                    // S2
+                    if let (Some(_), Some(_), Some(_), Some(_)) = s2 {
+                        if let (Some(d), Some(c), Some(b), Some(a)) = t1 {
+                            self.stack.push_front(BaseElement::from(a));
+                            self.stack.push_front(BaseElement::from(b));
+                            self.stack.push_front(BaseElement::from(c));
+                            self.stack.push_front(BaseElement::from(d));
+
+                            self.ram_memory.insert(
+                                0,
+                                [
+                                    BaseElement::from(a),
+                                    BaseElement::from(b),
+                                    BaseElement::from(c),
+                                    BaseElement::from(d),
+                                ],
+                            );
+                        }
+                    }
+                }
+                for _ in 0..8 {
+                    if let (Some(a), Some(b), Some(c), Some(d)) = (
+                        self.advice_stack.pop_front(),
+                        self.advice_stack.pop_front(),
+                        self.advice_stack.pop_front(),
+                        self.advice_stack.pop_front(),
+                    ) {
+                        self.stack.push_front(BaseElement::from(a));
+                    }
+                }
             }
 
             Operand::Not => {
@@ -235,10 +330,8 @@ impl MidenProgram {
                 }
             }
             Operand::PadW => {
-                if self.stack.len() < 16 {
-                    for _ in 0..4 {
-                        self.stack.push_front(BaseElement::from(0_u64));
-                    }
+                for _ in 0..4 {
+                    self.stack.push_front(BaseElement::from(0_u64));
                 }
             }
             Operand::SwapW(n) => {
@@ -296,14 +389,14 @@ impl MidenProgram {
                 if *n < self.stack.len() {
                     if let (Some(a), Some(b), Some(c), Some(d)) = (
                         self.stack.remove(*n * 4),
-                        self.stack.remove(*n * 4 + 1),
-                        self.stack.remove(*n * 4 + 2),
-                        self.stack.remove(*n * 4 + 3),
+                        self.stack.remove(*n * 4),
+                        self.stack.remove(*n * 4),
+                        self.stack.remove(*n * 4),
                     ) {
-                        self.stack.push_front(a);
-                        self.stack.push_front(b);
-                        self.stack.push_front(c);
                         self.stack.push_front(d);
+                        self.stack.push_front(c);
+                        self.stack.push_front(b);
+                        self.stack.push_front(a);
                     }
                 }
             }
@@ -328,10 +421,18 @@ impl MidenProgram {
                 }
             }
 
-            // Comparisons
-            Operand::Lt => {
-                if let (Some(a), Some(b)) = (self.stack.pop_front(), self.stack.pop_front()) {
-                    if a.as_int() > b.as_int() {
+            Operand::EqW => {
+                if let (Some(a), Some(b), Some(c), Some(d), Some(e), Some(f), Some(g), Some(h)) = (
+                    self.stack.get(0),
+                    self.stack.get(1),
+                    self.stack.get(2),
+                    self.stack.get(3),
+                    self.stack.get(4),
+                    self.stack.get(5),
+                    self.stack.get(6),
+                    self.stack.get(7),
+                ) {
+                    if a == e && b == f && c == g && d == h {
                         self.stack.push_front(BaseElement::ONE);
                     } else {
                         self.stack.push_front(BaseElement::ZERO);
@@ -339,8 +440,9 @@ impl MidenProgram {
                 }
             }
 
-            Operand::Gt => {
-                if let (Some(a), Some(b)) = (self.stack.pop_front(), self.stack.pop_front()) {
+            // Comparisons
+            Operand::Lt => {
+                if let (Some(b), Some(a)) = (self.stack.pop_front(), self.stack.pop_front()) {
                     if a.as_int() < b.as_int() {
                         self.stack.push_front(BaseElement::ONE);
                     } else {
@@ -349,9 +451,9 @@ impl MidenProgram {
                 }
             }
 
-            Operand::Lte => {
-                if let (Some(a), Some(b)) = (self.stack.pop_front(), self.stack.pop_front()) {
-                    if a.as_int() >= b.as_int() {
+            Operand::Gt => {
+                if let (Some(b), Some(a)) = (self.stack.pop_front(), self.stack.pop_front()) {
+                    if a.as_int() > b.as_int() {
                         self.stack.push_front(BaseElement::ONE);
                     } else {
                         self.stack.push_front(BaseElement::ZERO);
@@ -359,8 +461,8 @@ impl MidenProgram {
                 }
             }
 
-            Operand::Gte => {
-                if let (Some(a), Some(b)) = (self.stack.pop_front(), self.stack.pop_front()) {
+            Operand::Lte => {
+                if let (Some(b), Some(a)) = (self.stack.pop_front(), self.stack.pop_front()) {
                     if a.as_int() <= b.as_int() {
                         self.stack.push_front(BaseElement::ONE);
                     } else {
@@ -369,8 +471,18 @@ impl MidenProgram {
                 }
             }
 
+            Operand::Gte => {
+                if let (Some(b), Some(a)) = (self.stack.pop_front(), self.stack.pop_front()) {
+                    if a.as_int() >= b.as_int() {
+                        self.stack.push_front(BaseElement::ONE);
+                    } else {
+                        self.stack.push_front(BaseElement::ZERO);
+                    }
+                }
+            }
+
             Operand::Or => {
-                if let (Some(a), Some(b)) = (self.stack.pop_front(), self.stack.pop_front()) {
+                if let (Some(b), Some(a)) = (self.stack.pop_front(), self.stack.pop_front()) {
                     if a == BaseElement::ONE || b == BaseElement::ONE {
                         self.stack.push_front(BaseElement::ONE);
                     } else {
@@ -380,17 +492,18 @@ impl MidenProgram {
             }
 
             Operand::And => {
-                if let (Some(a), Some(b)) = (self.stack.pop_front(), self.stack.pop_front()) {
+                if let (Some(b), Some(a)) = (self.stack.pop_front(), self.stack.pop_front()) {
                     if a == BaseElement::ONE && b == BaseElement::ONE {
                         self.stack.push_front(BaseElement::ONE);
                     } else {
                         self.stack.push_front(BaseElement::ZERO);
                     }
                 }
+                println!("stack: {:?}", self.stack);
             }
 
             Operand::Xor => {
-                if let (Some(a), Some(b)) = (self.stack.pop_front(), self.stack.pop_front()) {
+                if let (Some(b), Some(a)) = (self.stack.pop_front(), self.stack.pop_front()) {
                     if a != b && (a == BaseElement::ONE || b == BaseElement::ONE) {
                         self.stack.push_front(BaseElement::ONE);
                     } else {
@@ -400,7 +513,7 @@ impl MidenProgram {
             }
 
             Operand::Neq => {
-                if let (Some(a), Some(b)) = (self.stack.pop_front(), self.stack.pop_front()) {
+                if let (Some(b), Some(a)) = (self.stack.pop_front(), self.stack.pop_front()) {
                     if a != b {
                         self.stack.push_front(BaseElement::ONE);
                     } else {
@@ -409,9 +522,9 @@ impl MidenProgram {
                 }
             }
 
-            Operand::NeqImm(x) => {
+            Operand::NeqImm(b) => {
                 if let Some(a) = self.stack.pop_front() {
-                    if a != BaseElement::from(*x) {
+                    if a != BaseElement::from(*b) {
                         self.stack.push_front(BaseElement::ONE);
                     } else {
                         self.stack.push_front(BaseElement::ZERO);
@@ -557,14 +670,58 @@ impl MidenProgram {
             }
 
             Operand::Exp => {
-                if let (Some(a), Some(b)) = (self.stack.pop_front(), self.stack.pop_front()) {
+                if let (Some(b), Some(a)) = (self.stack.pop_front(), self.stack.pop_front()) {
                     self.stack.push_front(a.exp(b.into()));
                 }
             }
 
-            Operand::ExpImm(n) => {
+            Operand::Assert => {
+                if let Some(a) = self.stack.get(0) {
+                    if *a == BaseElement::ONE {
+                        self.stack.pop_front();
+                    }
+                }
+            }
+
+            Operand::AssertZ => {
+                if let Some(a) = self.stack.get(0) {
+                    if *a == BaseElement::ZERO {
+                        self.stack.pop_front();
+                    }
+                }
+            }
+
+            Operand::AssertEqW => {
+                if let (Some(a), Some(b), Some(c), Some(d), Some(e), Some(f), Some(g), Some(h)) = (
+                    self.stack.get(0),
+                    self.stack.get(1),
+                    self.stack.get(2),
+                    self.stack.get(3),
+                    self.stack.get(4),
+                    self.stack.get(5),
+                    self.stack.get(6),
+                    self.stack.get(7),
+                ) {
+                    if a == e && b == f && c == g && d == h {
+                        for _ in 0..8 {
+                            self.stack.pop_front();
+                        }
+                    }
+                }
+            }
+
+            Operand::AssertEq => {
+                if let (Some(b), Some(a)) = (self.stack.get(0), self.stack.get(1)) {
+                    if a == b {
+                        self.stack.pop_front();
+                        self.stack.pop_front();
+                    }
+                }
+            }
+
+            Operand::ExpImm(b) => {
                 if let Some(a) = self.stack.pop_front() {
-                    self.stack.push_front(a.exp(*n));
+                    self.stack.push_front(a.exp(*b));
                 }
             }
 

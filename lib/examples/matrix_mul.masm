@@ -130,6 +130,7 @@ proc.copy_matrix_data_from_tape.0
             sub.2
 
             # while(c>0)
+            print.is_not_zero_or_negative_one
             dup exec.is_not_zero_or_negative_one
         end
 

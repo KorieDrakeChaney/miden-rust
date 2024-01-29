@@ -4,6 +4,12 @@ use super::error::MidenProgramError;
 
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub enum Operand {
+    // assertions and tests
+    Assert,
+    AssertZ,
+    AssertEq,
+    AssertEqW,
+
     Push(BaseElement),
     Drop,
     DropW,
@@ -212,6 +218,12 @@ pub enum Operand {
 impl std::fmt::Display for Operand {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         match self {
+            // assertions and tests
+            Self::Assert => write!(f, "assert"),
+            Self::AssertZ => write!(f, "assertz"),
+            Self::AssertEq => write!(f, "assert_eq"),
+            Self::AssertEqW => write!(f, "assert_eqw"),
+            // Manipulation operations
             Self::Push(value) => write!(f, "push.{value}"),
             Self::Drop => write!(f, "drop"),
             Self::DropW => write!(f, "dropw"),
