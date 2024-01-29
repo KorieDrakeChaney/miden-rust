@@ -7,6 +7,19 @@ use super::utils::{max, U32_MAX};
 impl MidenProgram {
     pub fn is_valid(&mut self, operand: &Operand) -> bool {
         match operand {
+            Operand::AdvPush(n) => {
+                if *n >= 1 && *n <= 16 {
+                    true
+                } else {
+                    self.add_operand(Operand::Error(MidenProgramError::InvalidParameter(
+                        Operand::AdvPush(*n).to_string(),
+                        *n,
+                        1,
+                        16,
+                    )));
+                    false
+                }
+            }
             // Manipulation
             Operand::Dup(n) => {
                 if *n <= 15 {

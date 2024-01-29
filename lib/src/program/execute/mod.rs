@@ -173,12 +173,10 @@ impl MidenProgram {
         execute_u32_bitwise(self, op);
 
         match op {
-            Operand::AdvPush(x) => {
-                if *x >= 1 && *x <= 16 {
-                    for _ in 0..*x {
-                        if let Some(a) = self.advice_stack.pop_front() {
-                            self.stack.push_front(BaseElement::from(a));
-                        }
+            Operand::AdvPush(n) => {
+                for _ in 0..*n {
+                    if let Some(a) = self.advice_stack.pop_front() {
+                        self.stack.push_front(BaseElement::from(a));
                     }
                 }
             }
