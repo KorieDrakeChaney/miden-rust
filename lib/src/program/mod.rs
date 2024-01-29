@@ -9,7 +9,6 @@ mod operand;
 mod parser;
 mod proc;
 mod u32;
-mod utils;
 use crate::Inputs;
 
 pub use empty::*;
