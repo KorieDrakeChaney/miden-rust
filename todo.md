@@ -4,7 +4,7 @@
 - [x] Assertions and tests
 - [x] Arithmetic and Boolean operations
 - [x] Comparison operations
-- [ ] Extension Field Operations
+- [?] Extension Field Operations
 - [x] Constant inputs
 - [x] RAM
 - [x] Stack Manipulation
@@ -14,14 +14,13 @@
 - [x] u32 Bitwise operations
 - [x] u32 Comparison operations
 - [x] u32 Error handling
+- [ ] U32 documentation
+- [ ] U32 for CLI
 - [ ] Hashing and Merkle trees
 - [ ] Environment inputs
 - [ ] Extension Field Operations Documentation
 - [ ] Extension Field Operations for CLI
-- [ ] U32 documentation
 - [ ] Better documentation
-- [ ] U32 error handling
 - [x] AdvPipe and AdvLoadW
-- [ ] U32 for CLI
 - [ ] Performance improvements
 - [ ] Better componentization
