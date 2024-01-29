@@ -75,26 +75,31 @@ impl MidenProgram {
         masm.push_str("begin\n");
 
         let mut scope = 1;
-        for op in self.operand_stack.iter() {
+        for op in self.operand_stack.clone() {
             match op {
-                &Operand::IF | &Operand::WHILE | &Operand::REPEAT(_) => {
+                Operand::IF | Operand::WHILE | Operand::REPEAT(_) => {
                     let tabs = "\t".repeat(scope);
                     masm.push_str(&format!("{}{}\n", tabs, op));
                     scope += 1;
                 }
-                &Operand::ELSE => {
+                Operand::ELSE => {
                     scope -= 1;
                     let tabs = "\t".repeat(scope);
                     masm.push_str(&format!("{}{}\n", tabs, op));
                     scope += 1;
                 }
-                &Operand::END => {
+                Operand::END => {
                     scope -= 1;
                     let tabs = "\t".repeat(scope);
                     masm.push_str(&format!("{}{}\n\n", tabs, op));
                 }
 
-                &Operand::PRINT(_) | &Operand::Error(_) => {}
+                Operand::Error(e) => {
+                    let tabs = "\t".repeat(scope);
+                    masm.push_str(&format!("{}#error: {}\n", tabs, e));
+                }
+
+                Operand::PRINT(_) => {}
                 _ => {
                     let tabs = "\t".repeat(scope);
                     masm.push_str(&format!("{}{}\n", tabs, op));
@@ -266,16 +271,25 @@ impl MidenProgram {
     ///
     /// * `operands` - The operands to add.
     pub fn add_operands(&mut self, operands: &mut VecDeque<Operand>) {
-        for op in operands.clone() {
+        for op in operands.iter() {
             self.operand_stack.push_back(op.clone());
         }
         self.execute_block(operands);
     }
 
     pub fn add_operand(&mut self, operand: Operand) {
-        println!("executing operand: {:?}", &operand);
         self.execute_operand(&operand);
-        self.operand_stack.push_back(operand);
+
+        match operand {
+            Operand::Error(e) => {
+                self.operand_stack.push_back(Operand::Error(e));
+                self.operand_stack
+                    .swap(self.operand_stack.len() - 2, self.operand_stack.len() - 1);
+            }
+            _ => {
+                self.operand_stack.push_back(operand);
+            }
+        }
     }
 
     /// Adds the specified operands to the operand stack of the program.

@@ -23,9 +23,7 @@ pub fn execute_manipulation(program: &mut MidenProgram, operand: &Operand) {
         }
 
         Operand::Swap(n) => {
-            if program.stack.len() > 0 {
-                program.stack.swap(0, *n);
-            }
+            program.stack.swap(0, *n);
         }
 
         Operand::PadW => {
@@ -34,63 +32,48 @@ pub fn execute_manipulation(program: &mut MidenProgram, operand: &Operand) {
             }
         }
         Operand::SwapW(n) => {
-            if program.stack.len() > 0 {
-                if *n > 1 && *n <= 3 {
-                    while program.stack.len() < 8 {
-                        program.stack.push_back(BaseElement::ZERO);
-                    }
-                    program.stack.swap(0, *n * 4);
-                    program.stack.swap(1, *n * 4 + 1);
-                    program.stack.swap(2, *n * 4 + 2);
-                    program.stack.swap(3, *n * 4 + 3);
-                }
-            }
+            program.stack.swap(0, *n * 4);
+            program.stack.swap(1, *n * 4 + 1);
+            program.stack.swap(2, *n * 4 + 2);
+            program.stack.swap(3, *n * 4 + 3);
         }
         Operand::MovDn(n) => {
-            if *n < program.stack.len() {
-                if let Some(a) = program.stack.pop_front() {
-                    program.stack.insert(*n, a);
-                }
+            if let Some(a) = program.stack.pop_front() {
+                program.stack.insert(*n, a);
             }
         }
 
         Operand::MovDnW(n) => {
-            if *n < program.stack.len() {
-                if let (Some(a), Some(b), Some(c), Some(d)) = (
-                    program.stack.pop_front(),
-                    program.stack.pop_front(),
-                    program.stack.pop_front(),
-                    program.stack.pop_front(),
-                ) {
-                    program.stack.insert(*n * 4, a);
-                    program.stack.insert(*n * 4 + 1, b);
-                    program.stack.insert(*n * 4 + 2, c);
-                    program.stack.insert(*n * 4 + 3, d);
-                }
+            if let (Some(a), Some(b), Some(c), Some(d)) = (
+                program.stack.pop_front(),
+                program.stack.pop_front(),
+                program.stack.pop_front(),
+                program.stack.pop_front(),
+            ) {
+                program.stack.insert(*n * 4, a);
+                program.stack.insert(*n * 4 + 1, b);
+                program.stack.insert(*n * 4 + 2, c);
+                program.stack.insert(*n * 4 + 3, d);
             }
         }
 
         Operand::MovUp(n) => {
-            if *n < program.stack.len() {
-                if let Some(a) = program.stack.remove(*n) {
-                    program.stack.push_front(a);
-                }
+            if let Some(a) = program.stack.remove(*n) {
+                program.stack.push_front(a);
             }
         }
 
         Operand::MovUpW(n) => {
-            if *n < program.stack.len() {
-                if let (Some(a), Some(b), Some(c), Some(d)) = (
-                    program.stack.remove(*n * 4),
-                    program.stack.remove(*n * 4),
-                    program.stack.remove(*n * 4),
-                    program.stack.remove(*n * 4),
-                ) {
-                    program.stack.push_front(d);
-                    program.stack.push_front(c);
-                    program.stack.push_front(b);
-                    program.stack.push_front(a);
-                }
+            if let (Some(a), Some(b), Some(c), Some(d)) = (
+                program.stack.remove(*n * 4),
+                program.stack.remove(*n * 4),
+                program.stack.remove(*n * 4),
+                program.stack.remove(*n * 4),
+            ) {
+                program.stack.push_front(d);
+                program.stack.push_front(c);
+                program.stack.push_front(b);
+                program.stack.push_front(a);
             }
         }
 

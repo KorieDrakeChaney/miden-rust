@@ -6,6 +6,7 @@ mod memory;
 mod u32_arithmetic;
 mod u32_bitwise;
 mod utils;
+mod valid_checker;
 
 use self::arithmetic::execute_arithmetic;
 use self::comparison::execute_comparison;
@@ -21,6 +22,9 @@ use std::collections::VecDeque;
 impl MidenProgram {
     pub fn execute_block(&mut self, block: &mut VecDeque<Operand>) {
         while let Some(op) = block.pop_front() {
+            if !self.is_valid(&op) {
+                continue;
+            }
             match op {
                 Operand::IF => {
                     if let Some(n) = self.stack.pop_front() {
