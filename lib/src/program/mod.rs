@@ -96,7 +96,7 @@ impl MidenProgram {
 
                 Operand::Error(e) => {
                     let tabs = "\t".repeat(scope);
-                    masm.push_str(&format!("{}#error: {}\n", tabs, e));
+                    masm.push_str(&format!("{}#ERROR: {}\n", tabs, e));
                 }
 
                 Operand::PRINT(_) => {}
@@ -282,9 +282,11 @@ impl MidenProgram {
 
         match operand {
             Operand::Error(e) => {
-                self.operand_stack.push_back(Operand::Error(e));
-                self.operand_stack
-                    .swap(self.operand_stack.len() - 2, self.operand_stack.len() - 1);
+                if let Some(operand) = self.operand_stack.pop_back() {
+                    self.operand_stack.push_back(Operand::Error(e));
+                    self.operand_stack
+                        .push_back(Operand::CommentedOut(operand.to_string()))
+                }
             }
             _ => {
                 self.operand_stack.push_back(operand);

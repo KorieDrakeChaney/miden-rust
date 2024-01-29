@@ -213,6 +213,8 @@ pub enum Operand {
 
     U32CheckedMax,
     U32UncheckedMax,
+
+    CommentedOut(String),
 }
 
 impl std::fmt::Display for Operand {
@@ -310,6 +312,7 @@ impl std::fmt::Display for Operand {
             Self::Decrement => write!(f, "sub.1"),
 
             Self::Error(e) => write!(f, "{}", e),
+            Self::CommentedOut(message) => write!(f, "#{}", message),
 
             // u32 arithmetic operations
             Self::U32CheckedAdd => write!(f, "u32checked_add"),
