@@ -11,9 +11,11 @@ begin
 		push.1
 		add.2
 	end
+
 	repeat.5
 		exp.2
 	end
+
 end
 
 #stack output : [3273349785757477523, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0] 

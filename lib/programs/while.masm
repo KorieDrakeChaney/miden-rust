@@ -11,7 +11,9 @@ begin
 		else
 			push.1
 		end
+
 	end
+
 end
 
 #stack output : [89, 55, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0] 

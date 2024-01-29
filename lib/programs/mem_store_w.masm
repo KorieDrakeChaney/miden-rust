@@ -7,6 +7,7 @@ begin
 	repeat.4
 		drop
 	end
+
 	push.4
 	mem_loadw
 end

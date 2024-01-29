@@ -13,6 +13,7 @@
 - [x] u32 Arithmetic operations
 - [x] u32 Bitwise operations
 - [x] u32 Comparison operations
+- [x] u32 Error handling
 - [ ] Hashing and Merkle trees
 - [ ] Environment inputs
 - [ ] Extension Field Operations Documentation

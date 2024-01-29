@@ -1,6 +1,6 @@
-use math::{fields::f64::BaseElement, FieldElement};
+use math::fields::f64::BaseElement;
 
-use super::{error::MidenProgramError, utils::is_binary, MidenProgram, Operand};
+use super::{MidenProgram, Operand};
 
 impl MidenProgram {
     /// Adds the top two values on the stack.
@@ -46,11 +46,7 @@ impl MidenProgram {
 
     /// Divides the first value into the second value on the stack.
     pub fn div(&mut self) {
-        if self.stack[0] == BaseElement::ZERO {
-            self.add_operand(Operand::Error(MidenProgramError::DivideByZero));
-        } else {
-            self.add_operand(Operand::Div);
-        }
+        self.add_operand(Operand::Div);
     }
 
     /// Divides the top value on the stack by `n`.
@@ -59,11 +55,7 @@ impl MidenProgram {
     ///
     /// * `n` - The number to divide the top value on the stack by.
     pub fn div_n(&mut self, n: u64) {
-        if n == 0 {
-            self.add_operand(Operand::Error(MidenProgramError::DivisionByZero));
-        } else {
-            self.add_operand(Operand::DivImm(BaseElement::from(n)));
-        }
+        self.add_operand(Operand::DivImm(BaseElement::from(n)));
     }
 
     /// Negates the top value on the stack.
@@ -78,12 +70,7 @@ impl MidenProgram {
 
     /// Pushes 2 to the power of the first value on the stack.
     pub fn pow2(&mut self) {
-        let top: u64 = self.stack[0].into();
-        if top > 63_u64 {
-            self.add_operand(Operand::Error(MidenProgramError::Pow2Overflow(top)));
-        } else {
-            self.add_operand(Operand::Pow2);
-        }
+        self.add_operand(Operand::Pow2);
     }
 
     /// Raises the number `e` to the power of the top value on the stack.
@@ -106,15 +93,7 @@ impl MidenProgram {
     ///
     /// Returns `MidenProgramError::NotBinaryValue` if either of the top two values on the stack is not a binary value.
     pub fn and(&mut self) {
-        if !is_binary(&self.stack[0]) {
-            self.add_operand(Operand::Error(MidenProgramError::NotBinaryValue(
-                (self.stack[0]).into(),
-            )))
-        } else if !is_binary(&self.stack[1]) {
-            self.add_operand(Operand::Error(MidenProgramError::NotBinaryValue(
-                (self.stack[1]).into(),
-            )))
-        }
+        self.add_operand(Operand::And);
     }
 
     /// Performs a bitwise OR operation on the top two values on the stack.
@@ -123,17 +102,7 @@ impl MidenProgram {
     ///
     /// Returns `MidenProgramError::NotBinaryValue` if either of the top two values on the stack is not a binary value.
     pub fn or(&mut self) {
-        if !is_binary(&self.stack[0]) {
-            self.add_operand(Operand::Error(MidenProgramError::NotBinaryValue(
-                (self.stack[0]).into(),
-            )))
-        } else if !is_binary(&self.stack[1]) {
-            self.add_operand(Operand::Error(MidenProgramError::NotBinaryValue(
-                (self.stack[1]).into(),
-            )))
-        } else {
-            self.add_operand(Operand::Or);
-        }
+        self.add_operand(Operand::Or);
     }
 
     /// Performs a bitwise XOR operation on the top two values on the stack.
@@ -142,17 +111,7 @@ impl MidenProgram {
     ///
     /// Returns `MidenProgramError::NotBinaryValue` if either of the top two values on the stack is not a binary value.
     pub fn xor(&mut self) {
-        if !is_binary(&self.stack[0]) {
-            self.add_operand(Operand::Error(MidenProgramError::NotBinaryValue(
-                (self.stack[0]).into(),
-            )))
-        } else if !is_binary(&self.stack[1]) {
-            self.add_operand(Operand::Error(MidenProgramError::NotBinaryValue(
-                (self.stack[1]).into(),
-            )))
-        } else {
-            self.add_operand(Operand::Xor);
-        }
+        self.add_operand(Operand::Xor);
     }
 
     /// Performs a bitwise NOT operation on the top value on the stack.
@@ -161,13 +120,7 @@ impl MidenProgram {
     ///
     /// Returns `MidenProgramError::NotBinaryValue` if the top value on the stack is not a binary value.
     pub fn not(&mut self) {
-        if !is_binary(&self.stack[0]) {
-            self.add_operand(Operand::Error(MidenProgramError::NotBinaryValue(
-                (self.stack[0]).into(),
-            )))
-        } else {
-            self.add_operand(Operand::Not);
-        }
+        self.add_operand(Operand::Not);
     }
 
     /// Checks if the top two values on the stack are equal.

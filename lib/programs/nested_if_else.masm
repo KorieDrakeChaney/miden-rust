@@ -7,18 +7,22 @@ begin
 		else
 			push.0
 		end
+
 		if.true
 			push.1
 		else
 			push.0
 		end
+
 	else
 		if.true
 			push.1
 		else
 			push.0
 		end
+
 	end
+
 end
 
 #stack output : [1, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0] 

@@ -4,6 +4,7 @@ begin
 		dup.1
 		add
 	end
+
 end
 
 #stack output : [89, 55, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0] 

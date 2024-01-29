@@ -4,10 +4,13 @@ begin
 		repeat.2
 			push.1
 		end
+
 		repeat.2
 			push.1
 		end
+
 	end
+
 end
 
 #stack output : [1, 1, 1, 1, 1, 1, 1, 1, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0] 

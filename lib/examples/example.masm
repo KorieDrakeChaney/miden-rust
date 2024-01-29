@@ -1,5 +1,31 @@
 
 
 begin
-  adv_pipe
+  push.1.2
+  u32checked_popcnt
+  push.1.2
+  u32unchecked_popcnt
+  push.1.2
+  u32checked_shl
+  push.1.2
+  u32unchecked_shl
+  push.1.2
+  u32checked_shr
+  push.1.2
+  u32unchecked_shr
+  push.1.2
+  u32checked_rotr
+  push.1.2
+  u32unchecked_rotr
+  push.1.2
+  u32checked_rotl
+  push.1.2
+  u32unchecked_rotl
+  push.1.2
+  u32checked_add
+  push.1.2
+  u32checked_or
+   push.1.2
+  u32checked_xor
+  
 end
