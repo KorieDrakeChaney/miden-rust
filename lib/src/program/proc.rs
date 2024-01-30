@@ -7,7 +7,7 @@ use crate::{MidenProgram, Operand};
 #[derive(Clone, Debug, PartialEq)]
 pub struct Proc {
     pub name: String,
-    operands: VecDeque<Operand>,
+    pub operands: VecDeque<Operand>,
     loc_count: u16,
 }
 
@@ -49,7 +49,12 @@ impl Proc {
                     masm.push_str(&format!("{}{}\n\n", tabs, op));
                 }
 
-                &Operand::PRINT(_) | &Operand::Error(_) => {}
+                Operand::Error(e) => {
+                    let tabs = "\t".repeat(scope);
+                    masm.push_str(&format!("\n{}#ERROR: {}\n", tabs, e));
+                }
+
+                Operand::PRINT(_) => {}
                 _ => {
                     let tabs = "\t".repeat(scope);
                     masm.push_str(&format!("{}{}\n", tabs, op));
@@ -135,7 +140,19 @@ impl Proc {
 
     pub fn execute_block(&mut self, program: &mut MidenProgram, block: &mut VecDeque<Operand>) {
         while let Some(operand) = block.pop_front() {
-            println!("executing operand: {:?}", &operand);
+            match program.is_valid_operand(&operand) {
+                Some(error) => {
+                    let index = self.operands.len() - block.len() - 1;
+
+                    if let Some(op) = self.operands.get_mut(index) {
+                        *op = Operand::CommentedOut(op.to_string());
+                        self.operands.insert(index, Operand::Error(error.clone()));
+                    }
+
+                    continue;
+                }
+                _ => {}
+            }
             match operand {
                 Operand::WHILE => {
                     let mut while_block = VecDeque::new();

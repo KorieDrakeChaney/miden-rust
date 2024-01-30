@@ -761,7 +761,7 @@ fn test_adv_pipe() {
 #[test]
 fn test_masm() {
     let mut program = MidenProgram::parse_from_file_with_inputs(
-        "examples/example.masm",
+        "examples/errors.masm",
         Inputs::from_file("inputs/matrix_mul.json"),
     )
     .unwrap();
@@ -775,12 +775,16 @@ fn test_masm() {
 
 #[test]
 fn test_error_handling() {
-    let mut program = MidenProgram::new();
-
-    program.push(1);
-    program.push(2);
-
-    program.and();
+    let mut program = MidenProgram::parse(
+        "
+        begin
+            push.1
+            push.2
+            and 
+        end
+        ",
+    )
+    .unwrap();
 
     program.print_masm();
 

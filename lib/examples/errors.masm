@@ -1,0 +1,14 @@
+
+
+proc.errorTest
+    adv_push.21312
+    movdn.231312
+    movdnw.321331
+    movup.3212321
+    movupw.123231
+    push.5
+end
+
+begin   
+    exec.errorTest
+end

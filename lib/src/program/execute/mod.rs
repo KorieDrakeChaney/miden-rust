@@ -22,9 +22,21 @@ use std::collections::VecDeque;
 impl MidenProgram {
     pub fn execute_block(&mut self, block: &mut VecDeque<Operand>) {
         while let Some(op) = block.pop_front() {
-            if !self.is_valid(&op) {
-                continue;
+            match self.is_valid_operand(&op) {
+                Some(error) => {
+                    let index = self.operand_stack.len() - block.len() - 1;
+
+                    if let Some(op) = self.operand_stack.get_mut(index) {
+                        *op = Operand::CommentedOut(op.to_string());
+                        self.operand_stack
+                            .insert(index, Operand::Error(error.clone()));
+                    }
+
+                    continue;
+                }
+                _ => {}
             }
+
             match op {
                 Operand::IF => {
                     if let Some(n) = self.stack.pop_front() {
@@ -153,6 +165,17 @@ impl MidenProgram {
                         self.execute_block(&mut repeat_operands.clone());
                     }
                 }
+
+                Operand::Error(error) => {
+                    let index = self.operand_stack.len() - block.len();
+
+                    if let Some(op) = self.operand_stack.get(index) {
+                        println!("Error: {} at {:?}", error, op);
+                    } else {
+                        println!("Error: {}", error);
+                    }
+                }
+
                 _ => {
                     self.execute_operand(&op);
                 }
@@ -274,8 +297,8 @@ impl MidenProgram {
             }
 
             Operand::Exec(name) => {
-                if let Some(mut program) = self.internal_programs.get(name).cloned() {
-                    program.execute(self);
+                if let Some(program) = self.internal_programs.get(name).cloned() {
+                    program.borrow_mut().execute(self);
                 }
             }
 

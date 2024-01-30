@@ -11,6 +11,9 @@ mod proc;
 mod u32;
 use crate::Inputs;
 
+use std::cell::RefCell;
+use std::rc::Rc;
+
 pub use empty::*;
 pub use operand::Operand;
 
@@ -27,11 +30,9 @@ pub struct MidenProgram {
     pub stack: VecDeque<BaseElement>,
     pub advice_stack: VecDeque<u64>,
     pub operand_stack: VecDeque<Operand>,
-    internal_programs: HashMap<String, Proc>,
 
-    proc_script: String,
-
-    runnable: bool,
+    internal_programs: HashMap<String, Rc<RefCell<Proc>>>,
+    internal_programs_order: Vec<String>,
 
     stack_inputs: StackInputs,
     advice_inputs: AdviceInputs,
@@ -53,10 +54,7 @@ impl MidenProgram {
             advice_stack: VecDeque::new(),
 
             internal_programs: HashMap::new(),
-
-            proc_script: String::new(),
-
-            runnable: true,
+            internal_programs_order: Vec::new(),
 
             stack_inputs: StackInputs::default(),
             advice_inputs: AdviceInputs::default(),
@@ -71,7 +69,14 @@ impl MidenProgram {
     ///
     /// A string containing the MASM representation of the program.
     pub fn get_masm(&self) -> String {
-        let mut masm: String = self.proc_script.clone();
+        let mut masm: String = String::new();
+
+        for name in self.internal_programs_order.iter() {
+            if let Some(proc) = self.internal_programs.get(name) {
+                masm.push_str(&format!("{}\n", proc.borrow().get_masm()));
+            }
+        }
+
         masm.push_str("begin\n");
 
         let mut scope = 1;
@@ -96,7 +101,7 @@ impl MidenProgram {
 
                 Operand::Error(e) => {
                     let tabs = "\t".repeat(scope);
-                    masm.push_str(&format!("{}#ERROR: {}\n", tabs, e));
+                    masm.push_str(&format!("\n{}#ERROR: {}\n", tabs, e));
                 }
 
                 Operand::PRINT(_) => {}
@@ -278,19 +283,15 @@ impl MidenProgram {
     }
 
     pub fn add_operand(&mut self, operand: Operand) {
-        match operand {
-            Operand::Error(e) => {
-                if let Some(operand) = self.operand_stack.pop_back() {
-                    self.operand_stack.push_back(Operand::Error(e));
-                    self.operand_stack
-                        .push_back(Operand::CommentedOut(operand.to_string()))
-                }
+        match self.is_valid_operand(&operand) {
+            Some(error) => {
+                self.operand_stack.push_back(Operand::Error(error.clone()));
+                self.operand_stack
+                    .push_back(Operand::CommentedOut(operand.to_string()));
             }
             _ => {
                 self.operand_stack.push_back(operand.clone());
-                if self.is_valid(&operand) {
-                    self.execute_operand(&operand);
-                }
+                self.execute_operand(&operand);
             }
         }
     }
@@ -323,21 +324,16 @@ impl MidenProgram {
     /// * `program` - The procedure to append.
     ///
     pub fn add_proc(&mut self, program: Proc) {
-        self.proc_script.push_str(&program.get_masm());
-
-        self.proc_script.push_str("\n");
-
-        self.internal_programs.insert(program.name.clone(), program);
+        let name = program.name.clone();
+        self.internal_programs_order.push(name.clone());
+        self.internal_programs
+            .insert(name, Rc::new(RefCell::new(program)));
     }
 
     pub fn add_procs(&mut self, programs: Vec<Proc>) {
         for program in programs {
             self.add_proc(program);
         }
-    }
-
-    pub fn set_runnable(&mut self, runnable: bool) {
-        self.runnable = runnable;
     }
 
     /// Returns a clone of the operand stack.

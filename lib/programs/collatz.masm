@@ -28,6 +28,8 @@ begin
 	end
 
 	swap.1
+	#ERROR: InvalidParameter(2131231312), swap.2131231312 is invalid, must be between 1 and 15
+	#swap.2131231312
 end
 
 #stack output : [132, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0] 

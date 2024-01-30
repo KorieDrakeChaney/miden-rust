@@ -1,8 +1,25 @@
-begin
-	push.1
-	push.2
-	#ERROR: NotBinaryValue(2), 2 is not binary
-	#and
+proc.errorTest
+
+	#ERROR: InvalidParameter(21312), adv_push.21312 is invalid, must be between 1 and 16
+	#adv_push.21312
+
+	#ERROR: InvalidParameter(231312), movdn.231312 is invalid, must be between 2 and 3
+	#movdn.231312
+
+	#ERROR: InvalidParameter(321331), movdnw.321331 is invalid, must be between 2 and 15
+	#movdnw.321331
+
+	#ERROR: InvalidParameter(3212321), movup.3212321 is invalid, must be between 1 and 15
+	#movup.3212321
+
+	#ERROR: InvalidParameter(123231), movupw.123231 is invalid, must be between 1 and 3
+	#movupw.123231
+	push.5
 end
 
-#stack output : [2, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0] 
+
+begin
+	exec.errorTest
+end
+
+#stack output : [5, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0] 
