@@ -750,6 +750,9 @@ proc.fifteen.32
 	loc_load.14
 	loc_load.15
 	if.true
+
+		#ERROR: InvalidParameter(17), adv_push.17 is invalid, must be between 1 and 16
+		#adv_push.17
 		repeat.7
 			add
 		end
@@ -788,6 +791,9 @@ end
 
 begin
 	repeat.10
+
+		#ERROR: InvalidParameter(17), adv_push.17 is invalid, must be between 1 and 16
+		#adv_push.17
 		exec.storecellsn
 		exec.zero
 		exec.clearstack

@@ -258,7 +258,7 @@ fn test_while() {
     let mut else_program = MidenProgram::new();
     else_program.push(1);
 
-    while_program.if_else(|| if_program.get_operands(), || else_program.get_operands());
+    while_program.if_else_block(|| if_program.get_operands(), || else_program.get_operands());
 
     program.adv_push(1);
     program.while_block(|| while_program.get_operands());
@@ -285,7 +285,7 @@ fn nested_if_else() {
 
     else_program.push(0);
 
-    program_2.if_else(|| if_program.get_operands(), || else_program.get_operands());
+    program_2.if_else_block(|| if_program.get_operands(), || else_program.get_operands());
 
     let mut program_3 = MidenProgram::new();
 
@@ -297,7 +297,7 @@ fn nested_if_else() {
 
     if_program_2.add_program(|| program_2.get_operands());
 
-    program_3.if_else(|| if_program_2.get_operands(), || program_2.get_operands());
+    program_3.if_else_block(|| if_program_2.get_operands(), || program_2.get_operands());
 
     program.add_program(|| program_3.get_operands());
 

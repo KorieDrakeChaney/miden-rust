@@ -66,9 +66,20 @@ impl MidenProgram {
                                         if_block.push_back(next_op);
                                     }
                                 }
-                                _ => {
-                                    if_block.push_back(next_op);
-                                }
+                                _ => match self.is_valid_operand(&next_op) {
+                                    Some(error) => {
+                                        let index = self.operand_stack.len() - block.len() - 1;
+
+                                        if let Some(op) = self.operand_stack.get_mut(index) {
+                                            *op = Operand::CommentedOut(op.to_string());
+                                            self.operand_stack
+                                                .insert(index, Operand::Error(error.clone()));
+                                        }
+                                    }
+                                    _ => {
+                                        if_block.push_back(next_op);
+                                    }
+                                },
                             }
                         }
 
@@ -87,9 +98,20 @@ impl MidenProgram {
                                         else_scope_count += 1;
                                         else_block.push_back(next_op);
                                     }
-                                    _ => {
-                                        else_block.push_back(next_op);
-                                    }
+                                    _ => match self.is_valid_operand(&next_op) {
+                                        Some(error) => {
+                                            let index = self.operand_stack.len() - block.len() - 1;
+
+                                            if let Some(op) = self.operand_stack.get_mut(index) {
+                                                *op = Operand::CommentedOut(op.to_string());
+                                                self.operand_stack
+                                                    .insert(index, Operand::Error(error.clone()));
+                                            }
+                                        }
+                                        _ => {
+                                            else_block.push_back(next_op);
+                                        }
+                                    },
                                 }
                             }
                         }
@@ -122,9 +144,20 @@ impl MidenProgram {
                                 scope_count += 1;
                                 while_block.push_back(next_op);
                             }
-                            _ => {
-                                while_block.push_back(next_op);
-                            }
+                            _ => match self.is_valid_operand(&next_op) {
+                                Some(error) => {
+                                    let index = self.operand_stack.len() - block.len() - 1;
+
+                                    if let Some(op) = self.operand_stack.get_mut(index) {
+                                        *op = Operand::CommentedOut(op.to_string());
+                                        self.operand_stack
+                                            .insert(index, Operand::Error(error.clone()));
+                                    }
+                                }
+                                _ => {
+                                    while_block.push_back(next_op);
+                                }
+                            },
                         }
                     }
 
@@ -155,9 +188,20 @@ impl MidenProgram {
                                 scope_count += 1;
                                 repeat_operands.push_back(next_op);
                             }
-                            _ => {
-                                repeat_operands.push_back(next_op);
-                            }
+                            _ => match self.is_valid_operand(&next_op) {
+                                Some(error) => {
+                                    let index = self.operand_stack.len() - block.len() - 1;
+
+                                    if let Some(op) = self.operand_stack.get_mut(index) {
+                                        *op = Operand::CommentedOut(op.to_string());
+                                        self.operand_stack
+                                            .insert(index, Operand::Error(error.clone()));
+                                    }
+                                }
+                                _ => {
+                                    repeat_operands.push_back(next_op);
+                                }
+                            },
                         }
                     }
 

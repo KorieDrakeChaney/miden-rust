@@ -171,9 +171,19 @@ impl Proc {
                                 scope_count += 1;
                                 while_block.push_back(next_op);
                             }
-                            _ => {
-                                while_block.push_back(next_op);
-                            }
+                            _ => match program.is_valid_operand(&next_op) {
+                                Some(error) => {
+                                    let index = self.operands.len() - block.len() - 1;
+
+                                    if let Some(op) = self.operands.get_mut(index) {
+                                        *op = Operand::CommentedOut(op.to_string());
+                                        self.operands.insert(index, Operand::Error(error.clone()));
+                                    }
+                                }
+                                _ => {
+                                    while_block.push_back(next_op);
+                                }
+                            },
                         }
                     }
 
@@ -215,9 +225,22 @@ impl Proc {
                                         if_block.push_back(next_op);
                                     }
                                 }
-                                _ => {
-                                    if_block.push_back(next_op);
-                                }
+                                _ => match program.is_valid_operand(&next_op) {
+                                    Some(error) => {
+                                        let index = self.operands.len() - block.len() - 1;
+
+                                        if let Some(op) = self.operands.get_mut(index) {
+                                            *op = Operand::CommentedOut(op.to_string());
+                                            self.operands
+                                                .insert(index, Operand::Error(error.clone()));
+                                        }
+
+                                        continue;
+                                    }
+                                    _ => {
+                                        if_block.push_back(next_op);
+                                    }
+                                },
                             }
                         }
 
@@ -236,9 +259,22 @@ impl Proc {
                                         else_scope_count += 1;
                                         else_block.push_back(next_op);
                                     }
-                                    _ => {
-                                        else_block.push_back(next_op);
-                                    }
+                                    _ => match program.is_valid_operand(&next_op) {
+                                        Some(error) => {
+                                            let index = self.operands.len() - block.len() - 1;
+
+                                            if let Some(op) = self.operands.get_mut(index) {
+                                                *op = Operand::CommentedOut(op.to_string());
+                                                self.operands
+                                                    .insert(index, Operand::Error(error.clone()));
+                                            }
+
+                                            continue;
+                                        }
+                                        _ => {
+                                            else_block.push_back(next_op);
+                                        }
+                                    },
                                 }
                             }
                         }
@@ -271,9 +307,21 @@ impl Proc {
                                 scope_count += 1;
                                 repeat_operands.push_back(next_op);
                             }
-                            _ => {
-                                repeat_operands.push_back(next_op);
-                            }
+                            _ => match program.is_valid_operand(&next_op) {
+                                Some(error) => {
+                                    let index = self.operands.len() - block.len() - 1;
+
+                                    if let Some(op) = self.operands.get_mut(index) {
+                                        *op = Operand::CommentedOut(op.to_string());
+                                        self.operands.insert(index, Operand::Error(error.clone()));
+                                    }
+
+                                    continue;
+                                }
+                                _ => {
+                                    repeat_operands.push_back(next_op);
+                                }
+                            },
                         }
                     }
 

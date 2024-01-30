@@ -18,7 +18,7 @@ impl MidenProgram {
     /// fn main() {
     ///     let mut program = MidenProgram::new();
     ///     program.push(1);
-    ///     program.if_else(|| {
+    ///     program.if_else_block(|| {
     ///         let mut block = EmptyProgram::new();
     ///         block.push(1);
     ///         block.get_operands()},
@@ -30,7 +30,7 @@ impl MidenProgram {
     /// }
     ///    
     /// ```
-    pub fn if_else<F1, F2>(&mut self, if_op: F1, else_op: F2)
+    pub fn if_else_block<F1, F2>(&mut self, if_op: F1, else_op: F2)
     where
         F1: FnOnce() -> VecDeque<Operand>,
         F2: FnOnce() -> VecDeque<Operand>,
@@ -46,6 +46,16 @@ impl MidenProgram {
         temp_stack.push_back(Operand::END);
 
         self.add_operands(&mut temp_stack);
+    }
+
+    pub fn if_block<F>(&mut self, block: F)
+    where
+        F: FnOnce() -> VecDeque<Operand>,
+    {
+        let mut block_operands = block();
+        block_operands.push_front(Operand::IF);
+        block_operands.push_back(Operand::END);
+        self.add_operands(&mut block_operands);
     }
     /// Constructs a new `while` block in the Miden program.
     ///

@@ -1,6 +1,7 @@
 begin
 	push.1
 	push.2
+
 	#ERROR: NotBinaryValue(2), 2 is not binary
 	#and
 end
