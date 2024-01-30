@@ -80,7 +80,7 @@ impl MidenProgram {
         masm.push_str("begin\n");
 
         let mut scope = 1;
-        for op in self.operand_stack.clone() {
+        for op in self.operand_stack.iter() {
             match op {
                 Operand::IF | Operand::WHILE | Operand::REPEAT(_) => {
                     let tabs = "\t".repeat(scope);
@@ -102,6 +102,11 @@ impl MidenProgram {
                 Operand::Error(e) => {
                     let tabs = "\t".repeat(scope);
                     masm.push_str(&format!("\n{}#ERROR: {}\n", tabs, e));
+                }
+
+                Operand::CommentedOut(_) => {
+                    let tabs = "\t".repeat(scope);
+                    masm.push_str(&format!("{}{}\n\n", tabs, op));
                 }
 
                 Operand::PRINT(_) => {}
@@ -279,7 +284,7 @@ impl MidenProgram {
         for op in operands.iter() {
             self.operand_stack.push_back(op.clone());
         }
-        self.execute_block(operands);
+        self.execute_block(operands, 0);
     }
 
     pub fn add_operand(&mut self, operand: Operand) {

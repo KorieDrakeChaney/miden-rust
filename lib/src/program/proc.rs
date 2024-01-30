@@ -54,6 +54,11 @@ impl Proc {
                     masm.push_str(&format!("\n{}#ERROR: {}\n", tabs, e));
                 }
 
+                Operand::CommentedOut(_) => {
+                    let tabs = "\t".repeat(scope);
+                    masm.push_str(&format!("{}{}\n\n", tabs, op));
+                }
+
                 Operand::PRINT(_) => {}
                 _ => {
                     let tabs = "\t".repeat(scope);
@@ -138,21 +143,33 @@ impl Proc {
         self.operands.append(&mut operands.into_iter().collect());
     }
 
-    pub fn execute_block(&mut self, program: &mut MidenProgram, block: &mut VecDeque<Operand>) {
+    pub fn execute_block(
+        &mut self,
+        program: &mut MidenProgram,
+        block: &mut VecDeque<Operand>,
+        scope: usize,
+    ) {
+        let mut index = scope;
         while let Some(operand) = block.pop_front() {
             match program.is_valid_operand(&operand) {
                 Some(error) => {
-                    let index = self.operands.len() - block.len() - 1;
-
                     if let Some(op) = self.operands.get_mut(index) {
-                        *op = Operand::CommentedOut(op.to_string());
-                        self.operands.insert(index, Operand::Error(error.clone()));
+                        match op {
+                            Operand::Error(_) | Operand::CommentedOut(_) => {}
+                            _ => {
+                                *op = Operand::CommentedOut(op.to_string());
+                                self.operands.insert(index, Operand::Error(error.clone()));
+                            }
+                        }
                     }
-
+                    index += 2;
                     continue;
                 }
-                _ => {}
+                _ => {
+                    index += 1;
+                }
             }
+
             match operand {
                 Operand::WHILE => {
                     let mut while_block = VecDeque::new();
@@ -171,31 +188,22 @@ impl Proc {
                                 scope_count += 1;
                                 while_block.push_back(next_op);
                             }
-                            _ => match program.is_valid_operand(&next_op) {
-                                Some(error) => {
-                                    let index = self.operands.len() - block.len() - 1;
-
-                                    if let Some(op) = self.operands.get_mut(index) {
-                                        *op = Operand::CommentedOut(op.to_string());
-                                        self.operands.insert(index, Operand::Error(error.clone()));
-                                    }
-                                }
-                                _ => {
-                                    while_block.push_back(next_op);
-                                }
-                            },
+                            _ => {
+                                while_block.push_back(next_op);
+                            }
                         }
                     }
 
                     'while_loop: loop {
                         if let Some(n) = program.stack.pop_front() {
                             if n == BaseElement::ONE {
-                                self.execute_block(program, &mut while_block.clone());
+                                self.execute_block(program, &mut while_block.clone(), index);
                             } else {
                                 break 'while_loop;
                             }
                         }
                     }
+                    index += while_block.len() + 1;
                 }
                 Operand::IF => {
                     if let Some(n) = program.stack.pop_front() {
@@ -225,22 +233,9 @@ impl Proc {
                                         if_block.push_back(next_op);
                                     }
                                 }
-                                _ => match program.is_valid_operand(&next_op) {
-                                    Some(error) => {
-                                        let index = self.operands.len() - block.len() - 1;
-
-                                        if let Some(op) = self.operands.get_mut(index) {
-                                            *op = Operand::CommentedOut(op.to_string());
-                                            self.operands
-                                                .insert(index, Operand::Error(error.clone()));
-                                        }
-
-                                        continue;
-                                    }
-                                    _ => {
-                                        if_block.push_back(next_op);
-                                    }
-                                },
+                                _ => {
+                                    if_block.push_back(next_op);
+                                }
                             }
                         }
 
@@ -259,34 +254,27 @@ impl Proc {
                                         else_scope_count += 1;
                                         else_block.push_back(next_op);
                                     }
-                                    _ => match program.is_valid_operand(&next_op) {
-                                        Some(error) => {
-                                            let index = self.operands.len() - block.len() - 1;
-
-                                            if let Some(op) = self.operands.get_mut(index) {
-                                                *op = Operand::CommentedOut(op.to_string());
-                                                self.operands
-                                                    .insert(index, Operand::Error(error.clone()));
-                                            }
-
-                                            continue;
-                                        }
-                                        _ => {
-                                            else_block.push_back(next_op);
-                                        }
-                                    },
+                                    _ => {
+                                        else_block.push_back(next_op);
+                                    }
                                 }
                             }
                         }
 
                         if n == BaseElement::ONE {
                             if if_block.len() > 0 {
-                                self.execute_block(program, &mut if_block);
+                                self.execute_block(program, &mut if_block, index);
                             }
                         } else {
                             if else_block.len() > 0 {
-                                self.execute_block(program, &mut else_block);
+                                self.execute_block(program, &mut else_block, index);
                             }
+                        }
+
+                        index += if_block.len() + else_block.len() + 1;
+
+                        if if_scope_count > 0 {
+                            index += 1;
                         }
                     }
                 }
@@ -307,27 +295,17 @@ impl Proc {
                                 scope_count += 1;
                                 repeat_operands.push_back(next_op);
                             }
-                            _ => match program.is_valid_operand(&next_op) {
-                                Some(error) => {
-                                    let index = self.operands.len() - block.len() - 1;
-
-                                    if let Some(op) = self.operands.get_mut(index) {
-                                        *op = Operand::CommentedOut(op.to_string());
-                                        self.operands.insert(index, Operand::Error(error.clone()));
-                                    }
-
-                                    continue;
-                                }
-                                _ => {
-                                    repeat_operands.push_back(next_op);
-                                }
-                            },
+                            _ => {
+                                repeat_operands.push_back(next_op);
+                            }
                         }
                     }
 
                     for _ in 0..n {
-                        self.execute_block(program, &mut repeat_operands.clone());
+                        self.execute_block(program, &mut repeat_operands.clone(), index);
                     }
+
+                    index += repeat_operands.len() + 1;
                 }
                 _ => {
                     self.execute_operand(program, &operand);
@@ -337,7 +315,7 @@ impl Proc {
     }
 
     pub fn execute(&mut self, program: &mut MidenProgram) {
-        self.execute_block(program, &mut self.operands.clone());
+        self.execute_block(program, &mut self.operands.clone(), 0);
     }
 
     pub fn execute_operand(&mut self, program: &mut MidenProgram, operand: &Operand) {

@@ -1,3 +1,5 @@
+use std::collections::VecDeque;
+
 use math::StarkField;
 
 use crate::{program::error::MidenProgramError, MidenProgram, Operand};

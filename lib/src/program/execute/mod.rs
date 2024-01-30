@@ -20,21 +20,27 @@ use math::{fields::f64::BaseElement, FieldElement};
 use std::collections::VecDeque;
 
 impl MidenProgram {
-    pub fn execute_block(&mut self, block: &mut VecDeque<Operand>) {
+    pub fn execute_block(&mut self, block: &mut VecDeque<Operand>, scope: usize) {
+        let mut index = scope;
         while let Some(op) = block.pop_front() {
             match self.is_valid_operand(&op) {
                 Some(error) => {
-                    let index = self.operand_stack.len() - block.len() - 1;
-
                     if let Some(op) = self.operand_stack.get_mut(index) {
-                        *op = Operand::CommentedOut(op.to_string());
-                        self.operand_stack
-                            .insert(index, Operand::Error(error.clone()));
+                        match op {
+                            Operand::Error(_) | Operand::CommentedOut(_) => {}
+                            _ => {
+                                *op = Operand::CommentedOut(op.to_string());
+                                self.operand_stack
+                                    .insert(index, Operand::Error(error.clone()));
+                            }
+                        }
                     }
-
+                    index += 2;
                     continue;
                 }
-                _ => {}
+                _ => {
+                    index += 1;
+                }
             }
 
             match op {
@@ -66,20 +72,9 @@ impl MidenProgram {
                                         if_block.push_back(next_op);
                                     }
                                 }
-                                _ => match self.is_valid_operand(&next_op) {
-                                    Some(error) => {
-                                        let index = self.operand_stack.len() - block.len() - 1;
-
-                                        if let Some(op) = self.operand_stack.get_mut(index) {
-                                            *op = Operand::CommentedOut(op.to_string());
-                                            self.operand_stack
-                                                .insert(index, Operand::Error(error.clone()));
-                                        }
-                                    }
-                                    _ => {
-                                        if_block.push_back(next_op);
-                                    }
-                                },
+                                _ => {
+                                    if_block.push_back(next_op);
+                                }
                             }
                         }
 
@@ -98,32 +93,27 @@ impl MidenProgram {
                                         else_scope_count += 1;
                                         else_block.push_back(next_op);
                                     }
-                                    _ => match self.is_valid_operand(&next_op) {
-                                        Some(error) => {
-                                            let index = self.operand_stack.len() - block.len() - 1;
-
-                                            if let Some(op) = self.operand_stack.get_mut(index) {
-                                                *op = Operand::CommentedOut(op.to_string());
-                                                self.operand_stack
-                                                    .insert(index, Operand::Error(error.clone()));
-                                            }
-                                        }
-                                        _ => {
-                                            else_block.push_back(next_op);
-                                        }
-                                    },
+                                    _ => {
+                                        else_block.push_back(next_op);
+                                    }
                                 }
                             }
                         }
 
                         if n == BaseElement::ONE {
                             if if_block.len() > 0 {
-                                self.execute_block(&mut if_block.clone());
+                                self.execute_block(&mut if_block.clone(), index);
                             }
                         } else {
                             if else_block.len() > 0 {
-                                self.execute_block(&mut else_block.clone());
+                                self.execute_block(&mut else_block.clone(), index);
                             }
+                        }
+
+                        index += if_block.len() + else_block.len() + 1;
+
+                        if if_scope_count > 0 {
+                            index += 1;
                         }
                     }
                 }
@@ -144,32 +134,22 @@ impl MidenProgram {
                                 scope_count += 1;
                                 while_block.push_back(next_op);
                             }
-                            _ => match self.is_valid_operand(&next_op) {
-                                Some(error) => {
-                                    let index = self.operand_stack.len() - block.len() - 1;
-
-                                    if let Some(op) = self.operand_stack.get_mut(index) {
-                                        *op = Operand::CommentedOut(op.to_string());
-                                        self.operand_stack
-                                            .insert(index, Operand::Error(error.clone()));
-                                    }
-                                }
-                                _ => {
-                                    while_block.push_back(next_op);
-                                }
-                            },
+                            _ => {
+                                while_block.push_back(next_op);
+                            }
                         }
                     }
 
                     'while_loop: loop {
                         if let Some(n) = self.stack.pop_front() {
                             if n == BaseElement::ONE {
-                                self.execute_block(&mut while_block.clone());
+                                self.execute_block(&mut while_block.clone(), index);
                             } else {
                                 break 'while_loop;
                             }
                         }
                     }
+                    index += while_block.len() + 1;
                 }
                 Operand::REPEAT(n) => {
                     let mut repeat_operands = VecDeque::new();
@@ -188,36 +168,20 @@ impl MidenProgram {
                                 scope_count += 1;
                                 repeat_operands.push_back(next_op);
                             }
-                            _ => match self.is_valid_operand(&next_op) {
-                                Some(error) => {
-                                    let index = self.operand_stack.len() - block.len() - 1;
-
-                                    if let Some(op) = self.operand_stack.get_mut(index) {
-                                        *op = Operand::CommentedOut(op.to_string());
-                                        self.operand_stack
-                                            .insert(index, Operand::Error(error.clone()));
-                                    }
-                                }
-                                _ => {
-                                    repeat_operands.push_back(next_op);
-                                }
-                            },
+                            _ => {
+                                repeat_operands.push_back(next_op);
+                            }
                         }
                     }
 
                     for _ in 0..n {
-                        self.execute_block(&mut repeat_operands.clone());
+                        self.execute_block(&mut repeat_operands.clone(), index);
                     }
+                    index += repeat_operands.len() + 1;
                 }
 
                 Operand::Error(error) => {
-                    let index = self.operand_stack.len() - block.len();
-
-                    if let Some(op) = self.operand_stack.get(index) {
-                        println!("Error: {} at {:?}", error, op);
-                    } else {
-                        println!("Error: {}", error);
-                    }
+                    println!("Error: {}", error);
                 }
 
                 _ => {

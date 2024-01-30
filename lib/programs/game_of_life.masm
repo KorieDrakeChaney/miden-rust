@@ -743,6 +743,10 @@ end
 
 
 proc.fifteen.32
+
+	#ERROR: InvalidParameter(12312), adv_push.12312 is invalid, must be between 1 and 16
+	#adv_push.12312
+
 	push.0
 	loc_store.31
 	loc_load.10
@@ -751,10 +755,15 @@ proc.fifteen.32
 	loc_load.15
 	if.true
 
-		#ERROR: InvalidParameter(17), adv_push.17 is invalid, must be between 1 and 16
-		#adv_push.17
+		#ERROR: InvalidParameter(12312), adv_push.12312 is invalid, must be between 1 and 16
+		#adv_push.12312
+
 		repeat.7
 			add
+
+			#ERROR: InvalidParameter(12312), adv_push.12312 is invalid, must be between 1 and 16
+			#adv_push.12312
+
 		end
 
 		dup.0
@@ -791,9 +800,6 @@ end
 
 begin
 	repeat.10
-
-		#ERROR: InvalidParameter(17), adv_push.17 is invalid, must be between 1 and 16
-		#adv_push.17
 		exec.storecellsn
 		exec.zero
 		exec.clearstack
