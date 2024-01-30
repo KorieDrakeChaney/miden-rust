@@ -15,6 +15,11 @@ impl MidenProgram {
                         1,
                         16,
                     ));
+                } else if *n > self.advice_stack.len() {
+                    return Some(MidenProgramError::AdviceStackReadOutOfBounds(
+                        *n,
+                        self.advice_stack.len(),
+                    ));
                 }
             }
             // Manipulation

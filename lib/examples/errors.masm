@@ -11,4 +11,13 @@ end
 
 begin   
     exec.errorTest
+    and
+    repeat.4
+     push.2.2
+     end
+    or
+    xor
+    not
+
+    adv_push.5
 end

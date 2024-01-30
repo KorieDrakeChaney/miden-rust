@@ -20,6 +20,26 @@ end
 
 begin
 	exec.errorTest
+
+	#ERROR: NotBinaryValue(5), 5 is not binary
+	#and
+	repeat.4
+		push.2
+		push.2
+	end
+
+
+	#ERROR: NotBinaryValue(2), 2 is not binary
+	#or
+
+	#ERROR: NotBinaryValue(2), 2 is not binary
+	#xor
+
+	#ERROR: NotBinaryValue(2), 2 is not binary
+	#not
+
+	#ERROR: Advice stack read out of bounds: 5 > 0
+	#adv_push.5
 end
 
-#stack output : [5, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0] 
+#stack output : [2, 2, 2, 2, 2, 2, 2, 2, 5, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0] 
