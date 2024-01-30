@@ -16,6 +16,7 @@ pub enum MidenProgramError {
     U32Overflow(u64),
     U32InvalidSubtraction(u64, u64),
     TopValueInvalid(String, usize, usize, usize),
+    ZeroInvertInvalid,
 }
 
 impl std::fmt::Display for MidenProgramError {
@@ -25,6 +26,7 @@ impl std::fmt::Display for MidenProgramError {
                 f,
                 "procedure at index {proc_idx} not found in module {module_path}"
             ),
+            Self::ZeroInvertInvalid => write!(f, "Cannot invert 0"),
             Self::DivideByZero => write!(f, "The top value on the stack must be greater than 0"),
             Self::ModulusByZero => write!(f, "The top value on the stack must be greater than 0"),
             Self::DivModByZero => write!(f, "The top value on the stack must be greater than 0"),

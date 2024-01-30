@@ -1,8 +1,14 @@
 mod arithmetic;
 mod boolean;
 mod comparison;
+mod conditional_manipulation;
+mod conversion;
+mod environment;
+mod extensions;
+mod hashing;
 mod manipulation;
 mod memory;
+mod merkle;
 mod u32_arithmetic;
 mod u32_bitwise;
 mod utils;
@@ -10,6 +16,8 @@ mod valid_checker;
 
 use self::arithmetic::execute_arithmetic;
 use self::comparison::execute_comparison;
+use self::conditional_manipulation::execute_conditional;
+use self::extensions::execute_extensions;
 use self::manipulation::execute_manipulation;
 use self::u32_arithmetic::execute_u32_arithmetic;
 use self::u32_bitwise::execute_u32_bitwise;
@@ -202,6 +210,8 @@ impl MidenProgram {
         execute_memory(self, op);
         execute_u32_arithmetic(self, op);
         execute_u32_bitwise(self, op);
+        execute_extensions(self, op);
+        execute_conditional(self, op);
 
         match op {
             Operand::AdvPush(n) => {

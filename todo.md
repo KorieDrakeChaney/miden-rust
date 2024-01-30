@@ -5,11 +5,12 @@
 - [x] Assertions and tests
 - [x] Arithmetic and Boolean operations
 - [x] Comparison operations
-- [ ] Extension Field Operations
+- [x] Extension Field Operations
 - [x] Constant inputs
 - [x] RAM
 - [x] Stack Manipulation
-- [ ] Conditional manipulation
+- [x] Conditional manipulation
+- [x] Support hexidecimal numbers
 - [ ] Conversions and tests
 - [x] u32 Arithmetic operations
 - [x] u32 Bitwise operations

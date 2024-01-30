@@ -989,6 +989,42 @@ pub fn parse(tokens: Vec<Token>) -> Result<(VecDeque<Operand>, Vec<Proc>), Strin
                 }
             }
 
+            Token::CSwap => {
+                if in_proc {
+                    let index = procedures.len() - 1;
+                    procedures[index].add_operand(Operand::CSwap);
+                } else {
+                    operands.push_back(Operand::CSwap);
+                }
+            }
+
+            Token::CSwapW => {
+                if in_proc {
+                    let index = procedures.len() - 1;
+                    procedures[index].add_operand(Operand::CSwapW);
+                } else {
+                    operands.push_back(Operand::CSwapW);
+                }
+            }
+
+            Token::CDrop => {
+                if in_proc {
+                    let index = procedures.len() - 1;
+                    procedures[index].add_operand(Operand::CDrop);
+                } else {
+                    operands.push_back(Operand::CDrop);
+                }
+            }
+
+            Token::CDropW => {
+                if in_proc {
+                    let index = procedures.len() - 1;
+                    procedures[index].add_operand(Operand::CDropW);
+                } else {
+                    operands.push_back(Operand::CDropW);
+                }
+            }
+
             Token::Ext2Add => {
                 if in_proc {
                     let index = procedures.len() - 1;

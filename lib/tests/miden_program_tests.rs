@@ -788,3 +788,23 @@ fn test_error_handling() {
 
     assert_eq!(Some(program.stack[0].into()), program.prove());
 }
+
+#[test]
+fn test_conditional_manipulation() {
+    let mut program = MidenProgram::parse(
+        "
+        begin
+            push.0x00001234.0x00005678.0x00009012.0x0000abcd
+            push.0x341200000000000078560000000000001290000000000000cdab000000000000
+          
+        end
+        ",
+    )
+    .unwrap();
+
+    program.print_masm();
+
+    program.save("programs/conditional_manipulation.masm");
+
+    assert_eq!(Some(program.stack[0].into()), program.prove());
+}

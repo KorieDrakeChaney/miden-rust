@@ -67,6 +67,12 @@ pub enum Operand {
     Ext2Inv,
     Ext2Div,
 
+    // Conditionals
+    CSwap,
+    CSwapW,
+    CDrop,
+    CDropW,
+
     AdvPush(usize),
     AdvLoadW,
     AdvPipe,
@@ -239,6 +245,11 @@ impl std::fmt::Display for Operand {
             Self::MovUpW(value) => write!(f, "movupw.{value}"),
             Self::MovDn(value) => write!(f, "movdn.{value}"),
             Self::MovDnW(value) => write!(f, "movdnw.{value}"),
+
+            Self::CSwap => write!(f, "cswap"),
+            Self::CSwapW => write!(f, "cswapw"),
+            Self::CDrop => write!(f, "cdrop"),
+            Self::CDropW => write!(f, "cdropw"),
 
             // Arithmetic and Boolean operations
             Self::Add => write!(f, "add"),

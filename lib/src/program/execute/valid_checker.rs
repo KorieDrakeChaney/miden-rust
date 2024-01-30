@@ -1,6 +1,4 @@
-use std::collections::VecDeque;
-
-use math::StarkField;
+use math::{fields::f64::BaseElement, FieldElement, StarkField};
 
 use crate::{program::error::MidenProgramError, MidenProgram, Operand};
 
@@ -9,6 +7,35 @@ use super::utils::{max, U32_MAX};
 impl MidenProgram {
     pub fn is_valid_operand(&mut self, operand: &Operand) -> Option<MidenProgramError> {
         match operand {
+            Operand::CDrop | Operand::CSwap | Operand::CDropW | Operand::CSwapW => {
+                if let Some(c) = self.stack.get(0) {
+                    if *c != BaseElement::ZERO && *c != BaseElement::ONE {
+                        return Some(MidenProgramError::NotBinaryValue(c.as_int()));
+                    }
+                }
+            }
+
+            Operand::Ext2Div | Operand::Div => {
+                if let Some(a) = self.stack.get(0) {
+                    if *a == BaseElement::ZERO {
+                        return Some(MidenProgramError::DivideByZero);
+                    }
+                }
+            }
+            Operand::Ext2Inv => {
+                if let (Some(a1), Some(a0)) = (self.stack.get(0), self.stack.get(1)) {
+                    if *a0 == BaseElement::ZERO || *a1 == BaseElement::ZERO {
+                        return Some(MidenProgramError::ZeroInvertInvalid);
+                    }
+                }
+            }
+            Operand::Inv => {
+                if let Some(a) = self.stack.get(0) {
+                    if *a == BaseElement::ZERO {
+                        return Some(MidenProgramError::ZeroInvertInvalid);
+                    }
+                }
+            }
             Operand::AdvPush(n) => {
                 if !(*n >= 1 && *n <= 16) {
                     return Some(MidenProgramError::InvalidParameter(
@@ -466,6 +493,7 @@ impl MidenProgram {
                     }
                 }
             }
+
             _ => {}
         }
 

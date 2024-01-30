@@ -72,6 +72,11 @@ pub enum Token {
     MovDn,
     MovDnW,
 
+    CSwap,
+    CSwapW,
+    CDrop,
+    CDropW,
+
     Exec,
 
     // u32 arithmetic operations
