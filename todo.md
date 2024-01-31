@@ -12,10 +12,10 @@
 - [x] Conditional manipulation
 - [x] Support hexidecimal numbers
 - [ ] Conversions and tests
-- [x] u32 Arithmetic operations
-- [x] u32 Bitwise operations
-- [x] u32 Comparison operations
-- [x] u32 Error handling
+- [x] U32 Arithmetic operations
+- [x] U32 Bitwise operations
+- [x] U32 Comparison operations
+- [x] U32 Error handling
 - [ ] U32 documentation
 - [ ] U32 for CLI
 - [ ] Hashing and Merkle trees
