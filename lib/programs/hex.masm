@@ -1,81 +1,16 @@
 begin
-	push.4626
-	push.8482
-	add
-	push.8465
-	push.8482
-	sub
-	push.4641
-	push.8482
-	mul
-	push.4641
-	push.4641
-	div
-	push.4641
-	push.4641
-	eq
-	push.4641
-	push.4641
-	lt
-	push.4641
-	push.4641
-	gt
-	push.4641
-	push.4641
-
-	#ERROR: NotBinaryValue(4641), 4641 is not binary
-	#and
-
-	push.4641
-	push.4641
-
-	#ERROR: NotBinaryValue(4641), 4641 is not binary
-	#or
-
-	push.4641
-	push.4641
-
-	#ERROR: NotBinaryValue(4641), 4641 is not binary
-	#xor
-
-	push.4641
-
-	#ERROR: NotBinaryValue(4641), 4641 is not binary
-	#not
-
-	push.4641
-	push.4641
-	eqw
-	push.4641
-	push.4641
-	lt
-	push.4641
-	push.4641
-	gt
-	push.4641
-	push.4641
-
-	#ERROR: NotBinaryValue(4641), 4641 is not binary
-	#cswap
-
-	push.4641
-	push.4641
-
-	#ERROR: NotBinaryValue(4641), 4641 is not binary
-	#cswapw
-
-	push.4641
-	push.4641
-
-	#ERROR: NotBinaryValue(4641), 4641 is not binary
-	#cdrop
-
-	push.4641
-	push.4641
-
-	#ERROR: NotBinaryValue(4641), 4641 is not binary
-	#cdropw
-
+	push.4660
+	push.22136
+	push.36882
+	push.43981
+	push.4660
+	push.22136
+	push.36882
+	push.43981
+	push.4660
+	push.22136
+	push.36882
+	push.43981
 end
 
-#stack output : [4641, 4641, 4641, 4641, 4641, 4641, 4641, 4641, 0, 0, 1, 4641, 4641, 4641, 4641, 4641, 4641, 4641, 4641, 4641, 0, 0, 1, 1, 39364962, 18446744069414584304, 13108, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0] 
+#stack output : [43981, 36882, 22136, 4660, 43981, 36882, 22136, 4660, 43981, 36882, 22136, 4660, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0] 

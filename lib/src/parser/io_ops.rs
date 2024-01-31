@@ -17,7 +17,7 @@ fn parse_long_hex(hex_str: &str) -> Result<Vec<u64>, String> {
     }
 
     let values = (0..hex_str.len()).step_by(16).map(|i| {
-        u64::from_str_radix(hex_str, 16)
+        u64::from_str_radix(&hex_str[i..i + 16], 16)
             .map(|v| v.swap_bytes())
             .map_err(|_| "Invalid hex value".to_string())
     });
@@ -56,7 +56,27 @@ pub fn parse_push(op: &Token) -> Result<Vec<Instruction>, String> {
             for i in 1..op.num_parts() {
                 match op.parts[i].parse::<u64>() {
                     Ok(num) => instructions.push(Instruction::Push(BaseElement::from(num))),
-                    Err(_) => return Err(format!("Invalid immediate value: {}", op.parts[i])),
+                    Err(_) => {
+                        if op.parts[i].starts_with("0x") {
+                            let hex_str = &op.parts[i][2..];
+                            if hex_str.len() < 16 && hex_str.len() % 2 == 0 && hex_str.len() != 0 {
+                                instructions.push(Instruction::Push(BaseElement::from(parse_hex(
+                                    hex_str,
+                                )?)));
+                            } else if hex_str.len() == 64 {
+                                instructions.append(
+                                    &mut parse_long_hex(hex_str)?
+                                        .into_iter()
+                                        .map(|num| Instruction::Push(BaseElement::from(num)))
+                                        .collect(),
+                                );
+                            } else {
+                                return Err(format!("Invalid hex value: {}", hex_str));
+                            }
+                        } else {
+                            return Err(format!("parameter '{}' is invalid", op.parts[1]));
+                        }
+                    }
                 }
             }
             Ok(instructions)
