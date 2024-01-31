@@ -42,7 +42,7 @@ fn main() {
     else_program.push(1);
     else_program.add_n(2);
 
-    if_program.if_else(&mut add_program, &mut else_program);
+    if_program.if_else_block(&mut add_program, &mut else_program);
 
     let mut rand_program = EmptyProgram::new();
 
