@@ -10,12 +10,12 @@ use math::fields::f64::BaseElement;
 use token::Token;
 pub use tokenizer::tokenize;
 
-use crate::{Operand, Proc};
+use crate::{Instruction, Proc};
 
-pub fn parse(tokens: Vec<Token>) -> Result<(VecDeque<Operand>, Vec<Proc>), String> {
+pub fn parse(tokens: Vec<Token>) -> Result<(VecDeque<Instruction>, Vec<Proc>), String> {
     let mut procedures: Vec<Proc> = Vec::new();
 
-    let mut operands: VecDeque<Operand> = VecDeque::new();
+    let mut instructions: VecDeque<Instruction> = VecDeque::new();
 
     let mut i = 0;
 
@@ -30,33 +30,33 @@ pub fn parse(tokens: Vec<Token>) -> Result<(VecDeque<Operand>, Vec<Proc>), Strin
             Token::Assert => {
                 if in_proc {
                     let index = procedures.len() - 1;
-                    procedures[index].add_operand(Operand::Assert);
+                    procedures[index].add_instruction(Instruction::Assert);
                 } else {
-                    operands.push_back(Operand::Assert);
+                    instructions.push_back(Instruction::Assert);
                 }
             }
             Token::AssertZ => {
                 if in_proc {
                     let index = procedures.len() - 1;
-                    procedures[index].add_operand(Operand::AssertZ);
+                    procedures[index].add_instruction(Instruction::AssertZ);
                 } else {
-                    operands.push_back(Operand::AssertZ);
+                    instructions.push_back(Instruction::AssertZ);
                 }
             }
             Token::AssertEq => {
                 if in_proc {
                     let index = procedures.len() - 1;
-                    procedures[index].add_operand(Operand::AssertEq);
+                    procedures[index].add_instruction(Instruction::AssertEq);
                 } else {
-                    operands.push_back(Operand::AssertEq);
+                    instructions.push_back(Instruction::AssertEq);
                 }
             }
             Token::AssertEqW => {
                 if in_proc {
                     let index = procedures.len() - 1;
-                    procedures[index].add_operand(Operand::AssertEqW);
+                    procedures[index].add_instruction(Instruction::AssertEqW);
                 } else {
-                    operands.push_back(Operand::AssertEqW);
+                    instructions.push_back(Instruction::AssertEqW);
                 }
             }
             Token::Proc => {
@@ -102,18 +102,19 @@ pub fn parse(tokens: Vec<Token>) -> Result<(VecDeque<Operand>, Vec<Proc>), Strin
                         Token::String(name) => {
                             if in_proc {
                                 let index = procedures.len() - 1;
-                                procedures[index].add_operand(Operand::PRINT(name.to_string()));
+                                procedures[index]
+                                    .add_instruction(Instruction::PRINT(name.to_string()));
                             } else {
-                                operands.push_back(Operand::PRINT(name.to_string()));
+                                instructions.push_back(Instruction::PRINT(name.to_string()));
                             }
                             i += 1;
                         }
                         _ => {
-                            operands.push_back(Operand::PRINT("test".to_string()));
+                            instructions.push_back(Instruction::PRINT("test".to_string()));
                         }
                     }
                 } else {
-                    operands.push_back(Operand::PRINT("test".to_string()));
+                    instructions.push_back(Instruction::PRINT("test".to_string()));
                 }
             }
             Token::If => {
@@ -123,9 +124,9 @@ pub fn parse(tokens: Vec<Token>) -> Result<(VecDeque<Operand>, Vec<Proc>), Strin
                             if statement == "true" {
                                 if in_proc {
                                     let index = procedures.len() - 1;
-                                    procedures[index].add_operand(Operand::IF);
+                                    procedures[index].add_instruction(Instruction::IF);
                                 } else {
-                                    operands.push_back(Operand::IF);
+                                    instructions.push_back(Instruction::IF);
                                 }
                                 scope += 1;
                                 i += 1;
@@ -151,27 +152,27 @@ pub fn parse(tokens: Vec<Token>) -> Result<(VecDeque<Operand>, Vec<Proc>), Strin
             Token::Pow2 => {
                 if in_proc {
                     let index = procedures.len() - 1;
-                    procedures[index].add_operand(Operand::Pow2);
+                    procedures[index].add_instruction(Instruction::Pow2);
                 } else {
-                    operands.push_back(Operand::Pow2);
+                    instructions.push_back(Instruction::Pow2);
                 }
             }
 
             Token::Neg => {
                 if in_proc {
                     let index = procedures.len() - 1;
-                    procedures[index].add_operand(Operand::Neg);
+                    procedures[index].add_instruction(Instruction::Neg);
                 } else {
-                    operands.push_back(Operand::Neg);
+                    instructions.push_back(Instruction::Neg);
                 }
             }
 
             Token::Inv => {
                 if in_proc {
                     let index = procedures.len() - 1;
-                    procedures[index].add_operand(Operand::Inv);
+                    procedures[index].add_instruction(Instruction::Inv);
                 } else {
-                    operands.push_back(Operand::Inv);
+                    instructions.push_back(Instruction::Inv);
                 }
             }
 
@@ -181,27 +182,27 @@ pub fn parse(tokens: Vec<Token>) -> Result<(VecDeque<Operand>, Vec<Proc>), Strin
                         Token::Number(n) => {
                             if in_proc {
                                 let index = procedures.len() - 1;
-                                procedures[index].add_operand(Operand::ExpImm(*n));
+                                procedures[index].add_instruction(Instruction::ExpImm(*n));
                             } else {
-                                operands.push_back(Operand::ExpImm(*n));
+                                instructions.push_back(Instruction::ExpImm(*n));
                             }
                             i += 1;
                         }
                         _ => {
                             if in_proc {
                                 let index = procedures.len() - 1;
-                                procedures[index].add_operand(Operand::Exp);
+                                procedures[index].add_instruction(Instruction::Exp);
                             } else {
-                                operands.push_back(Operand::Exp);
+                                instructions.push_back(Instruction::Exp);
                             }
                         }
                     }
                 } else {
                     if in_proc {
                         let index = procedures.len() - 1;
-                        procedures[index].add_operand(Operand::Exp);
+                        procedures[index].add_instruction(Instruction::Exp);
                     } else {
-                        operands.push_back(Operand::Exp);
+                        instructions.push_back(Instruction::Exp);
                     }
                 }
             }
@@ -232,9 +233,10 @@ pub fn parse(tokens: Vec<Token>) -> Result<(VecDeque<Operand>, Vec<Proc>), Strin
                     for n in nums {
                         if in_proc {
                             let index = procedures.len() - 1;
-                            procedures[index].add_operand(Operand::Push(BaseElement::from(n)));
+                            procedures[index]
+                                .add_instruction(Instruction::Push(BaseElement::from(n)));
                         } else {
-                            operands.push_back(Operand::Push(BaseElement::from(n)));
+                            instructions.push_back(Instruction::Push(BaseElement::from(n)));
                         }
                     }
                 } else {
@@ -245,9 +247,9 @@ pub fn parse(tokens: Vec<Token>) -> Result<(VecDeque<Operand>, Vec<Proc>), Strin
             Token::Else => {
                 if in_proc {
                     let index = procedures.len() - 1;
-                    procedures[index].add_operand(Operand::ELSE);
+                    procedures[index].add_instruction(Instruction::ELSE);
                 } else {
-                    operands.push_back(Operand::ELSE);
+                    instructions.push_back(Instruction::ELSE);
                 }
             }
             Token::End => {
@@ -256,9 +258,9 @@ pub fn parse(tokens: Vec<Token>) -> Result<(VecDeque<Operand>, Vec<Proc>), Strin
                 if scope != 0 {
                     if in_proc {
                         let index = procedures.len() - 1;
-                        procedures[index].add_operand(Operand::END);
+                        procedures[index].add_instruction(Instruction::END);
                     } else {
-                        operands.push_back(Operand::END);
+                        instructions.push_back(Instruction::END);
                     }
                 } else {
                     in_proc = false;
@@ -271,9 +273,9 @@ pub fn parse(tokens: Vec<Token>) -> Result<(VecDeque<Operand>, Vec<Proc>), Strin
                             if statement == "true" {
                                 if in_proc {
                                     let index = procedures.len() - 1;
-                                    procedures[index].add_operand(Operand::WHILE);
+                                    procedures[index].add_instruction(Instruction::WHILE);
                                 } else {
-                                    operands.push_back(Operand::WHILE);
+                                    instructions.push_back(Instruction::WHILE);
                                 }
                                 scope += 1;
                                 i += 1;
@@ -301,9 +303,9 @@ pub fn parse(tokens: Vec<Token>) -> Result<(VecDeque<Operand>, Vec<Proc>), Strin
                         Token::Number(n) => {
                             if in_proc {
                                 let index = procedures.len() - 1;
-                                procedures[index].add_operand(Operand::REPEAT(*n as usize));
+                                procedures[index].add_instruction(Instruction::REPEAT(*n as usize));
                             } else {
-                                operands.push_back(Operand::REPEAT(*n as usize));
+                                instructions.push_back(Instruction::REPEAT(*n as usize));
                             }
                             i += 1;
                         }
@@ -326,27 +328,27 @@ pub fn parse(tokens: Vec<Token>) -> Result<(VecDeque<Operand>, Vec<Proc>), Strin
                             if in_proc {
                                 let index = procedures.len() - 1;
                                 procedures[index]
-                                    .add_operand(Operand::AddImm(BaseElement::from(*n)));
+                                    .add_instruction(Instruction::AddImm(BaseElement::from(*n)));
                             } else {
-                                operands.push_back(Operand::AddImm(BaseElement::from(*n)));
+                                instructions.push_back(Instruction::AddImm(BaseElement::from(*n)));
                             }
                             i += 1;
                         }
                         _ => {
                             if in_proc {
                                 let index = procedures.len() - 1;
-                                procedures[index].add_operand(Operand::Add);
+                                procedures[index].add_instruction(Instruction::Add);
                             } else {
-                                operands.push_back(Operand::Add);
+                                instructions.push_back(Instruction::Add);
                             }
                         }
                     }
                 } else {
                     if in_proc {
                         let index = procedures.len() - 1;
-                        procedures[index].add_operand(Operand::Add);
+                        procedures[index].add_instruction(Instruction::Add);
                     } else {
-                        operands.push_back(Operand::Add);
+                        instructions.push_back(Instruction::Add);
                     }
                 }
             }
@@ -357,27 +359,27 @@ pub fn parse(tokens: Vec<Token>) -> Result<(VecDeque<Operand>, Vec<Proc>), Strin
                             if in_proc {
                                 let index = procedures.len() - 1;
                                 procedures[index]
-                                    .add_operand(Operand::SubImm(BaseElement::from(*n)));
+                                    .add_instruction(Instruction::SubImm(BaseElement::from(*n)));
                             } else {
-                                operands.push_back(Operand::SubImm(BaseElement::from(*n)));
+                                instructions.push_back(Instruction::SubImm(BaseElement::from(*n)));
                             }
                             i += 1;
                         }
                         _ => {
                             if in_proc {
                                 let index = procedures.len() - 1;
-                                procedures[index].add_operand(Operand::Sub);
+                                procedures[index].add_instruction(Instruction::Sub);
                             } else {
-                                operands.push_back(Operand::Sub);
+                                instructions.push_back(Instruction::Sub);
                             }
                         }
                     }
                 } else {
                     if in_proc {
                         let index = procedures.len() - 1;
-                        procedures[index].add_operand(Operand::Sub);
+                        procedures[index].add_instruction(Instruction::Sub);
                     } else {
-                        operands.push_back(Operand::Sub);
+                        instructions.push_back(Instruction::Sub);
                     }
                 }
             }
@@ -388,27 +390,27 @@ pub fn parse(tokens: Vec<Token>) -> Result<(VecDeque<Operand>, Vec<Proc>), Strin
                             if in_proc {
                                 let index = procedures.len() - 1;
                                 procedures[index]
-                                    .add_operand(Operand::MulImm(BaseElement::from(*n)));
+                                    .add_instruction(Instruction::MulImm(BaseElement::from(*n)));
                             } else {
-                                operands.push_back(Operand::MulImm(BaseElement::from(*n)));
+                                instructions.push_back(Instruction::MulImm(BaseElement::from(*n)));
                             }
                             i += 1;
                         }
                         _ => {
                             if in_proc {
                                 let index = procedures.len() - 1;
-                                procedures[index].add_operand(Operand::Mul);
+                                procedures[index].add_instruction(Instruction::Mul);
                             } else {
-                                operands.push_back(Operand::Mul);
+                                instructions.push_back(Instruction::Mul);
                             }
                         }
                     }
                 } else {
                     if in_proc {
                         let index = procedures.len() - 1;
-                        procedures[index].add_operand(Operand::Mul);
+                        procedures[index].add_instruction(Instruction::Mul);
                     } else {
-                        operands.push_back(Operand::Mul);
+                        instructions.push_back(Instruction::Mul);
                     }
                 }
             }
@@ -419,27 +421,27 @@ pub fn parse(tokens: Vec<Token>) -> Result<(VecDeque<Operand>, Vec<Proc>), Strin
                             if in_proc {
                                 let index = procedures.len() - 1;
                                 procedures[index]
-                                    .add_operand(Operand::DivImm(BaseElement::from(*n)));
+                                    .add_instruction(Instruction::DivImm(BaseElement::from(*n)));
                             } else {
-                                operands.push_back(Operand::DivImm(BaseElement::from(*n)));
+                                instructions.push_back(Instruction::DivImm(BaseElement::from(*n)));
                             }
                             i += 1;
                         }
                         _ => {
                             if in_proc {
                                 let index = procedures.len() - 1;
-                                procedures[index].add_operand(Operand::Div);
+                                procedures[index].add_instruction(Instruction::Div);
                             } else {
-                                operands.push_back(Operand::Div);
+                                instructions.push_back(Instruction::Div);
                             }
                         }
                     }
                 } else {
                     if in_proc {
                         let index = procedures.len() - 1;
-                        procedures[index].add_operand(Operand::Div);
+                        procedures[index].add_instruction(Instruction::Div);
                     } else {
-                        operands.push_back(Operand::Div);
+                        instructions.push_back(Instruction::Div);
                     }
                 }
             }
@@ -449,9 +451,10 @@ pub fn parse(tokens: Vec<Token>) -> Result<(VecDeque<Operand>, Vec<Proc>), Strin
                         Token::Number(n) => {
                             if in_proc {
                                 let index = procedures.len() - 1;
-                                procedures[index].add_operand(Operand::AdvPush(*n as usize));
+                                procedures[index]
+                                    .add_instruction(Instruction::AdvPush(*n as usize));
                             } else {
-                                operands.push_back(Operand::AdvPush(*n as usize));
+                                instructions.push_back(Instruction::AdvPush(*n as usize));
                             }
                             i += 1;
                         }
@@ -470,18 +473,18 @@ pub fn parse(tokens: Vec<Token>) -> Result<(VecDeque<Operand>, Vec<Proc>), Strin
             Token::AdvLoadW => {
                 if in_proc {
                     let index = procedures.len() - 1;
-                    procedures[index].add_operand(Operand::AdvLoadW);
+                    procedures[index].add_instruction(Instruction::AdvLoadW);
                 } else {
-                    operands.push_back(Operand::AdvLoadW);
+                    instructions.push_back(Instruction::AdvLoadW);
                 }
             }
 
             Token::AdvPipe => {
                 if in_proc {
                     let index = procedures.len() - 1;
-                    procedures[index].add_operand(Operand::AdvPipe);
+                    procedures[index].add_instruction(Instruction::AdvPipe);
                 } else {
-                    operands.push_back(Operand::AdvPipe);
+                    instructions.push_back(Instruction::AdvPipe);
                 }
             }
 
@@ -491,27 +494,28 @@ pub fn parse(tokens: Vec<Token>) -> Result<(VecDeque<Operand>, Vec<Proc>), Strin
                         Token::Number(n) => {
                             if in_proc {
                                 let index = procedures.len() - 1;
-                                procedures[index].add_operand(Operand::MemLoadImm(*n as u32));
+                                procedures[index]
+                                    .add_instruction(Instruction::MemLoadImm(*n as u32));
                             } else {
-                                operands.push_back(Operand::MemLoadImm(*n as u32));
+                                instructions.push_back(Instruction::MemLoadImm(*n as u32));
                             }
                             i += 1;
                         }
                         _ => {
                             if in_proc {
                                 let index = procedures.len() - 1;
-                                procedures[index].add_operand(Operand::MemLoad);
+                                procedures[index].add_instruction(Instruction::MemLoad);
                             } else {
-                                operands.push_back(Operand::MemLoad);
+                                instructions.push_back(Instruction::MemLoad);
                             }
                         }
                     }
                 } else {
                     if in_proc {
                         let index = procedures.len() - 1;
-                        procedures[index].add_operand(Operand::MemLoad);
+                        procedures[index].add_instruction(Instruction::MemLoad);
                     } else {
-                        operands.push_back(Operand::MemLoad);
+                        instructions.push_back(Instruction::MemLoad);
                     }
                 }
             }
@@ -522,27 +526,28 @@ pub fn parse(tokens: Vec<Token>) -> Result<(VecDeque<Operand>, Vec<Proc>), Strin
                         Token::Number(n) => {
                             if in_proc {
                                 let index = procedures.len() - 1;
-                                procedures[index].add_operand(Operand::MemStoreImm(*n as u32));
+                                procedures[index]
+                                    .add_instruction(Instruction::MemStoreImm(*n as u32));
                             } else {
-                                operands.push_back(Operand::MemStoreImm(*n as u32));
+                                instructions.push_back(Instruction::MemStoreImm(*n as u32));
                             }
                             i += 1;
                         }
                         _ => {
                             if in_proc {
                                 let index = procedures.len() - 1;
-                                procedures[index].add_operand(Operand::MemStore);
+                                procedures[index].add_instruction(Instruction::MemStore);
                             } else {
-                                operands.push_back(Operand::MemStore);
+                                instructions.push_back(Instruction::MemStore);
                             }
                         }
                     }
                 } else {
                     if in_proc {
                         let index = procedures.len() - 1;
-                        procedures[index].add_operand(Operand::MemStore);
+                        procedures[index].add_instruction(Instruction::MemStore);
                     } else {
-                        operands.push_back(Operand::MemStore);
+                        instructions.push_back(Instruction::MemStore);
                     }
                 }
             }
@@ -553,27 +558,28 @@ pub fn parse(tokens: Vec<Token>) -> Result<(VecDeque<Operand>, Vec<Proc>), Strin
                         Token::Number(n) => {
                             if in_proc {
                                 let index = procedures.len() - 1;
-                                procedures[index].add_operand(Operand::MemLoadWImm(*n as u32));
+                                procedures[index]
+                                    .add_instruction(Instruction::MemLoadWImm(*n as u32));
                             } else {
-                                operands.push_back(Operand::MemLoadWImm(*n as u32));
+                                instructions.push_back(Instruction::MemLoadWImm(*n as u32));
                             }
                             i += 1;
                         }
                         _ => {
                             if in_proc {
                                 let index = procedures.len() - 1;
-                                procedures[index].add_operand(Operand::MemLoadW);
+                                procedures[index].add_instruction(Instruction::MemLoadW);
                             } else {
-                                operands.push_back(Operand::MemLoadW);
+                                instructions.push_back(Instruction::MemLoadW);
                             }
                         }
                     }
                 } else {
                     if in_proc {
                         let index = procedures.len() - 1;
-                        procedures[index].add_operand(Operand::MemLoadW);
+                        procedures[index].add_instruction(Instruction::MemLoadW);
                     } else {
-                        operands.push_back(Operand::MemLoadW);
+                        instructions.push_back(Instruction::MemLoadW);
                     }
                 }
             }
@@ -584,27 +590,28 @@ pub fn parse(tokens: Vec<Token>) -> Result<(VecDeque<Operand>, Vec<Proc>), Strin
                         Token::Number(n) => {
                             if in_proc {
                                 let index = procedures.len() - 1;
-                                procedures[index].add_operand(Operand::MemStoreWImm(*n as u32));
+                                procedures[index]
+                                    .add_instruction(Instruction::MemStoreWImm(*n as u32));
                             } else {
-                                operands.push_back(Operand::MemStoreWImm(*n as u32));
+                                instructions.push_back(Instruction::MemStoreWImm(*n as u32));
                             }
                             i += 1;
                         }
                         _ => {
                             if in_proc {
                                 let index = procedures.len() - 1;
-                                procedures[index].add_operand(Operand::MemStoreW);
+                                procedures[index].add_instruction(Instruction::MemStoreW);
                             } else {
-                                operands.push_back(Operand::MemStoreW);
+                                instructions.push_back(Instruction::MemStoreW);
                             }
                         }
                     }
                 } else {
                     if in_proc {
                         let index = procedures.len() - 1;
-                        procedures[index].add_operand(Operand::MemStoreW);
+                        procedures[index].add_instruction(Instruction::MemStoreW);
                     } else {
-                        operands.push_back(Operand::MemStoreW);
+                        instructions.push_back(Instruction::MemStoreW);
                     }
                 }
             }
@@ -615,7 +622,7 @@ pub fn parse(tokens: Vec<Token>) -> Result<(VecDeque<Operand>, Vec<Proc>), Strin
                         Token::Number(n) => {
                             if in_proc {
                                 let index = procedures.len() - 1;
-                                procedures[index].add_operand(Operand::LocLoad(*n as u16));
+                                procedures[index].add_instruction(Instruction::LocLoad(*n as u16));
                             } else {
                                 return Err(format!(
                                     "Unexpected loc_load with value: {:?}",
@@ -642,7 +649,7 @@ pub fn parse(tokens: Vec<Token>) -> Result<(VecDeque<Operand>, Vec<Proc>), Strin
                         Token::Number(n) => {
                             if in_proc {
                                 let index = procedures.len() - 1;
-                                procedures[index].add_operand(Operand::LocLoadW(*n as u16));
+                                procedures[index].add_instruction(Instruction::LocLoadW(*n as u16));
                             } else {
                                 return Err(format!(
                                     "Unexpected loc_loadw with value: {:?}",
@@ -669,7 +676,7 @@ pub fn parse(tokens: Vec<Token>) -> Result<(VecDeque<Operand>, Vec<Proc>), Strin
                         Token::Number(n) => {
                             if in_proc {
                                 let index = procedures.len() - 1;
-                                procedures[index].add_operand(Operand::LocStore(*n as u16));
+                                procedures[index].add_instruction(Instruction::LocStore(*n as u16));
                             } else {
                                 return Err(format!(
                                     "Unexpected loc_store with value: {:?}",
@@ -696,7 +703,8 @@ pub fn parse(tokens: Vec<Token>) -> Result<(VecDeque<Operand>, Vec<Proc>), Strin
                         Token::Number(n) => {
                             if in_proc {
                                 let index = procedures.len() - 1;
-                                procedures[index].add_operand(Operand::LocStoreW(*n as u16));
+                                procedures[index]
+                                    .add_instruction(Instruction::LocStoreW(*n as u16));
                             } else {
                                 return Err(format!(
                                     "Unexpected loc_storew with value: {:?}",
@@ -723,9 +731,10 @@ pub fn parse(tokens: Vec<Token>) -> Result<(VecDeque<Operand>, Vec<Proc>), Strin
                         Token::String(name) => {
                             if in_proc {
                                 let index = procedures.len() - 1;
-                                procedures[index].add_operand(Operand::Exec(name.to_string()));
+                                procedures[index]
+                                    .add_instruction(Instruction::Exec(name.to_string()));
                             } else {
-                                operands.push_back(Operand::Exec(name.to_string()));
+                                instructions.push_back(Instruction::Exec(name.to_string()));
                             }
                             i += 1;
                         }
@@ -747,29 +756,29 @@ pub fn parse(tokens: Vec<Token>) -> Result<(VecDeque<Operand>, Vec<Proc>), Strin
                         Token::Number(n) => {
                             if in_proc {
                                 let index = procedures.len() - 1;
-                                procedures[index].add_operand(Operand::Dup(*n as usize));
+                                procedures[index].add_instruction(Instruction::Dup(*n as usize));
                             } else {
-                                operands.push_back(Operand::Dup(*n as usize));
+                                instructions.push_back(Instruction::Dup(*n as usize));
                             }
                             i += 1;
                         }
                         _ => {
                             if in_proc {
                                 let index = procedures.len() - 1;
-                                procedures[index].add_operand(Operand::Dup(0));
+                                procedures[index].add_instruction(Instruction::Dup(0));
                             } else {
-                                operands.push_back(Operand::Dup(0));
+                                instructions.push_back(Instruction::Dup(0));
                             }
                         }
                     }
                 } else {
                     if in_proc {
                         let index = procedures.len() - 1;
-                        procedures[index].add_operand(Operand::Dup(0));
+                        procedures[index].add_instruction(Instruction::Dup(0));
                     } else {
-                        operands.push_back(Operand::Dup(0));
+                        instructions.push_back(Instruction::Dup(0));
                     }
-                    operands.push_back(Operand::Dup(0));
+                    instructions.push_back(Instruction::Dup(0));
                 }
             }
 
@@ -779,27 +788,27 @@ pub fn parse(tokens: Vec<Token>) -> Result<(VecDeque<Operand>, Vec<Proc>), Strin
                         Token::Number(n) => {
                             if in_proc {
                                 let index = procedures.len() - 1;
-                                procedures[index].add_operand(Operand::Swap(*n as usize));
+                                procedures[index].add_instruction(Instruction::Swap(*n as usize));
                             } else {
-                                operands.push_back(Operand::Swap(*n as usize));
+                                instructions.push_back(Instruction::Swap(*n as usize));
                             }
                             i += 1;
                         }
                         _ => {
                             if in_proc {
                                 let index = procedures.len() - 1;
-                                procedures[index].add_operand(Operand::Swap(1));
+                                procedures[index].add_instruction(Instruction::Swap(1));
                             } else {
-                                operands.push_back(Operand::Swap(1));
+                                instructions.push_back(Instruction::Swap(1));
                             }
                         }
                     }
                 } else {
                     if in_proc {
                         let index = procedures.len() - 1;
-                        procedures[index].add_operand(Operand::Swap(1));
+                        procedures[index].add_instruction(Instruction::Swap(1));
                     } else {
-                        operands.push_back(Operand::Swap(1));
+                        instructions.push_back(Instruction::Swap(1));
                     }
                 }
             }
@@ -810,27 +819,27 @@ pub fn parse(tokens: Vec<Token>) -> Result<(VecDeque<Operand>, Vec<Proc>), Strin
                         Token::Number(n) => {
                             if in_proc {
                                 let index = procedures.len() - 1;
-                                procedures[index].add_operand(Operand::SwapW(*n as usize));
+                                procedures[index].add_instruction(Instruction::SwapW(*n as usize));
                             } else {
-                                operands.push_back(Operand::SwapW(*n as usize));
+                                instructions.push_back(Instruction::SwapW(*n as usize));
                             }
                             i += 1;
                         }
                         _ => {
                             if in_proc {
                                 let index = procedures.len() - 1;
-                                procedures[index].add_operand(Operand::SwapW(1));
+                                procedures[index].add_instruction(Instruction::SwapW(1));
                             } else {
-                                operands.push_back(Operand::SwapW(1));
+                                instructions.push_back(Instruction::SwapW(1));
                             }
                         }
                     }
                 } else {
                     if in_proc {
                         let index = procedures.len() - 1;
-                        procedures[index].add_operand(Operand::SwapW(1));
+                        procedures[index].add_instruction(Instruction::SwapW(1));
                     } else {
-                        operands.push_back(Operand::SwapW(1));
+                        instructions.push_back(Instruction::SwapW(1));
                     }
                 }
             }
@@ -841,27 +850,27 @@ pub fn parse(tokens: Vec<Token>) -> Result<(VecDeque<Operand>, Vec<Proc>), Strin
                         Token::Number(n) => {
                             if in_proc {
                                 let index = procedures.len() - 1;
-                                procedures[index].add_operand(Operand::SwapDw(*n as usize));
+                                procedures[index].add_instruction(Instruction::SwapDw(*n as usize));
                             } else {
-                                operands.push_back(Operand::SwapDw(*n as usize));
+                                instructions.push_back(Instruction::SwapDw(*n as usize));
                             }
                             i += 1;
                         }
                         _ => {
                             if in_proc {
                                 let index = procedures.len() - 1;
-                                procedures[index].add_operand(Operand::SwapDw(1));
+                                procedures[index].add_instruction(Instruction::SwapDw(1));
                             } else {
-                                operands.push_back(Operand::SwapDw(1));
+                                instructions.push_back(Instruction::SwapDw(1));
                             }
                         }
                     }
                 } else {
                     if in_proc {
                         let index = procedures.len() - 1;
-                        procedures[index].add_operand(Operand::SwapDw(1));
+                        procedures[index].add_instruction(Instruction::SwapDw(1));
                     } else {
-                        operands.push_back(Operand::SwapDw(1));
+                        instructions.push_back(Instruction::SwapDw(1));
                     }
                 }
             }
@@ -869,9 +878,9 @@ pub fn parse(tokens: Vec<Token>) -> Result<(VecDeque<Operand>, Vec<Proc>), Strin
             Token::PadW => {
                 if in_proc {
                     let index = procedures.len() - 1;
-                    procedures[index].add_operand(Operand::PadW);
+                    procedures[index].add_instruction(Instruction::PadW);
                 } else {
-                    operands.push_back(Operand::PadW);
+                    instructions.push_back(Instruction::PadW);
                 }
             }
 
@@ -881,9 +890,9 @@ pub fn parse(tokens: Vec<Token>) -> Result<(VecDeque<Operand>, Vec<Proc>), Strin
                         Token::Number(n) => {
                             if in_proc {
                                 let index = procedures.len() - 1;
-                                procedures[index].add_operand(Operand::MovUp(*n as usize));
+                                procedures[index].add_instruction(Instruction::MovUp(*n as usize));
                             } else {
-                                operands.push_back(Operand::MovUp(*n as usize));
+                                instructions.push_back(Instruction::MovUp(*n as usize));
                             }
                             i += 1;
                         }
@@ -905,9 +914,9 @@ pub fn parse(tokens: Vec<Token>) -> Result<(VecDeque<Operand>, Vec<Proc>), Strin
                         Token::Number(n) => {
                             if in_proc {
                                 let index = procedures.len() - 1;
-                                procedures[index].add_operand(Operand::MovUpW(*n as usize));
+                                procedures[index].add_instruction(Instruction::MovUpW(*n as usize));
                             } else {
-                                operands.push_back(Operand::MovUpW(*n as usize));
+                                instructions.push_back(Instruction::MovUpW(*n as usize));
                             }
                             i += 1;
                         }
@@ -929,9 +938,9 @@ pub fn parse(tokens: Vec<Token>) -> Result<(VecDeque<Operand>, Vec<Proc>), Strin
                         Token::Number(n) => {
                             if in_proc {
                                 let index = procedures.len() - 1;
-                                procedures[index].add_operand(Operand::MovDn(*n as usize));
+                                procedures[index].add_instruction(Instruction::MovDn(*n as usize));
                             } else {
-                                operands.push_back(Operand::MovDn(*n as usize));
+                                instructions.push_back(Instruction::MovDn(*n as usize));
                             }
                             i += 1;
                         }
@@ -953,9 +962,9 @@ pub fn parse(tokens: Vec<Token>) -> Result<(VecDeque<Operand>, Vec<Proc>), Strin
                         Token::Number(n) => {
                             if in_proc {
                                 let index = procedures.len() - 1;
-                                procedures[index].add_operand(Operand::MovDnW(*n as usize));
+                                procedures[index].add_instruction(Instruction::MovDnW(*n as usize));
                             } else {
-                                operands.push_back(Operand::MovDnW(*n as usize));
+                                instructions.push_back(Instruction::MovDnW(*n as usize));
                             }
                             i += 1;
                         }
@@ -974,153 +983,153 @@ pub fn parse(tokens: Vec<Token>) -> Result<(VecDeque<Operand>, Vec<Proc>), Strin
             Token::Drop => {
                 if in_proc {
                     let index = procedures.len() - 1;
-                    procedures[index].add_operand(Operand::Drop);
+                    procedures[index].add_instruction(Instruction::Drop);
                 } else {
-                    operands.push_back(Operand::Drop);
+                    instructions.push_back(Instruction::Drop);
                 }
             }
 
             Token::DropW => {
                 if in_proc {
                     let index = procedures.len() - 1;
-                    procedures[index].add_operand(Operand::DropW);
+                    procedures[index].add_instruction(Instruction::DropW);
                 } else {
-                    operands.push_back(Operand::DropW);
+                    instructions.push_back(Instruction::DropW);
                 }
             }
 
             Token::CSwap => {
                 if in_proc {
                     let index = procedures.len() - 1;
-                    procedures[index].add_operand(Operand::CSwap);
+                    procedures[index].add_instruction(Instruction::CSwap);
                 } else {
-                    operands.push_back(Operand::CSwap);
+                    instructions.push_back(Instruction::CSwap);
                 }
             }
 
             Token::CSwapW => {
                 if in_proc {
                     let index = procedures.len() - 1;
-                    procedures[index].add_operand(Operand::CSwapW);
+                    procedures[index].add_instruction(Instruction::CSwapW);
                 } else {
-                    operands.push_back(Operand::CSwapW);
+                    instructions.push_back(Instruction::CSwapW);
                 }
             }
 
             Token::CDrop => {
                 if in_proc {
                     let index = procedures.len() - 1;
-                    procedures[index].add_operand(Operand::CDrop);
+                    procedures[index].add_instruction(Instruction::CDrop);
                 } else {
-                    operands.push_back(Operand::CDrop);
+                    instructions.push_back(Instruction::CDrop);
                 }
             }
 
             Token::CDropW => {
                 if in_proc {
                     let index = procedures.len() - 1;
-                    procedures[index].add_operand(Operand::CDropW);
+                    procedures[index].add_instruction(Instruction::CDropW);
                 } else {
-                    operands.push_back(Operand::CDropW);
+                    instructions.push_back(Instruction::CDropW);
                 }
             }
 
             Token::Ext2Add => {
                 if in_proc {
                     let index = procedures.len() - 1;
-                    procedures[index].add_operand(Operand::Ext2Add);
+                    procedures[index].add_instruction(Instruction::Ext2Add);
                 } else {
-                    operands.push_back(Operand::Ext2Add);
+                    instructions.push_back(Instruction::Ext2Add);
                 }
             }
 
             Token::Ext2Sub => {
                 if in_proc {
                     let index = procedures.len() - 1;
-                    procedures[index].add_operand(Operand::Ext2Sub);
+                    procedures[index].add_instruction(Instruction::Ext2Sub);
                 } else {
-                    operands.push_back(Operand::Ext2Sub);
+                    instructions.push_back(Instruction::Ext2Sub);
                 }
             }
 
             Token::Ext2Mul => {
                 if in_proc {
                     let index = procedures.len() - 1;
-                    procedures[index].add_operand(Operand::Ext2Mul);
+                    procedures[index].add_instruction(Instruction::Ext2Mul);
                 } else {
-                    operands.push_back(Operand::Ext2Mul);
+                    instructions.push_back(Instruction::Ext2Mul);
                 }
             }
 
             Token::Ext2Div => {
                 if in_proc {
                     let index = procedures.len() - 1;
-                    procedures[index].add_operand(Operand::Ext2Div);
+                    procedures[index].add_instruction(Instruction::Ext2Div);
                 } else {
-                    operands.push_back(Operand::Ext2Div);
+                    instructions.push_back(Instruction::Ext2Div);
                 }
             }
 
             Token::Ext2Neg => {
                 if in_proc {
                     let index = procedures.len() - 1;
-                    procedures[index].add_operand(Operand::Ext2Neg);
+                    procedures[index].add_instruction(Instruction::Ext2Neg);
                 } else {
-                    operands.push_back(Operand::Ext2Neg);
+                    instructions.push_back(Instruction::Ext2Neg);
                 }
             }
 
             Token::Ext2Inv => {
                 if in_proc {
                     let index = procedures.len() - 1;
-                    procedures[index].add_operand(Operand::Ext2Inv);
+                    procedures[index].add_instruction(Instruction::Ext2Inv);
                 } else {
-                    operands.push_back(Operand::Ext2Inv);
+                    instructions.push_back(Instruction::Ext2Inv);
                 }
             }
 
             Token::And => {
                 if in_proc {
                     let index = procedures.len() - 1;
-                    procedures[index].add_operand(Operand::And);
+                    procedures[index].add_instruction(Instruction::And);
                 } else {
-                    operands.push_back(Operand::And);
+                    instructions.push_back(Instruction::And);
                 }
             }
 
             Token::Or => {
                 if in_proc {
                     let index = procedures.len() - 1;
-                    procedures[index].add_operand(Operand::Or);
+                    procedures[index].add_instruction(Instruction::Or);
                 } else {
-                    operands.push_back(Operand::Or);
+                    instructions.push_back(Instruction::Or);
                 }
             }
 
             Token::Xor => {
                 if in_proc {
                     let index = procedures.len() - 1;
-                    procedures[index].add_operand(Operand::Xor);
+                    procedures[index].add_instruction(Instruction::Xor);
                 } else {
-                    operands.push_back(Operand::Xor);
+                    instructions.push_back(Instruction::Xor);
                 }
             }
 
             Token::Not => {
                 if in_proc {
                     let index = procedures.len() - 1;
-                    procedures[index].add_operand(Operand::Not);
+                    procedures[index].add_instruction(Instruction::Not);
                 } else {
-                    operands.push_back(Operand::Not);
+                    instructions.push_back(Instruction::Not);
                 }
             }
 
             Token::IsOdd => {
                 if in_proc {
                     let index = procedures.len() - 1;
-                    procedures[index].add_operand(Operand::IsOdd);
+                    procedures[index].add_instruction(Instruction::IsOdd);
                 } else {
-                    operands.push_back(Operand::IsOdd);
+                    instructions.push_back(Instruction::IsOdd);
                 }
             }
 
@@ -1131,27 +1140,27 @@ pub fn parse(tokens: Vec<Token>) -> Result<(VecDeque<Operand>, Vec<Proc>), Strin
                             if in_proc {
                                 let index = procedures.len() - 1;
                                 procedures[index]
-                                    .add_operand(Operand::EqImm(BaseElement::from(*n)));
+                                    .add_instruction(Instruction::EqImm(BaseElement::from(*n)));
                             } else {
-                                operands.push_back(Operand::EqImm(BaseElement::from(*n)));
+                                instructions.push_back(Instruction::EqImm(BaseElement::from(*n)));
                             }
                             i += 1;
                         }
                         _ => {
                             if in_proc {
                                 let index = procedures.len() - 1;
-                                procedures[index].add_operand(Operand::Eq);
+                                procedures[index].add_instruction(Instruction::Eq);
                             } else {
-                                operands.push_back(Operand::Eq);
+                                instructions.push_back(Instruction::Eq);
                             }
                         }
                     }
                 } else {
                     if in_proc {
                         let index = procedures.len() - 1;
-                        procedures[index].add_operand(Operand::Eq);
+                        procedures[index].add_instruction(Instruction::Eq);
                     } else {
-                        operands.push_back(Operand::Eq);
+                        instructions.push_back(Instruction::Eq);
                     }
                 }
             }
@@ -1163,26 +1172,26 @@ pub fn parse(tokens: Vec<Token>) -> Result<(VecDeque<Operand>, Vec<Proc>), Strin
                             if in_proc {
                                 let index = procedures.len() - 1;
                                 procedures[index]
-                                    .add_operand(Operand::NeqImm(BaseElement::from(*n)));
+                                    .add_instruction(Instruction::NeqImm(BaseElement::from(*n)));
                             } else {
-                                operands.push_back(Operand::NeqImm(BaseElement::from(*n)));
+                                instructions.push_back(Instruction::NeqImm(BaseElement::from(*n)));
                             }
                         }
                         _ => {
                             if in_proc {
                                 let index = procedures.len() - 1;
-                                procedures[index].add_operand(Operand::Neq);
+                                procedures[index].add_instruction(Instruction::Neq);
                             } else {
-                                operands.push_back(Operand::Neq);
+                                instructions.push_back(Instruction::Neq);
                             }
                         }
                     }
                 } else {
                     if in_proc {
                         let index = procedures.len() - 1;
-                        procedures[index].add_operand(Operand::Neq);
+                        procedures[index].add_instruction(Instruction::Neq);
                     } else {
-                        operands.push_back(Operand::Neq);
+                        instructions.push_back(Instruction::Neq);
                     }
                 }
             }
@@ -1190,45 +1199,45 @@ pub fn parse(tokens: Vec<Token>) -> Result<(VecDeque<Operand>, Vec<Proc>), Strin
             Token::Lt => {
                 if in_proc {
                     let index = procedures.len() - 1;
-                    procedures[index].add_operand(Operand::Lt);
+                    procedures[index].add_instruction(Instruction::Lt);
                 } else {
-                    operands.push_back(Operand::Lt);
+                    instructions.push_back(Instruction::Lt);
                 }
             }
 
             Token::Lte => {
                 if in_proc {
                     let index = procedures.len() - 1;
-                    procedures[index].add_operand(Operand::Lte);
+                    procedures[index].add_instruction(Instruction::Lte);
                 } else {
-                    operands.push_back(Operand::Lte);
+                    instructions.push_back(Instruction::Lte);
                 }
             }
 
             Token::Gt => {
                 if in_proc {
                     let index = procedures.len() - 1;
-                    procedures[index].add_operand(Operand::Gt);
+                    procedures[index].add_instruction(Instruction::Gt);
                 } else {
-                    operands.push_back(Operand::Gt);
+                    instructions.push_back(Instruction::Gt);
                 }
             }
 
             Token::Gte => {
                 if in_proc {
                     let index = procedures.len() - 1;
-                    procedures[index].add_operand(Operand::Gte);
+                    procedures[index].add_instruction(Instruction::Gte);
                 } else {
-                    operands.push_back(Operand::Gte);
+                    instructions.push_back(Instruction::Gte);
                 }
             }
 
             Token::EqW => {
                 if in_proc {
                     let index = procedures.len() - 1;
-                    procedures[index].add_operand(Operand::EqW);
+                    procedures[index].add_instruction(Instruction::EqW);
                 } else {
-                    operands.push_back(Operand::EqW);
+                    instructions.push_back(Instruction::EqW);
                 }
             }
 
@@ -1239,28 +1248,28 @@ pub fn parse(tokens: Vec<Token>) -> Result<(VecDeque<Operand>, Vec<Proc>), Strin
                             if in_proc {
                                 let index = procedures.len() - 1;
                                 let n = *n as u32;
-                                procedures[index].add_operand(Operand::U32CheckedAddImm(n));
+                                procedures[index].add_instruction(Instruction::U32CheckedAddImm(n));
                             } else {
                                 let n = *n as u32;
-                                operands.push_back(Operand::U32CheckedAddImm(n));
+                                instructions.push_back(Instruction::U32CheckedAddImm(n));
                             }
                             i += 1;
                         }
                         _ => {
                             if in_proc {
                                 let index = procedures.len() - 1;
-                                procedures[index].add_operand(Operand::U32CheckedAdd);
+                                procedures[index].add_instruction(Instruction::U32CheckedAdd);
                             } else {
-                                operands.push_back(Operand::U32CheckedAdd);
+                                instructions.push_back(Instruction::U32CheckedAdd);
                             }
                         }
                     }
                 } else {
                     if in_proc {
                         let index = procedures.len() - 1;
-                        procedures[index].add_operand(Operand::U32CheckedAdd);
+                        procedures[index].add_instruction(Instruction::U32CheckedAdd);
                     } else {
-                        operands.push_back(Operand::U32CheckedAdd);
+                        instructions.push_back(Instruction::U32CheckedAdd);
                     }
                 }
             }
@@ -1272,28 +1281,29 @@ pub fn parse(tokens: Vec<Token>) -> Result<(VecDeque<Operand>, Vec<Proc>), Strin
                             if in_proc {
                                 let index = procedures.len() - 1;
                                 let n = *n as u32;
-                                procedures[index].add_operand(Operand::U32OverflowingAddImm(n));
+                                procedures[index]
+                                    .add_instruction(Instruction::U32OverflowingAddImm(n));
                             } else {
                                 let n = *n as u32;
-                                operands.push_back(Operand::U32OverflowingAddImm(n));
+                                instructions.push_back(Instruction::U32OverflowingAddImm(n));
                             }
                             i += 1;
                         }
                         _ => {
                             if in_proc {
                                 let index = procedures.len() - 1;
-                                procedures[index].add_operand(Operand::U32OverflowingAdd);
+                                procedures[index].add_instruction(Instruction::U32OverflowingAdd);
                             } else {
-                                operands.push_back(Operand::U32OverflowingAdd);
+                                instructions.push_back(Instruction::U32OverflowingAdd);
                             }
                         }
                     }
                 } else {
                     if in_proc {
                         let index = procedures.len() - 1;
-                        procedures[index].add_operand(Operand::U32OverflowingAdd);
+                        procedures[index].add_instruction(Instruction::U32OverflowingAdd);
                     } else {
-                        operands.push_back(Operand::U32OverflowingAdd);
+                        instructions.push_back(Instruction::U32OverflowingAdd);
                     }
                 }
             }
@@ -1305,28 +1315,29 @@ pub fn parse(tokens: Vec<Token>) -> Result<(VecDeque<Operand>, Vec<Proc>), Strin
                             if in_proc {
                                 let index = procedures.len() - 1;
                                 let n = *n as u32;
-                                procedures[index].add_operand(Operand::U32WrappingAddImm(n));
+                                procedures[index]
+                                    .add_instruction(Instruction::U32WrappingAddImm(n));
                             } else {
                                 let n = *n as u32;
-                                operands.push_back(Operand::U32WrappingAddImm(n));
+                                instructions.push_back(Instruction::U32WrappingAddImm(n));
                             }
                             i += 1;
                         }
                         _ => {
                             if in_proc {
                                 let index = procedures.len() - 1;
-                                procedures[index].add_operand(Operand::U32WrappingAdd);
+                                procedures[index].add_instruction(Instruction::U32WrappingAdd);
                             } else {
-                                operands.push_back(Operand::U32WrappingAdd);
+                                instructions.push_back(Instruction::U32WrappingAdd);
                             }
                         }
                     }
                 } else {
                     if in_proc {
                         let index = procedures.len() - 1;
-                        procedures[index].add_operand(Operand::U32WrappingAdd);
+                        procedures[index].add_instruction(Instruction::U32WrappingAdd);
                     } else {
-                        operands.push_back(Operand::U32WrappingAdd);
+                        instructions.push_back(Instruction::U32WrappingAdd);
                     }
                 }
             }
@@ -1338,28 +1349,28 @@ pub fn parse(tokens: Vec<Token>) -> Result<(VecDeque<Operand>, Vec<Proc>), Strin
                             if in_proc {
                                 let n = *n as u32;
                                 let index = procedures.len() - 1;
-                                procedures[index].add_operand(Operand::U32CheckedSubImm(n));
+                                procedures[index].add_instruction(Instruction::U32CheckedSubImm(n));
                             } else {
                                 let n = *n as u32;
-                                operands.push_back(Operand::U32CheckedSubImm(n));
+                                instructions.push_back(Instruction::U32CheckedSubImm(n));
                             }
                             i += 1;
                         }
                         _ => {
                             if in_proc {
                                 let index = procedures.len() - 1;
-                                procedures[index].add_operand(Operand::U32CheckedSub);
+                                procedures[index].add_instruction(Instruction::U32CheckedSub);
                             } else {
-                                operands.push_back(Operand::U32CheckedSub);
+                                instructions.push_back(Instruction::U32CheckedSub);
                             }
                         }
                     }
                 } else {
                     if in_proc {
                         let index = procedures.len() - 1;
-                        procedures[index].add_operand(Operand::U32CheckedSub);
+                        procedures[index].add_instruction(Instruction::U32CheckedSub);
                     } else {
-                        operands.push_back(Operand::U32CheckedSub);
+                        instructions.push_back(Instruction::U32CheckedSub);
                     }
                 }
             }
@@ -1371,28 +1382,29 @@ pub fn parse(tokens: Vec<Token>) -> Result<(VecDeque<Operand>, Vec<Proc>), Strin
                             if in_proc {
                                 let n = *n as u32;
                                 let index = procedures.len() - 1;
-                                procedures[index].add_operand(Operand::U32OverflowingSubImm(n));
+                                procedures[index]
+                                    .add_instruction(Instruction::U32OverflowingSubImm(n));
                             } else {
                                 let n = *n as u32;
-                                operands.push_back(Operand::U32OverflowingSubImm(n));
+                                instructions.push_back(Instruction::U32OverflowingSubImm(n));
                             }
                             i += 1;
                         }
                         _ => {
                             if in_proc {
                                 let index = procedures.len() - 1;
-                                procedures[index].add_operand(Operand::U32OverflowingSub);
+                                procedures[index].add_instruction(Instruction::U32OverflowingSub);
                             } else {
-                                operands.push_back(Operand::U32OverflowingSub);
+                                instructions.push_back(Instruction::U32OverflowingSub);
                             }
                         }
                     }
                 } else {
                     if in_proc {
                         let index = procedures.len() - 1;
-                        procedures[index].add_operand(Operand::U32OverflowingSub);
+                        procedures[index].add_instruction(Instruction::U32OverflowingSub);
                     } else {
-                        operands.push_back(Operand::U32OverflowingSub);
+                        instructions.push_back(Instruction::U32OverflowingSub);
                     }
                 }
             }
@@ -1404,28 +1416,29 @@ pub fn parse(tokens: Vec<Token>) -> Result<(VecDeque<Operand>, Vec<Proc>), Strin
                             if in_proc {
                                 let n = *n as u32;
                                 let index = procedures.len() - 1;
-                                procedures[index].add_operand(Operand::U32WrappingSubImm(n));
+                                procedures[index]
+                                    .add_instruction(Instruction::U32WrappingSubImm(n));
                             } else {
                                 let n = *n as u32;
-                                operands.push_back(Operand::U32WrappingSubImm(n));
+                                instructions.push_back(Instruction::U32WrappingSubImm(n));
                             }
                             i += 1;
                         }
                         _ => {
                             if in_proc {
                                 let index = procedures.len() - 1;
-                                procedures[index].add_operand(Operand::U32WrappingSub);
+                                procedures[index].add_instruction(Instruction::U32WrappingSub);
                             } else {
-                                operands.push_back(Operand::U32WrappingSub);
+                                instructions.push_back(Instruction::U32WrappingSub);
                             }
                         }
                     }
                 } else {
                     if in_proc {
                         let index = procedures.len() - 1;
-                        procedures[index].add_operand(Operand::U32WrappingSub);
+                        procedures[index].add_instruction(Instruction::U32WrappingSub);
                     } else {
-                        operands.push_back(Operand::U32WrappingSub);
+                        instructions.push_back(Instruction::U32WrappingSub);
                     }
                 }
             }
@@ -1437,28 +1450,28 @@ pub fn parse(tokens: Vec<Token>) -> Result<(VecDeque<Operand>, Vec<Proc>), Strin
                             if in_proc {
                                 let n = *n as u32;
                                 let index = procedures.len() - 1;
-                                procedures[index].add_operand(Operand::U32CheckedMulImm(n));
+                                procedures[index].add_instruction(Instruction::U32CheckedMulImm(n));
                             } else {
                                 let n = *n as u32;
-                                operands.push_back(Operand::U32CheckedMulImm(n));
+                                instructions.push_back(Instruction::U32CheckedMulImm(n));
                             }
                             i += 1;
                         }
                         _ => {
                             if in_proc {
                                 let index = procedures.len() - 1;
-                                procedures[index].add_operand(Operand::U32CheckedMul);
+                                procedures[index].add_instruction(Instruction::U32CheckedMul);
                             } else {
-                                operands.push_back(Operand::U32CheckedMul);
+                                instructions.push_back(Instruction::U32CheckedMul);
                             }
                         }
                     }
                 } else {
                     if in_proc {
                         let index = procedures.len() - 1;
-                        procedures[index].add_operand(Operand::U32CheckedMul);
+                        procedures[index].add_instruction(Instruction::U32CheckedMul);
                     } else {
-                        operands.push_back(Operand::U32CheckedMul);
+                        instructions.push_back(Instruction::U32CheckedMul);
                     }
                 }
             }
@@ -1470,28 +1483,29 @@ pub fn parse(tokens: Vec<Token>) -> Result<(VecDeque<Operand>, Vec<Proc>), Strin
                             if in_proc {
                                 let n = *n as u32;
                                 let index = procedures.len() - 1;
-                                procedures[index].add_operand(Operand::U32OverflowingMulImm(n));
+                                procedures[index]
+                                    .add_instruction(Instruction::U32OverflowingMulImm(n));
                             } else {
                                 let n = *n as u32;
-                                operands.push_back(Operand::U32OverflowingMulImm(n));
+                                instructions.push_back(Instruction::U32OverflowingMulImm(n));
                             }
                             i += 1;
                         }
                         _ => {
                             if in_proc {
                                 let index = procedures.len() - 1;
-                                procedures[index].add_operand(Operand::U32OverflowingMul);
+                                procedures[index].add_instruction(Instruction::U32OverflowingMul);
                             } else {
-                                operands.push_back(Operand::U32OverflowingMul);
+                                instructions.push_back(Instruction::U32OverflowingMul);
                             }
                         }
                     }
                 } else {
                     if in_proc {
                         let index = procedures.len() - 1;
-                        procedures[index].add_operand(Operand::U32OverflowingMul);
+                        procedures[index].add_instruction(Instruction::U32OverflowingMul);
                     } else {
-                        operands.push_back(Operand::U32OverflowingMul);
+                        instructions.push_back(Instruction::U32OverflowingMul);
                     }
                 }
             }
@@ -1503,28 +1517,29 @@ pub fn parse(tokens: Vec<Token>) -> Result<(VecDeque<Operand>, Vec<Proc>), Strin
                             if in_proc {
                                 let n = *n as u32;
                                 let index = procedures.len() - 1;
-                                procedures[index].add_operand(Operand::U32WrappingMulImm(n));
+                                procedures[index]
+                                    .add_instruction(Instruction::U32WrappingMulImm(n));
                             } else {
                                 let n = *n as u32;
-                                operands.push_back(Operand::U32WrappingMulImm(n));
+                                instructions.push_back(Instruction::U32WrappingMulImm(n));
                             }
                             i += 1;
                         }
                         _ => {
                             if in_proc {
                                 let index = procedures.len() - 1;
-                                procedures[index].add_operand(Operand::U32WrappingMul);
+                                procedures[index].add_instruction(Instruction::U32WrappingMul);
                             } else {
-                                operands.push_back(Operand::U32WrappingMul);
+                                instructions.push_back(Instruction::U32WrappingMul);
                             }
                         }
                     }
                 } else {
                     if in_proc {
                         let index = procedures.len() - 1;
-                        procedures[index].add_operand(Operand::U32WrappingMul);
+                        procedures[index].add_instruction(Instruction::U32WrappingMul);
                     } else {
-                        operands.push_back(Operand::U32WrappingMul);
+                        instructions.push_back(Instruction::U32WrappingMul);
                     }
                 }
             }
@@ -1536,28 +1551,28 @@ pub fn parse(tokens: Vec<Token>) -> Result<(VecDeque<Operand>, Vec<Proc>), Strin
                             if in_proc {
                                 let n = *n as u32;
                                 let index = procedures.len() - 1;
-                                procedures[index].add_operand(Operand::U32CheckedDivImm(n));
+                                procedures[index].add_instruction(Instruction::U32CheckedDivImm(n));
                             } else {
                                 let n = *n as u32;
-                                operands.push_back(Operand::U32CheckedDivImm(n));
+                                instructions.push_back(Instruction::U32CheckedDivImm(n));
                             }
                             i += 1;
                         }
                         _ => {
                             if in_proc {
                                 let index = procedures.len() - 1;
-                                procedures[index].add_operand(Operand::U32CheckedDiv);
+                                procedures[index].add_instruction(Instruction::U32CheckedDiv);
                             } else {
-                                operands.push_back(Operand::U32CheckedDiv);
+                                instructions.push_back(Instruction::U32CheckedDiv);
                             }
                         }
                     }
                 } else {
                     if in_proc {
                         let index = procedures.len() - 1;
-                        procedures[index].add_operand(Operand::U32CheckedDiv);
+                        procedures[index].add_instruction(Instruction::U32CheckedDiv);
                     } else {
-                        operands.push_back(Operand::U32CheckedDiv);
+                        instructions.push_back(Instruction::U32CheckedDiv);
                     }
                 }
             }
@@ -1569,28 +1584,29 @@ pub fn parse(tokens: Vec<Token>) -> Result<(VecDeque<Operand>, Vec<Proc>), Strin
                             if in_proc {
                                 let n = *n as u32;
                                 let index = procedures.len() - 1;
-                                procedures[index].add_operand(Operand::U32UncheckedDivImm(n));
+                                procedures[index]
+                                    .add_instruction(Instruction::U32UncheckedDivImm(n));
                             } else {
                                 let n = *n as u32;
-                                operands.push_back(Operand::U32UncheckedDivImm(n));
+                                instructions.push_back(Instruction::U32UncheckedDivImm(n));
                             }
                             i += 1;
                         }
                         _ => {
                             if in_proc {
                                 let index = procedures.len() - 1;
-                                procedures[index].add_operand(Operand::U32UncheckedDiv);
+                                procedures[index].add_instruction(Instruction::U32UncheckedDiv);
                             } else {
-                                operands.push_back(Operand::U32UncheckedDiv);
+                                instructions.push_back(Instruction::U32UncheckedDiv);
                             }
                         }
                     }
                 } else {
                     if in_proc {
                         let index = procedures.len() - 1;
-                        procedures[index].add_operand(Operand::U32UncheckedDiv);
+                        procedures[index].add_instruction(Instruction::U32UncheckedDiv);
                     } else {
-                        operands.push_back(Operand::U32UncheckedDiv);
+                        instructions.push_back(Instruction::U32UncheckedDiv);
                     }
                 }
             }
@@ -1602,28 +1618,28 @@ pub fn parse(tokens: Vec<Token>) -> Result<(VecDeque<Operand>, Vec<Proc>), Strin
                             if in_proc {
                                 let n = *n as u32;
                                 let index = procedures.len() - 1;
-                                procedures[index].add_operand(Operand::U32CheckedModImm(n));
+                                procedures[index].add_instruction(Instruction::U32CheckedModImm(n));
                             } else {
                                 let n = *n as u32;
-                                operands.push_back(Operand::U32CheckedModImm(n));
+                                instructions.push_back(Instruction::U32CheckedModImm(n));
                             }
                             i += 1;
                         }
                         _ => {
                             if in_proc {
                                 let index = procedures.len() - 1;
-                                procedures[index].add_operand(Operand::U32CheckedMod);
+                                procedures[index].add_instruction(Instruction::U32CheckedMod);
                             } else {
-                                operands.push_back(Operand::U32CheckedMod);
+                                instructions.push_back(Instruction::U32CheckedMod);
                             }
                         }
                     }
                 } else {
                     if in_proc {
                         let index = procedures.len() - 1;
-                        procedures[index].add_operand(Operand::U32CheckedMod);
+                        procedures[index].add_instruction(Instruction::U32CheckedMod);
                     } else {
-                        operands.push_back(Operand::U32CheckedMod);
+                        instructions.push_back(Instruction::U32CheckedMod);
                     }
                 }
             }
@@ -1635,28 +1651,29 @@ pub fn parse(tokens: Vec<Token>) -> Result<(VecDeque<Operand>, Vec<Proc>), Strin
                             if in_proc {
                                 let n = *n as u32;
                                 let index = procedures.len() - 1;
-                                procedures[index].add_operand(Operand::U32UncheckedModImm(n));
+                                procedures[index]
+                                    .add_instruction(Instruction::U32UncheckedModImm(n));
                             } else {
                                 let n = *n as u32;
-                                operands.push_back(Operand::U32UncheckedModImm(n));
+                                instructions.push_back(Instruction::U32UncheckedModImm(n));
                             }
                             i += 1;
                         }
                         _ => {
                             if in_proc {
                                 let index = procedures.len() - 1;
-                                procedures[index].add_operand(Operand::U32UncheckedMod);
+                                procedures[index].add_instruction(Instruction::U32UncheckedMod);
                             } else {
-                                operands.push_back(Operand::U32UncheckedMod);
+                                instructions.push_back(Instruction::U32UncheckedMod);
                             }
                         }
                     }
                 } else {
                     if in_proc {
                         let index = procedures.len() - 1;
-                        procedures[index].add_operand(Operand::U32UncheckedMod);
+                        procedures[index].add_instruction(Instruction::U32UncheckedMod);
                     } else {
-                        operands.push_back(Operand::U32UncheckedMod);
+                        instructions.push_back(Instruction::U32UncheckedMod);
                     }
                 }
             }
@@ -1668,28 +1685,29 @@ pub fn parse(tokens: Vec<Token>) -> Result<(VecDeque<Operand>, Vec<Proc>), Strin
                             if in_proc {
                                 let n = *n as u32;
                                 let index = procedures.len() - 1;
-                                procedures[index].add_operand(Operand::U32CheckedDivModImm(n));
+                                procedures[index]
+                                    .add_instruction(Instruction::U32CheckedDivModImm(n));
                             } else {
                                 let n = *n as u32;
-                                operands.push_back(Operand::U32CheckedDivModImm(n));
+                                instructions.push_back(Instruction::U32CheckedDivModImm(n));
                             }
                             i += 1;
                         }
                         _ => {
                             if in_proc {
                                 let index = procedures.len() - 1;
-                                procedures[index].add_operand(Operand::U32CheckedDivMod);
+                                procedures[index].add_instruction(Instruction::U32CheckedDivMod);
                             } else {
-                                operands.push_back(Operand::U32CheckedDivMod);
+                                instructions.push_back(Instruction::U32CheckedDivMod);
                             }
                         }
                     }
                 } else {
                     if in_proc {
                         let index = procedures.len() - 1;
-                        procedures[index].add_operand(Operand::U32CheckedDivMod);
+                        procedures[index].add_instruction(Instruction::U32CheckedDivMod);
                     } else {
-                        operands.push_back(Operand::U32CheckedDivMod);
+                        instructions.push_back(Instruction::U32CheckedDivMod);
                     }
                 }
             }
@@ -1701,28 +1719,29 @@ pub fn parse(tokens: Vec<Token>) -> Result<(VecDeque<Operand>, Vec<Proc>), Strin
                             if in_proc {
                                 let n = *n as u32;
                                 let index = procedures.len() - 1;
-                                procedures[index].add_operand(Operand::U32UncheckedDivModImm(n));
+                                procedures[index]
+                                    .add_instruction(Instruction::U32UncheckedDivModImm(n));
                             } else {
                                 let n = *n as u32;
-                                operands.push_back(Operand::U32UncheckedDivModImm(n));
+                                instructions.push_back(Instruction::U32UncheckedDivModImm(n));
                             }
                             i += 1;
                         }
                         _ => {
                             if in_proc {
                                 let index = procedures.len() - 1;
-                                procedures[index].add_operand(Operand::U32UncheckedDivMod);
+                                procedures[index].add_instruction(Instruction::U32UncheckedDivMod);
                             } else {
-                                operands.push_back(Operand::U32UncheckedDivMod);
+                                instructions.push_back(Instruction::U32UncheckedDivMod);
                             }
                         }
                     }
                 } else {
                     if in_proc {
                         let index = procedures.len() - 1;
-                        procedures[index].add_operand(Operand::U32UncheckedDivMod);
+                        procedures[index].add_instruction(Instruction::U32UncheckedDivMod);
                     } else {
-                        operands.push_back(Operand::U32UncheckedDivMod);
+                        instructions.push_back(Instruction::U32UncheckedDivMod);
                     }
                 }
             }
@@ -1730,72 +1749,72 @@ pub fn parse(tokens: Vec<Token>) -> Result<(VecDeque<Operand>, Vec<Proc>), Strin
             Token::U32OverflowingAdd3 => {
                 if in_proc {
                     let index = procedures.len() - 1;
-                    procedures[index].add_operand(Operand::U32OverflowingAdd3);
+                    procedures[index].add_instruction(Instruction::U32OverflowingAdd3);
                 } else {
-                    operands.push_back(Operand::U32OverflowingAdd3);
+                    instructions.push_back(Instruction::U32OverflowingAdd3);
                 }
             }
 
             Token::U32WrappingAdd3 => {
                 if in_proc {
                     let index = procedures.len() - 1;
-                    procedures[index].add_operand(Operand::U32WrappingAdd3);
+                    procedures[index].add_instruction(Instruction::U32WrappingAdd3);
                 } else {
-                    operands.push_back(Operand::U32WrappingAdd3);
+                    instructions.push_back(Instruction::U32WrappingAdd3);
                 }
             }
 
             Token::U32OverflowingMadd => {
                 if in_proc {
                     let index = procedures.len() - 1;
-                    procedures[index].add_operand(Operand::U32OverflowingMadd);
+                    procedures[index].add_instruction(Instruction::U32OverflowingMadd);
                 } else {
-                    operands.push_back(Operand::U32OverflowingMadd);
+                    instructions.push_back(Instruction::U32OverflowingMadd);
                 }
             }
 
             Token::U32WrappingMadd => {
                 if in_proc {
                     let index = procedures.len() - 1;
-                    procedures[index].add_operand(Operand::U32WrappingMadd);
+                    procedures[index].add_instruction(Instruction::U32WrappingMadd);
                 } else {
-                    operands.push_back(Operand::U32WrappingMadd);
+                    instructions.push_back(Instruction::U32WrappingMadd);
                 }
             }
 
             Token::U32CheckedAnd => {
                 if in_proc {
                     let index = procedures.len() - 1;
-                    procedures[index].add_operand(Operand::U32CheckedAnd);
+                    procedures[index].add_instruction(Instruction::U32CheckedAnd);
                 } else {
-                    operands.push_back(Operand::U32CheckedAnd);
+                    instructions.push_back(Instruction::U32CheckedAnd);
                 }
             }
 
             Token::U32CheckedOr => {
                 if in_proc {
                     let index = procedures.len() - 1;
-                    procedures[index].add_operand(Operand::U32CheckedOr);
+                    procedures[index].add_instruction(Instruction::U32CheckedOr);
                 } else {
-                    operands.push_back(Operand::U32CheckedOr);
+                    instructions.push_back(Instruction::U32CheckedOr);
                 }
             }
 
             Token::U32CheckedXor => {
                 if in_proc {
                     let index = procedures.len() - 1;
-                    procedures[index].add_operand(Operand::U32CheckedXor);
+                    procedures[index].add_instruction(Instruction::U32CheckedXor);
                 } else {
-                    operands.push_back(Operand::U32CheckedXor);
+                    instructions.push_back(Instruction::U32CheckedXor);
                 }
             }
 
             Token::U32CheckedNot => {
                 if in_proc {
                     let index = procedures.len() - 1;
-                    procedures[index].add_operand(Operand::U32CheckedNot);
+                    procedures[index].add_instruction(Instruction::U32CheckedNot);
                 } else {
-                    operands.push_back(Operand::U32CheckedNot);
+                    instructions.push_back(Instruction::U32CheckedNot);
                 }
             }
 
@@ -1806,28 +1825,28 @@ pub fn parse(tokens: Vec<Token>) -> Result<(VecDeque<Operand>, Vec<Proc>), Strin
                             if in_proc {
                                 let n = *n as u32;
                                 let index = procedures.len() - 1;
-                                procedures[index].add_operand(Operand::U32CheckedShlImm(n));
+                                procedures[index].add_instruction(Instruction::U32CheckedShlImm(n));
                             } else {
                                 let n = *n as u32;
-                                operands.push_back(Operand::U32CheckedShlImm(n));
+                                instructions.push_back(Instruction::U32CheckedShlImm(n));
                             }
                             i += 1;
                         }
                         _ => {
                             if in_proc {
                                 let index = procedures.len() - 1;
-                                procedures[index].add_operand(Operand::U32CheckedShl);
+                                procedures[index].add_instruction(Instruction::U32CheckedShl);
                             } else {
-                                operands.push_back(Operand::U32CheckedShl);
+                                instructions.push_back(Instruction::U32CheckedShl);
                             }
                         }
                     }
                 } else {
                     if in_proc {
                         let index = procedures.len() - 1;
-                        procedures[index].add_operand(Operand::U32CheckedShl);
+                        procedures[index].add_instruction(Instruction::U32CheckedShl);
                     } else {
-                        operands.push_back(Operand::U32CheckedShl);
+                        instructions.push_back(Instruction::U32CheckedShl);
                     }
                 }
             }
@@ -1839,28 +1858,29 @@ pub fn parse(tokens: Vec<Token>) -> Result<(VecDeque<Operand>, Vec<Proc>), Strin
                             if in_proc {
                                 let n = *n as u32;
                                 let index = procedures.len() - 1;
-                                procedures[index].add_operand(Operand::U32UncheckedShlImm(n));
+                                procedures[index]
+                                    .add_instruction(Instruction::U32UncheckedShlImm(n));
                             } else {
                                 let n = *n as u32;
-                                operands.push_back(Operand::U32UncheckedShlImm(n));
+                                instructions.push_back(Instruction::U32UncheckedShlImm(n));
                             }
                             i += 1;
                         }
                         _ => {
                             if in_proc {
                                 let index = procedures.len() - 1;
-                                procedures[index].add_operand(Operand::U32UncheckedShl);
+                                procedures[index].add_instruction(Instruction::U32UncheckedShl);
                             } else {
-                                operands.push_back(Operand::U32UncheckedShl);
+                                instructions.push_back(Instruction::U32UncheckedShl);
                             }
                         }
                     }
                 } else {
                     if in_proc {
                         let index = procedures.len() - 1;
-                        procedures[index].add_operand(Operand::U32UncheckedShl);
+                        procedures[index].add_instruction(Instruction::U32UncheckedShl);
                     } else {
-                        operands.push_back(Operand::U32UncheckedShl);
+                        instructions.push_back(Instruction::U32UncheckedShl);
                     }
                 }
             }
@@ -1872,28 +1892,28 @@ pub fn parse(tokens: Vec<Token>) -> Result<(VecDeque<Operand>, Vec<Proc>), Strin
                             if in_proc {
                                 let n = *n as u32;
                                 let index = procedures.len() - 1;
-                                procedures[index].add_operand(Operand::U32CheckedShrImm(n));
+                                procedures[index].add_instruction(Instruction::U32CheckedShrImm(n));
                             } else {
                                 let n = *n as u32;
-                                operands.push_back(Operand::U32CheckedShrImm(n));
+                                instructions.push_back(Instruction::U32CheckedShrImm(n));
                             }
                             i += 1;
                         }
                         _ => {
                             if in_proc {
                                 let index = procedures.len() - 1;
-                                procedures[index].add_operand(Operand::U32CheckedShr);
+                                procedures[index].add_instruction(Instruction::U32CheckedShr);
                             } else {
-                                operands.push_back(Operand::U32CheckedShr);
+                                instructions.push_back(Instruction::U32CheckedShr);
                             }
                         }
                     }
                 } else {
                     if in_proc {
                         let index = procedures.len() - 1;
-                        procedures[index].add_operand(Operand::U32CheckedShr);
+                        procedures[index].add_instruction(Instruction::U32CheckedShr);
                     } else {
-                        operands.push_back(Operand::U32CheckedShr);
+                        instructions.push_back(Instruction::U32CheckedShr);
                     }
                 }
             }
@@ -1905,28 +1925,29 @@ pub fn parse(tokens: Vec<Token>) -> Result<(VecDeque<Operand>, Vec<Proc>), Strin
                             if in_proc {
                                 let n = *n as u32;
                                 let index = procedures.len() - 1;
-                                procedures[index].add_operand(Operand::U32UncheckedShrImm(n));
+                                procedures[index]
+                                    .add_instruction(Instruction::U32UncheckedShrImm(n));
                             } else {
                                 let n = *n as u32;
-                                operands.push_back(Operand::U32UncheckedShrImm(n));
+                                instructions.push_back(Instruction::U32UncheckedShrImm(n));
                             }
                             i += 1;
                         }
                         _ => {
                             if in_proc {
                                 let index = procedures.len() - 1;
-                                procedures[index].add_operand(Operand::U32UncheckedShr);
+                                procedures[index].add_instruction(Instruction::U32UncheckedShr);
                             } else {
-                                operands.push_back(Operand::U32UncheckedShr);
+                                instructions.push_back(Instruction::U32UncheckedShr);
                             }
                         }
                     }
                 } else {
                     if in_proc {
                         let index = procedures.len() - 1;
-                        procedures[index].add_operand(Operand::U32UncheckedShr);
+                        procedures[index].add_instruction(Instruction::U32UncheckedShr);
                     } else {
-                        operands.push_back(Operand::U32UncheckedShr);
+                        instructions.push_back(Instruction::U32UncheckedShr);
                     }
                 }
             }
@@ -1938,28 +1959,29 @@ pub fn parse(tokens: Vec<Token>) -> Result<(VecDeque<Operand>, Vec<Proc>), Strin
                             if in_proc {
                                 let n = *n;
                                 let index = procedures.len() - 1;
-                                procedures[index].add_operand(Operand::U32CheckedRotlImm(n as u32));
+                                procedures[index]
+                                    .add_instruction(Instruction::U32CheckedRotlImm(n as u32));
                             } else {
                                 let n = *n;
-                                operands.push_back(Operand::U32CheckedRotlImm(n as u32));
+                                instructions.push_back(Instruction::U32CheckedRotlImm(n as u32));
                             }
                             i += 1;
                         }
                         _ => {
                             if in_proc {
                                 let index = procedures.len() - 1;
-                                procedures[index].add_operand(Operand::U32CheckedRotl);
+                                procedures[index].add_instruction(Instruction::U32CheckedRotl);
                             } else {
-                                operands.push_back(Operand::U32CheckedRotl);
+                                instructions.push_back(Instruction::U32CheckedRotl);
                             }
                         }
                     }
                 } else {
                     if in_proc {
                         let index = procedures.len() - 1;
-                        procedures[index].add_operand(Operand::U32CheckedRotl);
+                        procedures[index].add_instruction(Instruction::U32CheckedRotl);
                     } else {
-                        operands.push_back(Operand::U32CheckedRotl);
+                        instructions.push_back(Instruction::U32CheckedRotl);
                     }
                 }
             }
@@ -1972,28 +1994,28 @@ pub fn parse(tokens: Vec<Token>) -> Result<(VecDeque<Operand>, Vec<Proc>), Strin
                                 let n = *n;
                                 let index = procedures.len() - 1;
                                 procedures[index]
-                                    .add_operand(Operand::U32UncheckedRotlImm(n as u32));
+                                    .add_instruction(Instruction::U32UncheckedRotlImm(n as u32));
                             } else {
                                 let n = *n;
-                                operands.push_back(Operand::U32UncheckedRotlImm(n as u32));
+                                instructions.push_back(Instruction::U32UncheckedRotlImm(n as u32));
                             }
                             i += 1;
                         }
                         _ => {
                             if in_proc {
                                 let index = procedures.len() - 1;
-                                procedures[index].add_operand(Operand::U32UncheckedRotl);
+                                procedures[index].add_instruction(Instruction::U32UncheckedRotl);
                             } else {
-                                operands.push_back(Operand::U32UncheckedRotl);
+                                instructions.push_back(Instruction::U32UncheckedRotl);
                             }
                         }
                     }
                 } else {
                     if in_proc {
                         let index = procedures.len() - 1;
-                        procedures[index].add_operand(Operand::U32UncheckedRotl);
+                        procedures[index].add_instruction(Instruction::U32UncheckedRotl);
                     } else {
-                        operands.push_back(Operand::U32UncheckedRotl);
+                        instructions.push_back(Instruction::U32UncheckedRotl);
                     }
                 }
             }
@@ -2005,28 +2027,29 @@ pub fn parse(tokens: Vec<Token>) -> Result<(VecDeque<Operand>, Vec<Proc>), Strin
                             if in_proc {
                                 let n = *n;
                                 let index = procedures.len() - 1;
-                                procedures[index].add_operand(Operand::U32CheckedRotrImm(n as u32));
+                                procedures[index]
+                                    .add_instruction(Instruction::U32CheckedRotrImm(n as u32));
                             } else {
                                 let n = *n;
-                                operands.push_back(Operand::U32CheckedRotrImm(n as u32));
+                                instructions.push_back(Instruction::U32CheckedRotrImm(n as u32));
                             }
                             i += 1;
                         }
                         _ => {
                             if in_proc {
                                 let index = procedures.len() - 1;
-                                procedures[index].add_operand(Operand::U32CheckedRotr);
+                                procedures[index].add_instruction(Instruction::U32CheckedRotr);
                             } else {
-                                operands.push_back(Operand::U32CheckedRotr);
+                                instructions.push_back(Instruction::U32CheckedRotr);
                             }
                         }
                     }
                 } else {
                     if in_proc {
                         let index = procedures.len() - 1;
-                        procedures[index].add_operand(Operand::U32CheckedRotr);
+                        procedures[index].add_instruction(Instruction::U32CheckedRotr);
                     } else {
-                        operands.push_back(Operand::U32CheckedRotr);
+                        instructions.push_back(Instruction::U32CheckedRotr);
                     }
                 }
             }
@@ -2039,28 +2062,28 @@ pub fn parse(tokens: Vec<Token>) -> Result<(VecDeque<Operand>, Vec<Proc>), Strin
                                 let n = *n;
                                 let index = procedures.len() - 1;
                                 procedures[index]
-                                    .add_operand(Operand::U32UncheckedRotrImm(n as u32));
+                                    .add_instruction(Instruction::U32UncheckedRotrImm(n as u32));
                             } else {
                                 let n = *n;
-                                operands.push_back(Operand::U32UncheckedRotrImm(n as u32));
+                                instructions.push_back(Instruction::U32UncheckedRotrImm(n as u32));
                             }
                             i += 1;
                         }
                         _ => {
                             if in_proc {
                                 let index = procedures.len() - 1;
-                                procedures[index].add_operand(Operand::U32UncheckedRotr);
+                                procedures[index].add_instruction(Instruction::U32UncheckedRotr);
                             } else {
-                                operands.push_back(Operand::U32UncheckedRotr);
+                                instructions.push_back(Instruction::U32UncheckedRotr);
                             }
                         }
                     }
                 } else {
                     if in_proc {
                         let index = procedures.len() - 1;
-                        procedures[index].add_operand(Operand::U32UncheckedRotr);
+                        procedures[index].add_instruction(Instruction::U32UncheckedRotr);
                     } else {
-                        operands.push_back(Operand::U32UncheckedRotr);
+                        instructions.push_back(Instruction::U32UncheckedRotr);
                     }
                 }
             }
@@ -2068,18 +2091,18 @@ pub fn parse(tokens: Vec<Token>) -> Result<(VecDeque<Operand>, Vec<Proc>), Strin
             Token::U32CheckedPopcnt => {
                 if in_proc {
                     let index = procedures.len() - 1;
-                    procedures[index].add_operand(Operand::U32CheckedPopcnt);
+                    procedures[index].add_instruction(Instruction::U32CheckedPopcnt);
                 } else {
-                    operands.push_back(Operand::U32CheckedPopcnt);
+                    instructions.push_back(Instruction::U32CheckedPopcnt);
                 }
             }
 
             Token::U32UncheckedPopcnt => {
                 if in_proc {
                     let index = procedures.len() - 1;
-                    procedures[index].add_operand(Operand::U32UncheckedPopcnt);
+                    procedures[index].add_instruction(Instruction::U32UncheckedPopcnt);
                 } else {
-                    operands.push_back(Operand::U32UncheckedPopcnt);
+                    instructions.push_back(Instruction::U32UncheckedPopcnt);
                 }
             }
 
@@ -2089,27 +2112,28 @@ pub fn parse(tokens: Vec<Token>) -> Result<(VecDeque<Operand>, Vec<Proc>), Strin
                         Token::Number(n) => {
                             if in_proc {
                                 let index = procedures.len() - 1;
-                                procedures[index].add_operand(Operand::U32CheckedEqImm(*n as u32));
+                                procedures[index]
+                                    .add_instruction(Instruction::U32CheckedEqImm(*n as u32));
                             } else {
-                                operands.push_back(Operand::U32CheckedEqImm(*n as u32));
+                                instructions.push_back(Instruction::U32CheckedEqImm(*n as u32));
                             }
                             i += 1;
                         }
                         _ => {
                             if in_proc {
                                 let index = procedures.len() - 1;
-                                procedures[index].add_operand(Operand::U32CheckedEq);
+                                procedures[index].add_instruction(Instruction::U32CheckedEq);
                             } else {
-                                operands.push_back(Operand::U32CheckedEq);
+                                instructions.push_back(Instruction::U32CheckedEq);
                             }
                         }
                     }
                 } else {
                     if in_proc {
                         let index = procedures.len() - 1;
-                        procedures[index].add_operand(Operand::U32CheckedEq);
+                        procedures[index].add_instruction(Instruction::U32CheckedEq);
                     } else {
-                        operands.push_back(Operand::U32CheckedEq);
+                        instructions.push_back(Instruction::U32CheckedEq);
                     }
                 }
             }
@@ -2120,27 +2144,28 @@ pub fn parse(tokens: Vec<Token>) -> Result<(VecDeque<Operand>, Vec<Proc>), Strin
                         Token::Number(n) => {
                             if in_proc {
                                 let index = procedures.len() - 1;
-                                procedures[index].add_operand(Operand::U32CheckedNeqImm(*n as u32));
+                                procedures[index]
+                                    .add_instruction(Instruction::U32CheckedNeqImm(*n as u32));
                             } else {
-                                operands.push_back(Operand::U32CheckedNeqImm(*n as u32));
+                                instructions.push_back(Instruction::U32CheckedNeqImm(*n as u32));
                             }
                             i += 1;
                         }
                         _ => {
                             if in_proc {
                                 let index = procedures.len() - 1;
-                                procedures[index].add_operand(Operand::U32CheckedNeq);
+                                procedures[index].add_instruction(Instruction::U32CheckedNeq);
                             } else {
-                                operands.push_back(Operand::U32CheckedNeq);
+                                instructions.push_back(Instruction::U32CheckedNeq);
                             }
                         }
                     }
                 } else {
                     if in_proc {
                         let index = procedures.len() - 1;
-                        procedures[index].add_operand(Operand::U32CheckedNeq);
+                        procedures[index].add_instruction(Instruction::U32CheckedNeq);
                     } else {
-                        operands.push_back(Operand::U32CheckedNeq);
+                        instructions.push_back(Instruction::U32CheckedNeq);
                     }
                 }
             }
@@ -2148,108 +2173,108 @@ pub fn parse(tokens: Vec<Token>) -> Result<(VecDeque<Operand>, Vec<Proc>), Strin
             Token::U32CheckedLt => {
                 if in_proc {
                     let index = procedures.len() - 1;
-                    procedures[index].add_operand(Operand::U32CheckedLt);
+                    procedures[index].add_instruction(Instruction::U32CheckedLt);
                 } else {
-                    operands.push_back(Operand::U32CheckedLt);
+                    instructions.push_back(Instruction::U32CheckedLt);
                 }
             }
 
             Token::U32UncheckedLte => {
                 if in_proc {
                     let index = procedures.len() - 1;
-                    procedures[index].add_operand(Operand::U32UncheckedLte);
+                    procedures[index].add_instruction(Instruction::U32UncheckedLte);
                 } else {
-                    operands.push_back(Operand::U32UncheckedLte);
+                    instructions.push_back(Instruction::U32UncheckedLte);
                 }
             }
 
             Token::U32CheckedLte => {
                 if in_proc {
                     let index = procedures.len() - 1;
-                    procedures[index].add_operand(Operand::U32CheckedLte);
+                    procedures[index].add_instruction(Instruction::U32CheckedLte);
                 } else {
-                    operands.push_back(Operand::U32CheckedLte);
+                    instructions.push_back(Instruction::U32CheckedLte);
                 }
             }
 
             Token::U32UncheckedLt => {
                 if in_proc {
                     let index = procedures.len() - 1;
-                    procedures[index].add_operand(Operand::U32UncheckedLt);
+                    procedures[index].add_instruction(Instruction::U32UncheckedLt);
                 } else {
-                    operands.push_back(Operand::U32UncheckedLt);
+                    instructions.push_back(Instruction::U32UncheckedLt);
                 }
             }
 
             Token::U32CheckedGt => {
                 if in_proc {
                     let index = procedures.len() - 1;
-                    procedures[index].add_operand(Operand::U32CheckedGt);
+                    procedures[index].add_instruction(Instruction::U32CheckedGt);
                 } else {
-                    operands.push_back(Operand::U32CheckedGt);
+                    instructions.push_back(Instruction::U32CheckedGt);
                 }
             }
 
             Token::U32UncheckedGte => {
                 if in_proc {
                     let index = procedures.len() - 1;
-                    procedures[index].add_operand(Operand::U32UncheckedGte);
+                    procedures[index].add_instruction(Instruction::U32UncheckedGte);
                 } else {
-                    operands.push_back(Operand::U32UncheckedGte);
+                    instructions.push_back(Instruction::U32UncheckedGte);
                 }
             }
 
             Token::U32CheckedGte => {
                 if in_proc {
                     let index = procedures.len() - 1;
-                    procedures[index].add_operand(Operand::U32CheckedGte);
+                    procedures[index].add_instruction(Instruction::U32CheckedGte);
                 } else {
-                    operands.push_back(Operand::U32CheckedGte);
+                    instructions.push_back(Instruction::U32CheckedGte);
                 }
             }
 
             Token::U32UncheckedGt => {
                 if in_proc {
                     let index = procedures.len() - 1;
-                    procedures[index].add_operand(Operand::U32UncheckedGt);
+                    procedures[index].add_instruction(Instruction::U32UncheckedGt);
                 } else {
-                    operands.push_back(Operand::U32UncheckedGt);
+                    instructions.push_back(Instruction::U32UncheckedGt);
                 }
             }
 
             Token::U32CheckedMin => {
                 if in_proc {
                     let index = procedures.len() - 1;
-                    procedures[index].add_operand(Operand::U32CheckedMin);
+                    procedures[index].add_instruction(Instruction::U32CheckedMin);
                 } else {
-                    operands.push_back(Operand::U32CheckedMin);
+                    instructions.push_back(Instruction::U32CheckedMin);
                 }
             }
 
             Token::U32UncheckedMin => {
                 if in_proc {
                     let index = procedures.len() - 1;
-                    procedures[index].add_operand(Operand::U32UncheckedMin);
+                    procedures[index].add_instruction(Instruction::U32UncheckedMin);
                 } else {
-                    operands.push_back(Operand::U32UncheckedMin);
+                    instructions.push_back(Instruction::U32UncheckedMin);
                 }
             }
 
             Token::U32CheckedMax => {
                 if in_proc {
                     let index = procedures.len() - 1;
-                    procedures[index].add_operand(Operand::U32CheckedMax);
+                    procedures[index].add_instruction(Instruction::U32CheckedMax);
                 } else {
-                    operands.push_back(Operand::U32CheckedMax);
+                    instructions.push_back(Instruction::U32CheckedMax);
                 }
             }
 
             Token::U32UncheckedMax => {
                 if in_proc {
                     let index = procedures.len() - 1;
-                    procedures[index].add_operand(Operand::U32UncheckedMax);
+                    procedures[index].add_instruction(Instruction::U32UncheckedMax);
                 } else {
-                    operands.push_back(Operand::U32UncheckedMax);
+                    instructions.push_back(Instruction::U32UncheckedMax);
                 }
             }
 
@@ -2260,5 +2285,5 @@ pub fn parse(tokens: Vec<Token>) -> Result<(VecDeque<Operand>, Vec<Proc>), Strin
         i += 1;
     }
 
-    Ok((operands, procedures))
+    Ok((instructions, procedures))
 }

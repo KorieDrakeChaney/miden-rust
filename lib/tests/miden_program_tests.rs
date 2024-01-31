@@ -1,526 +1,4 @@
-use rust_masm::{tokenize, EmptyProgram, Inputs, MidenProgram};
-
-#[test]
-fn test_inv() {
-    let mut program = MidenProgram::new();
-
-    program.push(5);
-    program.inv();
-
-    program.print("test stack");
-    program.save("programs/inv.masm");
-
-    assert_eq!(Some(program.stack[0].into()), program.prove());
-}
-
-#[test]
-fn test_add() {
-    let mut program = MidenProgram::new();
-
-    program.push(5);
-    program.print("hello");
-    program.push(5);
-    program.add();
-    program.print("testing add");
-
-    program.save("programs/add.masm");
-    program.print_masm();
-    assert_eq!(Some(program.stack[0].into()), program.prove());
-}
-
-#[test]
-fn test_add_n() {
-    let mut program = MidenProgram::new();
-
-    program.push(5);
-    program.add_n(10);
-
-    program.save("programs/add_n.masm");
-    assert_eq!(Some(program.stack[0].into()), program.prove());
-}
-
-#[test]
-fn test_sub() {
-    let mut program = MidenProgram::new();
-
-    program.push(5);
-    program.push(5);
-    program.sub();
-
-    program.save("programs/sub.masm");
-    assert_eq!(Some(program.stack[0].into()), program.prove());
-}
-
-#[test]
-fn test_sub_n() {
-    let mut program = MidenProgram::new();
-
-    program.push(5);
-    program.sub_n(10);
-
-    program.save("programs/sub_n.masm");
-    assert_eq!(Some(program.stack[0].into()), program.prove());
-}
-
-#[test]
-fn test_mul() {
-    let mut program = MidenProgram::new();
-
-    program.push(5);
-    program.push(5);
-    program.mul();
-
-    program.save("programs/mul.masm");
-    assert_eq!(Some(program.stack[0].into()), program.prove());
-}
-
-#[test]
-fn test_mul_n() {
-    let mut program = MidenProgram::new();
-
-    program.push(5);
-    program.mul_n(10);
-
-    program.save("programs/mul_n.masm");
-    assert_eq!(Some(program.stack[0].into()), program.prove());
-}
-
-#[test]
-fn test_div() {
-    let mut program = MidenProgram::new();
-
-    program.push(5);
-    program.push(5);
-    program.div();
-
-    program.save("programs/div.masm");
-    assert_eq!(Some(program.stack[0].into()), program.prove());
-}
-
-#[test]
-fn test_div_n() {
-    let mut program = MidenProgram::new();
-
-    program.push(5);
-    program.div_n(10);
-
-    program.save("programs/div_n.masm");
-    assert_eq!(Some(program.stack[0].into()), program.prove());
-}
-
-#[test]
-fn test_repeat() {
-    let mut program = MidenProgram::new().with_inputs(Inputs::from_file("inputs/fibonacci.json"));
-
-    let mut fib = MidenProgram::new();
-
-    fib.swap();
-    fib.dup_n(1);
-    fib.add();
-
-    program.repeat(10, || fib.get_operands());
-
-    program.print_masm();
-
-    program.save("programs/repeat.masm");
-    assert_eq!(Some(program.stack[0].into()), program.prove());
-}
-
-#[test]
-fn test_not() {
-    let mut program = MidenProgram::new();
-
-    program.push(1);
-    program.not();
-
-    program.save("programs/not.masm");
-    assert_eq!(Some(program.stack[0].into()), program.prove());
-}
-
-#[test]
-fn test_swap() {
-    let mut program = MidenProgram::new();
-    let mut program2 = MidenProgram::new();
-    let mut pad_program = MidenProgram::new();
-
-    pad_program.padw();
-
-    program2.push(1);
-    program.repeat(8, || pad_program.get_operands());
-    program.repeat(7, || program2.get_operands());
-
-    program.swapw_n(3);
-
-    program.save("programs/swap.masm");
-    assert_eq!(Some(program.stack[0].into()), program.prove());
-}
-
-#[test]
-fn test_movup() {
-    let mut program = MidenProgram::new();
-
-    let mut pad_program = MidenProgram::new();
-
-    pad_program.padw();
-
-    program.repeat(4, || pad_program.get_operands());
-
-    for i in 0..9 {
-        program.push(i);
-    }
-
-    program.movup_n(3);
-
-    program.save("programs/movup.masm");
-    assert_eq!(Some(program.stack[0].into()), program.prove());
-}
-
-#[test]
-fn test_movdn() {
-    let mut program = MidenProgram::new();
-
-    let mut pad_program = MidenProgram::new();
-
-    pad_program.padw();
-
-    program.repeat(4, || pad_program.get_operands());
-
-    for i in 0..9 {
-        program.push(i);
-    }
-
-    program.movdn_n(3);
-
-    program.save("programs/movdn.masm");
-    assert_eq!(Some(program.stack[0].into()), program.prove());
-}
-
-#[test]
-fn test_movupw() {
-    let mut program = MidenProgram::new();
-
-    let mut pad_program = MidenProgram::new();
-
-    pad_program.padw();
-
-    program.repeat(4, || pad_program.get_operands());
-
-    for i in 0..9 {
-        program.push(i);
-    }
-
-    program.movupw_n(2);
-
-    program.save("programs/movupw.masm");
-    assert_eq!(Some(program.stack[0].into()), program.prove());
-}
-
-#[test]
-fn test_movdnw() {
-    let mut program = MidenProgram::new();
-
-    let mut pad_program = MidenProgram::new();
-
-    pad_program.padw();
-
-    program.repeat(4, || pad_program.get_operands());
-
-    for i in 0..9 {
-        program.push(i);
-    }
-
-    program.movdnw_n(3);
-
-    program.save("programs/movdnw.masm");
-    assert_eq!(Some(program.stack[0].into()), program.prove());
-}
-
-#[test]
-fn test_while() {
-    let mut program = MidenProgram::new().with_inputs(Inputs::from_file("inputs/while.json"));
-
-    let mut fib = MidenProgram::new();
-
-    fib.swap();
-    fib.dup_n(1);
-    fib.add();
-
-    let mut while_program = MidenProgram::new();
-
-    while_program.add_program(|| fib.get_operands());
-
-    while_program.dup();
-
-    while_program.eq_n(89);
-
-    let mut if_program = MidenProgram::new();
-    if_program.push(0);
-    let mut else_program = MidenProgram::new();
-    else_program.push(1);
-
-    while_program.if_else_block(|| if_program.get_operands(), || else_program.get_operands());
-
-    program.adv_push(1);
-    program.while_block(|| while_program.get_operands());
-
-    program.save("programs/while.masm");
-    program.print_masm();
-    assert_eq!(Some(program.stack[0].into()), program.prove());
-}
-
-#[test]
-fn nested_if_else() {
-    let mut program =
-        MidenProgram::new().with_inputs(Inputs::from_file("inputs/nested_if_else.json"));
-
-    program.adv_push(1);
-
-    let mut program_2 = MidenProgram::new();
-
-    let mut if_program = MidenProgram::new();
-
-    if_program.push(1);
-
-    let mut else_program = MidenProgram::new();
-
-    else_program.push(0);
-
-    program_2.if_else_block(|| if_program.get_operands(), || else_program.get_operands());
-
-    let mut program_3 = MidenProgram::new();
-
-    program_3.push(1);
-
-    let mut if_program_2 = MidenProgram::new();
-
-    if_program_2.add_program(|| program_2.get_operands());
-
-    if_program_2.add_program(|| program_2.get_operands());
-
-    program_3.if_else_block(|| if_program_2.get_operands(), || program_2.get_operands());
-
-    program.add_program(|| program_3.get_operands());
-
-    program.print_masm();
-
-    program.save("programs/nested_if_else.masm");
-    assert_eq!(Some(program.stack[0].into()), program.prove());
-}
-
-#[test]
-fn nested_repeat() {
-    let mut program = MidenProgram::new();
-
-    let mut program_2 = MidenProgram::new();
-
-    let mut repeat_program = MidenProgram::new();
-
-    repeat_program.push(1);
-
-    program_2.repeat(2, || repeat_program.get_operands());
-
-    let mut program_3 = MidenProgram::new();
-
-    program_3.push(1);
-
-    let mut repeat_program_2 = MidenProgram::new();
-
-    repeat_program_2.add_program(|| program_2.get_operands());
-
-    repeat_program_2.add_program(|| program_2.get_operands());
-
-    program_3.repeat(2, || repeat_program_2.get_operands());
-
-    program.add_program(|| program_3.get_operands());
-    program.print_masm();
-
-    program.print("test stack");
-    program.save("programs/nested_repeat.masm");
-    assert_eq!(Some(program.stack[0].into()), program.prove());
-}
-
-#[test]
-fn test_mem_store() {
-    let mut program = MidenProgram::new();
-
-    program.push(5);
-    program.push(2);
-    program.mem_store();
-    program.push(2);
-    program.mem_load();
-
-    program.save("programs/mem_store.masm");
-    assert_eq!(Some(program.stack[0].into()), program.prove());
-}
-
-#[test]
-fn test_mem_store_n() {
-    let mut program = MidenProgram::new();
-
-    program.push(5);
-    program.mem_store_n(2);
-    program.push(2);
-    program.mem_load_n(2);
-
-    program.save("programs/mem_store_n.masm");
-    assert_eq!(Some(program.stack[0].into()), program.prove());
-}
-
-#[test]
-fn test_mem_store_w() {
-    let mut program = MidenProgram::new();
-
-    program.push(5);
-    program.push(2);
-    program.push(3);
-    program.push(4);
-    program.mem_store_w();
-
-    let mut drop_program = MidenProgram::new();
-
-    drop_program.drop();
-
-    program.repeat(4, || drop_program.get_operands());
-
-    program.push(4);
-
-    program.mem_load_w();
-    program.print_masm();
-    program.print("test stack");
-    program.save("programs/mem_store_w.masm");
-    assert_eq!(Some(program.stack[0].into()), program.prove());
-}
-
-#[test]
-fn test_mem_store_w_n() {
-    let mut program = MidenProgram::new();
-
-    program.push(5);
-    program.push(2);
-    program.push(3);
-    program.push(4);
-    program.mem_store_w_n(4);
-
-    let mut drop_program = MidenProgram::new();
-
-    drop_program.drop();
-
-    program.repeat(4, || drop_program.get_operands());
-
-    program.mem_load_w_n(4);
-
-    program.print("test stack");
-    program.save("programs/mem_store_w_n.masm");
-    assert_eq!(Some(program.stack[0].into()), program.prove());
-}
-
-#[test]
-fn test_empty_program() {
-    let mut add_program = EmptyProgram::new();
-
-    add_program.add_n(5);
-
-    let mut if_program = EmptyProgram::new();
-
-    if_program.if_else(
-        || add_program.get_operands(),
-        || {
-            let mut else_program = EmptyProgram::new();
-            else_program.push(1);
-            else_program.add_n(2);
-            else_program.get_operands()
-        },
-    );
-
-    let mut rand_program = EmptyProgram::new();
-
-    rand_program.push(5);
-
-    rand_program.push(1);
-
-    rand_program.mem_store();
-
-    rand_program.mem_load_n(1);
-
-    rand_program.mul_n(2);
-
-    rand_program.eq_n(10);
-
-    let mut program = MidenProgram::new();
-
-    program.add_program(|| rand_program.get_operands());
-
-    program.add_program(|| if_program.get_operands());
-
-    program.repeat(5, || {
-        let mut repeat_program = EmptyProgram::new();
-
-        repeat_program.exp_n(2);
-
-        repeat_program.print("repeat_program");
-
-        repeat_program.get_operands()
-    });
-
-    program.save("programs/empty_program.masm");
-}
-
-#[test]
-fn while_block() {
-    let mut program = MidenProgram::new();
-    program.while_block(|| {
-        let mut block = EmptyProgram::new();
-        block.push(1);
-        block.increment();
-        block.dup();
-        block.neq_n(10);
-        block.print("loop");
-        block.get_operands()
-    });
-}
-
-#[test]
-fn test_tokenizer() {
-    let tokens = tokenize(
-        "
-        proc.MasmFromRust.9095
-        push.1
-        push.2
-        push.3
-        push.4
-        add
-        add
-        add
-        push.20
-        push.30
-        push.40
-        mul.2
-        mul.2
-        push.5
-        push.4
-        push.3
-        push.2
-        loc_store.1
-        loc_storew.5
-        loc_storew.9
-        loc_storew.90
-        loc_storew.909
-        loc_storew.9094
-        loc_storew.906
-        loc_storew.9069
-        add
-        mul
-        mul.2
-        add
-        mul.2
-        exp.2
-        add.10
-        end
-    ",
-    );
-
-    println!("{:?}", tokens);
-}
+use rust_masm::{EmptyProgram, Inputs, MidenProgram, Proc};
 
 #[test]
 fn test_parse() {
@@ -564,23 +42,22 @@ fn test_parse() {
         exec.MasmFromRust
         end
     ",
-    );
+    )
+    .unwrap();
 
-    match program {
-        Ok(mut program) => {
-            program.print_masm();
-            program.save("programs/parse.masm");
-            assert_eq!(Some(program.stack[0].into()), program.prove());
-        }
-        Err(e) => {
-            println!("{}", e);
-        }
-    }
+    assert_eq!(
+        program
+            .stack
+            .into_iter()
+            .map(|x| x.into())
+            .collect::<Vec<u64>>(),
+        vec![211610, 30, 20, 10, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
+    );
 }
 
 #[test]
 fn test_prime() {
-    let mut program = MidenProgram::parse_from_file_with_inputs(
+    let program = MidenProgram::parse_from_file_with_inputs(
         "examples/prime.masm",
         Inputs::from_file("inputs/prime.json"),
     )
@@ -590,7 +67,19 @@ fn test_prime() {
 
     program.save("programs/prime.masm");
 
-    assert_eq!(Some(program.stack[0].into()), program.prove());
+    assert_eq!(
+        program
+            .stack
+            .into_iter()
+            .map(|x| x.into())
+            .collect::<Vec<u64>>(),
+        vec![
+            229, 227, 223, 211, 199, 197, 193, 191, 181, 179, 173, 167, 163, 157, 151, 149, 139,
+            137, 131, 127, 113, 109, 107, 103, 101, 97, 89, 83, 79, 73, 71, 67, 61, 59, 53, 47, 43,
+            41, 37, 31, 29, 23, 19, 17, 13, 11, 7, 5, 3, 2, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+            0, 0
+        ],
+    );
 }
 
 #[test]
@@ -605,6 +94,15 @@ fn test_add_parse() {
     .unwrap();
 
     program.print("add 5 and 1");
+
+    assert_eq!(
+        program
+            .stack
+            .into_iter()
+            .map(|x| x.into())
+            .collect::<Vec<u64>>(),
+        vec![4, 3, 2, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
+    );
 }
 
 #[test]
@@ -634,11 +132,47 @@ fn test_parse_3() {
     simple_miden_program.exp_n(4);
 
     simple_miden_program.print_masm();
+    assert_eq!(
+        simple_miden_program
+            .stack
+            .into_iter()
+            .map(|x| x.into())
+            .collect::<Vec<u64>>(),
+        vec![
+            12296370321,
+            12,
+            31,
+            312,
+            12,
+            123,
+            1,
+            225,
+            16,
+            3,
+            2,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0
+        ],
+    );
 }
 
 #[test]
 fn test_game_of_life() {
-    let mut program = MidenProgram::parse_from_file_with_inputs(
+    let program = MidenProgram::parse_from_file_with_inputs(
         "examples/game_of_life.masm",
         Inputs::from_file("inputs/game_of_life.json"),
     )
@@ -648,12 +182,22 @@ fn test_game_of_life() {
 
     program.save("programs/game_of_life.masm");
 
-    assert_eq!(Some(program.stack[0].into()), program.prove());
+    assert_eq!(
+        program
+            .stack
+            .into_iter()
+            .map(|x| x.into())
+            .collect::<Vec<u64>>(),
+        vec![
+            1, 1, 0, 0, 1, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+            0, 0, 0
+        ],
+    );
 }
 
 #[test]
 fn test_catalan() {
-    let mut program = MidenProgram::parse_from_file_with_inputs(
+    let program = MidenProgram::parse_from_file_with_inputs(
         "examples/catalan.masm",
         Inputs::from_file("inputs/catalan.json"),
     )
@@ -663,13 +207,20 @@ fn test_catalan() {
 
     program.save("programs/catalan.masm");
 
-    assert_eq!(Some(program.stack[0].into()), program.prove());
+    assert_eq!(
+        program
+            .stack
+            .into_iter()
+            .map(|x| x.into())
+            .collect::<Vec<u64>>(),
+        vec![4862, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
+    );
 }
 
 #[test]
 
 fn test_collatz() {
-    let mut program = MidenProgram::parse_from_file_with_inputs(
+    let program = MidenProgram::parse_from_file_with_inputs(
         "examples/collatz.masm",
         Inputs::from_file("inputs/collatz.json"),
     )
@@ -679,7 +230,14 @@ fn test_collatz() {
 
     program.save("programs/collatz.masm");
 
-    assert_eq!(Some(program.stack[0].into()), program.prove());
+    assert_eq!(
+        program
+            .stack
+            .into_iter()
+            .map(|x| x.into())
+            .collect::<Vec<u64>>(),
+        vec![132, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
+    );
 }
 
 #[test]
@@ -694,12 +252,19 @@ fn test_comparison() {
 
     program.save("programs/comparison.masm");
 
-    assert_eq!(Some(program.stack[0].into()), program.prove());
+    assert_eq!(
+        program
+            .stack
+            .into_iter()
+            .map(|x| x.into())
+            .collect::<Vec<u64>>(),
+        vec![1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0]
+    );
 }
 
 #[test]
 fn test_conditional() {
-    let mut program = MidenProgram::parse_from_file_with_inputs(
+    let program = MidenProgram::parse_from_file_with_inputs(
         "examples/conditional.masm",
         Inputs::from_file("inputs/conditional.json"),
     )
@@ -709,12 +274,19 @@ fn test_conditional() {
 
     program.save("programs/conditional.masm");
 
-    assert_eq!(Some(program.stack[0].into()), program.prove());
+    assert_eq!(
+        program
+            .stack
+            .into_iter()
+            .map(|x| x.into())
+            .collect::<Vec<u64>>(),
+        vec![8, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0]
+    );
 }
 
 #[test]
 fn fibonacci() {
-    let mut program = MidenProgram::parse_from_file_with_inputs(
+    let program = MidenProgram::parse_from_file_with_inputs(
         "examples/fibonacci.masm",
         Inputs::from_file("inputs/fibonacci.json"),
     )
@@ -724,13 +296,37 @@ fn fibonacci() {
 
     program.save("programs/fibonacci.masm");
 
-    assert_eq!(Some(program.stack[0].into()), program.prove());
+    assert_eq!(
+        program
+            .stack
+            .into_iter()
+            .map(|x| x.into())
+            .collect::<Vec<u64>>(),
+        vec![
+            11112721240812633725,
+            16245143635561662896,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+        ]
+    );
 }
 
 #[test]
 fn test_matrix_mul() {
     //todo: fix this
-    let mut program = MidenProgram::parse_from_file_with_inputs(
+    let program = MidenProgram::parse_from_file_with_inputs(
         "examples/matrix_mul.masm",
         Inputs::from_file("inputs/matrix_mul.json"),
     )
@@ -740,12 +336,19 @@ fn test_matrix_mul() {
 
     program.save("programs/matrix_mul.masm");
 
-    assert_eq!(Some(program.stack[0].into()), program.prove());
+    assert_eq!(
+        program
+            .stack
+            .into_iter()
+            .map(|x| x.into())
+            .collect::<Vec<u64>>(),
+        vec![0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0]
+    );
 }
 
 #[test]
 fn test_adv_pipe() {
-    let mut program = MidenProgram::parse_from_file_with_inputs(
+    let program = MidenProgram::parse_from_file_with_inputs(
         "examples/adv_pipe.masm",
         Inputs::from_file("inputs/adv_pipe.json"),
     )
@@ -755,18 +358,32 @@ fn test_adv_pipe() {
 
     program.save("programs/adv_pipe.masm");
 
-    assert_eq!(Some(program.stack[0].into()), program.prove());
+    assert_eq!(
+        program
+            .stack
+            .into_iter()
+            .map(|x| x.into())
+            .collect::<Vec<u64>>(),
+        vec![7, 6, 5, 4, 3, 2, 1, 0, 2, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
+    );
 }
 
 #[test]
 fn test_masm() {
-    let mut program = MidenProgram::parse_from_file("examples/errors.masm").unwrap();
+    let program = MidenProgram::parse_from_file("examples/errors.masm").unwrap();
 
     program.print_masm();
 
     program.save("programs/example.masm");
 
-    assert_eq!(Some(program.stack[0].into()), program.prove());
+    assert_eq!(
+        program
+            .stack
+            .into_iter()
+            .map(|x| x.into())
+            .collect::<Vec<u64>>(),
+        vec![2, 2, 2, 2, 2, 2, 2, 2, 5, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0]
+    );
 }
 
 #[test]
@@ -794,9 +411,33 @@ fn test_conditional_manipulation() {
     let mut program = MidenProgram::parse(
         "
         begin
-            push.0x00001234.0x00005678.0x00009012.0x0000abcd
-            push.0x341200000000000078560000000000001290000000000000cdab000000000000
-          
+            push.1
+            push.2
+            eq
+            push.1
+            push.2
+            eq
+            push.1
+            push.2
+            eqw
+            push.1
+            push.2
+            lt
+            push.1
+            push.2
+            gt
+            push.1
+            push.2
+            cswap
+            push.1
+            push.2
+            cswapw
+            push.1
+            push.2
+            cdrop
+            push.1
+            push.2
+            cdropw
         end
         ",
     )
@@ -807,4 +448,151 @@ fn test_conditional_manipulation() {
     program.save("programs/conditional_manipulation.masm");
 
     assert_eq!(Some(program.stack[0].into()), program.prove());
+}
+
+#[test]
+fn test_hex() {
+    let program = MidenProgram::parse(
+        "
+        begin
+            push.0x1
+            push.0x2
+            add
+            push.0x1
+            push.0x2
+            sub
+            push.0x1
+            push.0x2
+            mul
+            push.0x1
+            push.0x2
+            div
+            push.0x1
+            push.0x2
+            eq
+            push.0x1
+            push.0x2
+            lt
+            push.0x1
+            push.0x2
+            gt
+            push.0x1
+            push.0x2
+            and
+            push.0x1
+            push.0x2
+            or
+            push.0x1
+            push.0x2
+            xor
+            push.0x1
+            not
+            push.0x1
+            push.0x2
+            eqw
+            push.0x1
+            push.0x2
+            lt
+            push.0x1
+            push.0x2
+            gt
+            push.0x1
+            push.0x2
+            cswap
+            push.0x1
+            push.0x2
+            cswapw
+            push.0x1
+            push.0x2
+            cdrop
+            push.0x1
+            push.0x2
+            cdropw
+        end
+        ",
+    )
+    .unwrap();
+
+    program.print_masm();
+
+    program.save("programs/hex.masm");
+
+    assert_eq!(
+        program
+            .stack
+            .into_iter()
+            .map(|x| x.into())
+            .collect::<Vec<u64>>(),
+        vec![
+            2,
+            1,
+            2,
+            1,
+            2,
+            1,
+            2,
+            1,
+            0,
+            1,
+            0,
+            2,
+            1,
+            0,
+            2,
+            1,
+            2,
+            1,
+            2,
+            1,
+            0,
+            1,
+            0,
+            9223372034707292161,
+            2,
+            18446744069414584320,
+            3,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0
+        ]
+    )
+}
+
+#[test]
+fn test_test_test() {
+    let mut procedure = Proc::new("whileExample");
+    procedure.push(1);
+    let mut while_program = EmptyProgram::new();
+    while_program.increment();
+    while_program.dup();
+    while_program.neq_n(10);
+    procedure.while_block(&mut while_program);
+    let mut program = MidenProgram::new();
+    program.push(1);
+    program.add_proc(procedure);
+    program.exec("whileExample");
+
+    program.print_masm();
+
+    assert_eq!(
+        program
+            .stack
+            .into_iter()
+            .map(|x| x.into())
+            .collect::<Vec<u64>>(),
+        vec![10, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0]
+    );
 }

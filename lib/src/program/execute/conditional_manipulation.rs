@@ -1,17 +1,17 @@
 use math::{fields::f64::BaseElement, FieldElement};
 
-use crate::{MidenProgram, Operand};
+use crate::{Instruction, MidenProgram};
 
-pub fn execute_conditional(program: &mut MidenProgram, operand: &Operand) {
+pub fn execute_conditional(program: &mut MidenProgram, operand: &Instruction) {
     match operand {
-        Operand::CSwap => {
+        Instruction::CSwap => {
             if let Some(c) = program.stack.pop_front() {
                 if c == BaseElement::ONE {
                     program.stack.swap(0, 1);
                 }
             }
         }
-        Operand::CSwapW => {
+        Instruction::CSwapW => {
             if let Some(c) = program.stack.pop_front() {
                 if c == BaseElement::ONE {
                     program.stack.swap(0, 4);
@@ -21,7 +21,7 @@ pub fn execute_conditional(program: &mut MidenProgram, operand: &Operand) {
                 }
             }
         }
-        Operand::CDrop => {
+        Instruction::CDrop => {
             if let (Some(c), Some(b), Some(a)) = (
                 program.stack.pop_front(),
                 program.stack.pop_front(),
@@ -34,7 +34,7 @@ pub fn execute_conditional(program: &mut MidenProgram, operand: &Operand) {
                 }
             }
         }
-        Operand::CDropW => {
+        Instruction::CDropW => {
             if let (Some(c), b, a) = (
                 program.stack.pop_front(),
                 (

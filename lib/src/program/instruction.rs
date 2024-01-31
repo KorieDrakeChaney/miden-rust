@@ -3,7 +3,7 @@ use math::fields::f64::BaseElement;
 use super::error::MidenProgramError;
 
 #[derive(Debug, Clone, PartialEq, Eq)]
-pub enum Operand {
+pub enum Instruction {
     // assertions and tests
     Assert,
     AssertZ,
@@ -223,7 +223,7 @@ pub enum Operand {
     CommentedOut(String),
 }
 
-impl std::fmt::Display for Operand {
+impl std::fmt::Display for Instruction {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         match self {
             // assertions and tests

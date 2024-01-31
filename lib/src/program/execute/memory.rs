@@ -1,10 +1,10 @@
 use math::{fields::f64::BaseElement, FieldElement, StarkField};
 
-use crate::{MidenProgram, Operand};
+use crate::{Instruction, MidenProgram};
 
-pub fn execute_memory(program: &mut MidenProgram, operand: &Operand) {
+pub fn execute_memory(program: &mut MidenProgram, operand: &Instruction) {
     match operand {
-        Operand::MemStore => {
+        Instruction::MemStore => {
             if let (Some(key), Some(a)) = (program.stack.pop_front(), program.stack.pop_front()) {
                 program.ram_memory.insert(
                     key.as_int() as u32,
@@ -14,7 +14,7 @@ pub fn execute_memory(program: &mut MidenProgram, operand: &Operand) {
             println!("ram: {:?}", program.ram_memory);
         }
 
-        Operand::MemStoreImm(key) => {
+        Instruction::MemStoreImm(key) => {
             if let Some(a) = program.stack.pop_front() {
                 program.ram_memory.insert(
                     *key,
@@ -23,7 +23,7 @@ pub fn execute_memory(program: &mut MidenProgram, operand: &Operand) {
             }
         }
 
-        Operand::MemLoad => {
+        Instruction::MemLoad => {
             if let Some(key) = program.stack.pop_front() {
                 if let Some([_, _, _, a]) = program.ram_memory.get(&(key.as_int() as u32)) {
                     program.stack.push_front(*a);
@@ -33,7 +33,7 @@ pub fn execute_memory(program: &mut MidenProgram, operand: &Operand) {
             }
         }
 
-        Operand::MemLoadImm(key) => {
+        Instruction::MemLoadImm(key) => {
             if let Some([_, _, _, a]) = program.ram_memory.get(&key) {
                 program.stack.push_front(*a);
             } else {
@@ -41,7 +41,7 @@ pub fn execute_memory(program: &mut MidenProgram, operand: &Operand) {
             }
         }
 
-        Operand::MemLoadW => {
+        Instruction::MemLoadW => {
             if let (Some(key), Some(_), Some(_), Some(_), Some(_)) = (
                 program.stack.pop_front(),
                 program.stack.pop_front(),
@@ -63,7 +63,7 @@ pub fn execute_memory(program: &mut MidenProgram, operand: &Operand) {
             }
         }
 
-        Operand::MemLoadWImm(key) => {
+        Instruction::MemLoadWImm(key) => {
             if let (Some(_), Some(_), Some(_), Some(_)) = (
                 program.stack.pop_front(),
                 program.stack.pop_front(),
@@ -84,7 +84,7 @@ pub fn execute_memory(program: &mut MidenProgram, operand: &Operand) {
             }
         }
 
-        Operand::MemStoreW => {
+        Instruction::MemStoreW => {
             while program.stack.len() < 5 {
                 program.stack.push_back(BaseElement::ZERO);
             }
@@ -103,7 +103,7 @@ pub fn execute_memory(program: &mut MidenProgram, operand: &Operand) {
             }
         }
 
-        Operand::MemStoreWImm(key) => {
+        Instruction::MemStoreWImm(key) => {
             while program.stack.len() < 4 {
                 program.stack.push_back(BaseElement::ZERO);
             }

@@ -1,12 +1,12 @@
 use math::{fields::f64::BaseElement, StarkField};
 
-use crate::{MidenProgram, Operand};
+use crate::{Instruction, MidenProgram};
 
 use super::utils::U32_MAX;
 
-pub fn execute_u32_arithmetic(program: &mut MidenProgram, operand: &Operand) {
+pub fn execute_u32_arithmetic(program: &mut MidenProgram, operand: &Instruction) {
     match operand {
-        Operand::U32CheckedAdd => {
+        Instruction::U32CheckedAdd => {
             if let (Some(b), Some(a)) = (program.stack.pop_front(), program.stack.pop_front()) {
                 let a_int = a.as_int();
                 let b_int = b.as_int();
@@ -15,7 +15,7 @@ pub fn execute_u32_arithmetic(program: &mut MidenProgram, operand: &Operand) {
                 program.stack.push_front(BaseElement::from(c_int));
             }
         }
-        Operand::U32CheckedAddImm(b) => {
+        Instruction::U32CheckedAddImm(b) => {
             if let Some(a) = program.stack.pop_front() {
                 let a_int = a.as_int();
                 let c_int = a_int + *b as u64;
@@ -24,7 +24,7 @@ pub fn execute_u32_arithmetic(program: &mut MidenProgram, operand: &Operand) {
             }
         }
 
-        Operand::U32OverflowingAdd => {
+        Instruction::U32OverflowingAdd => {
             if let (Some(b), Some(a)) = (program.stack.pop_front(), program.stack.pop_front()) {
                 let a_int = a.as_int();
                 let b_int = b.as_int();
@@ -35,7 +35,7 @@ pub fn execute_u32_arithmetic(program: &mut MidenProgram, operand: &Operand) {
                 program.stack.push_front(BaseElement::from(d));
             }
         }
-        Operand::U32OverflowingAddImm(b) => {
+        Instruction::U32OverflowingAddImm(b) => {
             if let Some(a) = program.stack.pop_front() {
                 let a_int = a.as_int();
                 let c_int = (a_int + *b as u64) % U32_MAX;
@@ -44,7 +44,7 @@ pub fn execute_u32_arithmetic(program: &mut MidenProgram, operand: &Operand) {
             }
         }
 
-        Operand::U32WrappingAdd => {
+        Instruction::U32WrappingAdd => {
             if let (Some(b), Some(a)) = (program.stack.pop_front(), program.stack.pop_front()) {
                 let a_int = a.as_int();
                 let b_int = b.as_int();
@@ -53,7 +53,7 @@ pub fn execute_u32_arithmetic(program: &mut MidenProgram, operand: &Operand) {
                 program.stack.push_front(BaseElement::from(c_int));
             }
         }
-        Operand::U32WrappingAddImm(b) => {
+        Instruction::U32WrappingAddImm(b) => {
             if let Some(a) = program.stack.pop_front() {
                 let a_int = a.as_int();
                 let c_int = (a_int + *b as u64) % U32_MAX;
@@ -62,7 +62,7 @@ pub fn execute_u32_arithmetic(program: &mut MidenProgram, operand: &Operand) {
             }
         }
 
-        Operand::U32OverflowingAdd3 => {
+        Instruction::U32OverflowingAdd3 => {
             if let (Some(c), Some(b), Some(a)) = (
                 program.stack.pop_front(),
                 program.stack.pop_front(),
@@ -80,7 +80,7 @@ pub fn execute_u32_arithmetic(program: &mut MidenProgram, operand: &Operand) {
             }
         }
 
-        Operand::U32WrappingAdd3 => {
+        Instruction::U32WrappingAdd3 => {
             if let (Some(c), Some(b), Some(a)) = (
                 program.stack.pop_front(),
                 program.stack.pop_front(),
@@ -96,7 +96,7 @@ pub fn execute_u32_arithmetic(program: &mut MidenProgram, operand: &Operand) {
             }
         }
 
-        Operand::U32CheckedSub => {
+        Instruction::U32CheckedSub => {
             if let (Some(b), Some(a)) = (program.stack.pop_front(), program.stack.pop_front()) {
                 let a_int = a.as_int();
                 let b_int = b.as_int();
@@ -106,7 +106,7 @@ pub fn execute_u32_arithmetic(program: &mut MidenProgram, operand: &Operand) {
             }
         }
 
-        Operand::U32CheckedSubImm(b) => {
+        Instruction::U32CheckedSubImm(b) => {
             if let Some(a) = program.stack.pop_front() {
                 let a_int = a.as_int();
                 let b_int = *b as u64;
@@ -115,7 +115,7 @@ pub fn execute_u32_arithmetic(program: &mut MidenProgram, operand: &Operand) {
             }
         }
 
-        Operand::U32OverflowingSub => {
+        Instruction::U32OverflowingSub => {
             if let (Some(b), Some(a)) = (program.stack.pop_front(), program.stack.pop_front()) {
                 let a_int = a.as_int();
                 let b_int = b.as_int();
@@ -127,7 +127,7 @@ pub fn execute_u32_arithmetic(program: &mut MidenProgram, operand: &Operand) {
             }
         }
 
-        Operand::U32OverflowingSubImm(b) => {
+        Instruction::U32OverflowingSubImm(b) => {
             if let Some(a) = program.stack.pop_front() {
                 let a_int = a.as_int();
                 let b_int = *b as u64;
@@ -139,7 +139,7 @@ pub fn execute_u32_arithmetic(program: &mut MidenProgram, operand: &Operand) {
             }
         }
 
-        Operand::U32WrappingSub => {
+        Instruction::U32WrappingSub => {
             if let (Some(b), Some(a)) = (program.stack.pop_front(), program.stack.pop_front()) {
                 let a_int = a.as_int();
                 let b_int = b.as_int();
@@ -149,7 +149,7 @@ pub fn execute_u32_arithmetic(program: &mut MidenProgram, operand: &Operand) {
             }
         }
 
-        Operand::U32WrappingSubImm(b) => {
+        Instruction::U32WrappingSubImm(b) => {
             if let Some(a) = program.stack.pop_front() {
                 let a_int = a.as_int();
                 let b_int = *b as u64;
@@ -159,7 +159,7 @@ pub fn execute_u32_arithmetic(program: &mut MidenProgram, operand: &Operand) {
             }
         }
 
-        Operand::U32CheckedMul => {
+        Instruction::U32CheckedMul => {
             if let (Some(b), Some(a)) = (program.stack.pop_front(), program.stack.pop_front()) {
                 let a_int = a.as_int();
                 let b_int = b.as_int();
@@ -169,7 +169,7 @@ pub fn execute_u32_arithmetic(program: &mut MidenProgram, operand: &Operand) {
             }
         }
 
-        Operand::U32CheckedMulImm(b) => {
+        Instruction::U32CheckedMulImm(b) => {
             if let Some(a) = program.stack.pop_front() {
                 let a_int = a.as_int();
                 let b_int = *b as u64;
@@ -179,7 +179,7 @@ pub fn execute_u32_arithmetic(program: &mut MidenProgram, operand: &Operand) {
             }
         }
 
-        Operand::U32OverflowingMul => {
+        Instruction::U32OverflowingMul => {
             if let (Some(b), Some(a)) = (program.stack.pop_front(), program.stack.pop_front()) {
                 let a_int = a.as_int();
                 let b_int = b.as_int();
@@ -191,7 +191,7 @@ pub fn execute_u32_arithmetic(program: &mut MidenProgram, operand: &Operand) {
             }
         }
 
-        Operand::U32OverflowingMulImm(b) => {
+        Instruction::U32OverflowingMulImm(b) => {
             if let Some(a) = program.stack.pop_front() {
                 let a_int = a.as_int();
                 let b_int = *b as u64;
@@ -203,7 +203,7 @@ pub fn execute_u32_arithmetic(program: &mut MidenProgram, operand: &Operand) {
             }
         }
 
-        Operand::U32WrappingMul => {
+        Instruction::U32WrappingMul => {
             if let (Some(b), Some(a)) = (program.stack.pop_front(), program.stack.pop_front()) {
                 let a_int = a.as_int();
                 let b_int = b.as_int();
@@ -213,7 +213,7 @@ pub fn execute_u32_arithmetic(program: &mut MidenProgram, operand: &Operand) {
             }
         }
 
-        Operand::U32WrappingMulImm(b) => {
+        Instruction::U32WrappingMulImm(b) => {
             if let Some(a) = program.stack.pop_front() {
                 let a_int = a.as_int();
                 let b_int = *b as u64;
@@ -223,7 +223,7 @@ pub fn execute_u32_arithmetic(program: &mut MidenProgram, operand: &Operand) {
             }
         }
 
-        Operand::U32OverflowingMadd => {
+        Instruction::U32OverflowingMadd => {
             if let (Some(b), Some(a), Some(c)) = (
                 program.stack.pop_front(),
                 program.stack.pop_front(),
@@ -242,7 +242,7 @@ pub fn execute_u32_arithmetic(program: &mut MidenProgram, operand: &Operand) {
             }
         }
 
-        Operand::U32WrappingMadd => {
+        Instruction::U32WrappingMadd => {
             if let (Some(b), Some(a), Some(c)) = (
                 program.stack.pop_front(),
                 program.stack.pop_front(),
@@ -258,7 +258,7 @@ pub fn execute_u32_arithmetic(program: &mut MidenProgram, operand: &Operand) {
             }
         }
 
-        Operand::U32CheckedDiv => {
+        Instruction::U32CheckedDiv => {
             if let (Some(b), Some(a)) = (program.stack.pop_front(), program.stack.pop_front()) {
                 let a_int = a.as_int();
                 let b_int = b.as_int();
@@ -267,7 +267,7 @@ pub fn execute_u32_arithmetic(program: &mut MidenProgram, operand: &Operand) {
             }
         }
 
-        Operand::U32CheckedDivImm(b) => {
+        Instruction::U32CheckedDivImm(b) => {
             if let Some(a) = program.stack.pop_front() {
                 let a_int = a.as_int();
                 let b_int = *b as u64;
@@ -276,7 +276,7 @@ pub fn execute_u32_arithmetic(program: &mut MidenProgram, operand: &Operand) {
             }
         }
 
-        Operand::U32UncheckedDiv => {
+        Instruction::U32UncheckedDiv => {
             if let (Some(b), Some(a)) = (program.stack.pop_front(), program.stack.pop_front()) {
                 let a_int = a.as_int();
                 let b_int = b.as_int();
@@ -285,7 +285,7 @@ pub fn execute_u32_arithmetic(program: &mut MidenProgram, operand: &Operand) {
             }
         }
 
-        Operand::U32UncheckedDivImm(b) => {
+        Instruction::U32UncheckedDivImm(b) => {
             if let Some(a) = program.stack.pop_front() {
                 let a_int = a.as_int();
                 let b_int = *b as u64;
@@ -294,7 +294,7 @@ pub fn execute_u32_arithmetic(program: &mut MidenProgram, operand: &Operand) {
             }
         }
 
-        Operand::U32CheckedMod => {
+        Instruction::U32CheckedMod => {
             if let (Some(b), Some(a)) = (program.stack.pop_front(), program.stack.pop_front()) {
                 let a_int = a.as_int();
                 let b_int = b.as_int();
@@ -303,7 +303,7 @@ pub fn execute_u32_arithmetic(program: &mut MidenProgram, operand: &Operand) {
             }
         }
 
-        Operand::U32CheckedModImm(b) => {
+        Instruction::U32CheckedModImm(b) => {
             if let Some(a) = program.stack.pop_front() {
                 let a_int = a.as_int();
                 let b_int = *b as u64;
@@ -312,7 +312,7 @@ pub fn execute_u32_arithmetic(program: &mut MidenProgram, operand: &Operand) {
             }
         }
 
-        Operand::U32UncheckedMod => {
+        Instruction::U32UncheckedMod => {
             if let (Some(b), Some(a)) = (program.stack.pop_front(), program.stack.pop_front()) {
                 let a_int = a.as_int();
                 let b_int = b.as_int();
@@ -321,7 +321,7 @@ pub fn execute_u32_arithmetic(program: &mut MidenProgram, operand: &Operand) {
             }
         }
 
-        Operand::U32UncheckedModImm(b) => {
+        Instruction::U32UncheckedModImm(b) => {
             if let Some(a) = program.stack.pop_front() {
                 let a_int = a.as_int();
                 let b_int = *b as u64;
@@ -330,7 +330,7 @@ pub fn execute_u32_arithmetic(program: &mut MidenProgram, operand: &Operand) {
             }
         }
 
-        Operand::U32CheckedDivMod => {
+        Instruction::U32CheckedDivMod => {
             if let (Some(b), Some(a)) = (program.stack.pop_front(), program.stack.pop_front()) {
                 let a_int = a.as_int();
                 let b_int = b.as_int();
@@ -340,7 +340,7 @@ pub fn execute_u32_arithmetic(program: &mut MidenProgram, operand: &Operand) {
             }
         }
 
-        Operand::U32CheckedDivModImm(b) => {
+        Instruction::U32CheckedDivModImm(b) => {
             if let Some(a) = program.stack.pop_front() {
                 let a_int = a.as_int();
                 let b_int = *b as u64;
@@ -350,7 +350,7 @@ pub fn execute_u32_arithmetic(program: &mut MidenProgram, operand: &Operand) {
             }
         }
 
-        Operand::U32UncheckedDivMod => {
+        Instruction::U32UncheckedDivMod => {
             if let (Some(b), Some(a)) = (program.stack.pop_front(), program.stack.pop_front()) {
                 let a_int = a.as_int();
                 let b_int = b.as_int();
@@ -359,7 +359,7 @@ pub fn execute_u32_arithmetic(program: &mut MidenProgram, operand: &Operand) {
             }
         }
 
-        Operand::U32UncheckedDivModImm(b) => {
+        Instruction::U32UncheckedDivModImm(b) => {
             if let Some(a) = program.stack.pop_front() {
                 let a_int = a.as_int();
                 let b_int = *b as u64;

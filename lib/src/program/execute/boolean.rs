@@ -1,10 +1,10 @@
 use math::{fields::f64::BaseElement, FieldElement, StarkField};
 
-use crate::{MidenProgram, Operand};
+use crate::{Instruction, MidenProgram};
 
-pub fn execute_boolean(program: &mut MidenProgram, operand: &Operand) {
+pub fn execute_boolean(program: &mut MidenProgram, operand: &Instruction) {
     match operand {
-        Operand::Or => {
+        Instruction::Or => {
             if let (Some(b), Some(a)) = (program.stack.pop_front(), program.stack.pop_front()) {
                 let a_int = a.as_int();
                 let b_int = b.as_int();
@@ -17,7 +17,7 @@ pub fn execute_boolean(program: &mut MidenProgram, operand: &Operand) {
             }
         }
 
-        Operand::And => {
+        Instruction::And => {
             if let (Some(b), Some(a)) = (program.stack.pop_front(), program.stack.pop_front()) {
                 let a_int = a.as_int();
                 let b_int = b.as_int();
@@ -30,7 +30,7 @@ pub fn execute_boolean(program: &mut MidenProgram, operand: &Operand) {
             }
         }
 
-        Operand::Xor => {
+        Instruction::Xor => {
             if let (Some(b), Some(a)) = (program.stack.pop_front(), program.stack.pop_front()) {
                 let a_int = a.as_int();
                 let b_int = b.as_int();
@@ -42,7 +42,7 @@ pub fn execute_boolean(program: &mut MidenProgram, operand: &Operand) {
             }
         }
 
-        Operand::Not => {
+        Instruction::Not => {
             if let Some(a) = program.stack.pop_front() {
                 let a_int = a.as_int();
                 if a_int == 0 {

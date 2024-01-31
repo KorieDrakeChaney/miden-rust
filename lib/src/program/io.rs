@@ -1,6 +1,6 @@
 use math::fields::f64::BaseElement;
 
-use super::{error::MidenProgramError, MidenProgram, Operand};
+use super::{error::MidenProgramError, Instruction, MidenProgram};
 
 impl MidenProgram {
     /// Pushes a value onto the stack.
@@ -9,7 +9,7 @@ impl MidenProgram {
     ///
     /// * `value` - The value to push onto the stack.
     pub fn push(&mut self, value: u64) {
-        self.add_operand(Operand::Push(BaseElement::from(value)));
+        self.add_instruction(Instruction::Push(BaseElement::from(value)));
     }
     /// Pushes the nth advice onto the stack.
     ///
@@ -21,20 +21,20 @@ impl MidenProgram {
     ///
     /// Returns `MidenProgramError::AdviceStackReadOutOfBounds` if `n` is greater than the length of the advice stack.
     pub fn adv_push(&mut self, n: usize) {
-        let op: Operand;
+        let op: Instruction;
         if n > self.advice_stack.len() {
-            op = Operand::Error(MidenProgramError::AdviceStackReadOutOfBounds(
+            op = Instruction::Error(MidenProgramError::AdviceStackReadOutOfBounds(
                 n,
                 self.advice_stack.len(),
             ));
         } else {
-            op = Operand::AdvPush(n);
+            op = Instruction::AdvPush(n);
         }
-        self.add_operand(op);
+        self.add_instruction(op);
     }
     /// Stores the second value on the stack in memory at the address specified by the first value on the stack.
     pub fn mem_store(&mut self) {
-        self.add_operand(Operand::MemStore);
+        self.add_instruction(Instruction::MemStore);
     }
 
     /// Stores the first value in the stack in memory at the address specified by `n`.
@@ -43,24 +43,24 @@ impl MidenProgram {
     ///
     /// * `n` - The address to store the first value on the stack.
     pub fn mem_store_n(&mut self, n: u32) {
-        self.add_operand(Operand::MemStoreImm(n));
+        self.add_instruction(Instruction::MemStoreImm(n));
     }
 
     /// Uses the first value on the stack as an address and stores the 2-5th values on the stack in memory at that address.
     pub fn mem_store_w(&mut self) {
-        self.add_operand(Operand::MemStoreW);
+        self.add_instruction(Instruction::MemStoreW);
     }
 
     /// Stores the first word in the stack in memory at the address specified by `n`.
     /// # Arguments
     /// * `n` - The address to store the first word on the stack.
     pub fn mem_store_w_n(&mut self, n: u32) {
-        self.add_operand(Operand::MemStoreWImm(n));
+        self.add_instruction(Instruction::MemStoreWImm(n));
     }
 
     /// Assumes top value on the stack is an address and pops it off, then loads the value at that address from RAM onto the stack.
     pub fn mem_load(&mut self) {
-        self.add_operand(Operand::MemLoad);
+        self.add_instruction(Instruction::MemLoad);
     }
 
     /// Loads the value at address `n` from RAM onto the stack.
@@ -69,12 +69,12 @@ impl MidenProgram {
     ///
     /// * `n` - The address to load onto the stack.
     pub fn mem_load_n(&mut self, n: u32) {
-        self.add_operand(Operand::MemLoadImm(n));
+        self.add_instruction(Instruction::MemLoadImm(n));
     }
 
     /// Assumes top value on the stack is an address and pops it off, then loads the word at that address from RAM onto the stack.
     pub fn mem_load_w(&mut self) {
-        self.add_operand(Operand::MemLoadW);
+        self.add_instruction(Instruction::MemLoadW);
     }
 
     /// Loads the word at address `n` from RAM onto the stack.
@@ -83,6 +83,6 @@ impl MidenProgram {
     ///
     /// * `n` - The address to load onto the stack.
     pub fn mem_load_w_n(&mut self, n: u32) {
-        self.add_operand(Operand::MemLoadWImm(n));
+        self.add_instruction(Instruction::MemLoadWImm(n));
     }
 }

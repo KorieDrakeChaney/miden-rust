@@ -2,62 +2,62 @@ use std::ops::Neg;
 
 use math::{fields::f64::BaseElement, FieldElement};
 
-use crate::{MidenProgram, Operand};
+use crate::{Instruction, MidenProgram};
 
-pub fn execute_arithmetic(program: &mut MidenProgram, operand: &Operand) {
+pub fn execute_arithmetic(program: &mut MidenProgram, operand: &Instruction) {
     match operand {
-        Operand::Add => {
+        Instruction::Add => {
             if let (Some(b), Some(a)) = (program.stack.pop_front(), program.stack.pop_front()) {
                 program.stack.push_front(a + b);
             }
         }
-        Operand::Sub => {
+        Instruction::Sub => {
             if let (Some(b), Some(a)) = (program.stack.pop_front(), program.stack.pop_front()) {
                 program.stack.push_front(a - b);
             }
         }
-        Operand::Mul => {
+        Instruction::Mul => {
             if let (Some(b), Some(a)) = (program.stack.pop_front(), program.stack.pop_front()) {
                 program.stack.push_front(a * b);
             }
         }
-        Operand::Div => {
+        Instruction::Div => {
             if let (Some(b), Some(a)) = (program.stack.pop_front(), program.stack.pop_front()) {
                 program.stack.push_front(a / b);
             }
         }
-        Operand::AddImm(b) => {
+        Instruction::AddImm(b) => {
             if let Some(a) = program.stack.pop_front() {
                 program.stack.push_front(a + *b);
             }
         }
-        Operand::SubImm(b) => {
+        Instruction::SubImm(b) => {
             if let Some(a) = program.stack.pop_front() {
                 program.stack.push_front(a - *b);
             }
         }
-        Operand::MulImm(b) => {
+        Instruction::MulImm(b) => {
             if let Some(a) = program.stack.pop_front() {
                 program.stack.push_front(a * *b);
             }
         }
-        Operand::DivImm(b) => {
+        Instruction::DivImm(b) => {
             if let Some(a) = program.stack.pop_front() {
                 program.stack.push_front(a / *b);
             }
         }
-        Operand::Neg => {
+        Instruction::Neg => {
             if let Some(a) = program.stack.pop_front() {
                 program.stack.push_front(a.neg());
             }
         }
-        Operand::Inv => {
+        Instruction::Inv => {
             if let Some(a) = program.stack.pop_front() {
                 program.stack.push_front(a.inv());
             }
         }
 
-        Operand::Pow2 => {
+        Instruction::Pow2 => {
             if let Some(a) = program.stack.pop_front() {
                 program
                     .stack
@@ -65,25 +65,25 @@ pub fn execute_arithmetic(program: &mut MidenProgram, operand: &Operand) {
             }
         }
 
-        Operand::Exp => {
+        Instruction::Exp => {
             if let (Some(b), Some(a)) = (program.stack.pop_front(), program.stack.pop_front()) {
                 program.stack.push_front(a.exp(b.into()));
             }
         }
 
-        Operand::ExpImm(b) => {
+        Instruction::ExpImm(b) => {
             if let Some(a) = program.stack.pop_front() {
                 program.stack.push_front(a.exp(*b));
             }
         }
 
-        Operand::Increment => {
+        Instruction::Increment => {
             if let Some(a) = program.stack.pop_front() {
                 program.stack.push_front(a + BaseElement::ONE);
             }
         }
 
-        Operand::Decrement => {
+        Instruction::Decrement => {
             if let Some(a) = program.stack.pop_front() {
                 program.stack.push_front(a - BaseElement::ONE);
             }

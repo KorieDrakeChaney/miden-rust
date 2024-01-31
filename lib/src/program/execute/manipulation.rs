@@ -1,19 +1,19 @@
 use math::{fields::f64::BaseElement, FieldElement};
 
-use crate::{MidenProgram, Operand};
+use crate::{Instruction, MidenProgram};
 
-pub fn execute_manipulation(program: &mut MidenProgram, operand: &Operand) {
+pub fn execute_manipulation(program: &mut MidenProgram, operand: &Instruction) {
     match operand {
-        Operand::Push(x) => program.stack.push_front(*x),
+        Instruction::Push(x) => program.stack.push_front(*x),
 
-        Operand::Dup(n) => {
+        Instruction::Dup(n) => {
             if let Some(a) = program.stack.get(*n as usize) {
                 program.stack.push_front(*a);
             }
         }
-        Operand::Drop => if let Some(_) = program.stack.pop_front() {},
+        Instruction::Drop => if let Some(_) = program.stack.pop_front() {},
 
-        Operand::DropW => {
+        Instruction::DropW => {
             for _ in 0..4 {
                 program.stack.pop_front();
                 program.stack.pop_front();
@@ -22,28 +22,28 @@ pub fn execute_manipulation(program: &mut MidenProgram, operand: &Operand) {
             }
         }
 
-        Operand::Swap(n) => {
+        Instruction::Swap(n) => {
             program.stack.swap(0, *n);
         }
 
-        Operand::PadW => {
+        Instruction::PadW => {
             for _ in 0..4 {
                 program.stack.push_front(BaseElement::ZERO);
             }
         }
-        Operand::SwapW(n) => {
+        Instruction::SwapW(n) => {
             program.stack.swap(0, *n * 4);
             program.stack.swap(1, *n * 4 + 1);
             program.stack.swap(2, *n * 4 + 2);
             program.stack.swap(3, *n * 4 + 3);
         }
-        Operand::MovDn(n) => {
+        Instruction::MovDn(n) => {
             if let Some(a) = program.stack.pop_front() {
                 program.stack.insert(*n, a);
             }
         }
 
-        Operand::MovDnW(n) => {
+        Instruction::MovDnW(n) => {
             if let (Some(a), Some(b), Some(c), Some(d)) = (
                 program.stack.pop_front(),
                 program.stack.pop_front(),
@@ -57,13 +57,13 @@ pub fn execute_manipulation(program: &mut MidenProgram, operand: &Operand) {
             }
         }
 
-        Operand::MovUp(n) => {
+        Instruction::MovUp(n) => {
             if let Some(a) = program.stack.remove(*n) {
                 program.stack.push_front(a);
             }
         }
 
-        Operand::MovUpW(n) => {
+        Instruction::MovUpW(n) => {
             if let (Some(a), Some(b), Some(c), Some(d)) = (
                 program.stack.remove(*n * 4),
                 program.stack.remove(*n * 4),

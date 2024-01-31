@@ -1,11 +1,12 @@
+mod advice_inject;
 mod block;
 mod empty;
 mod error;
 mod execute;
 mod field;
+mod instruction;
 mod io;
 mod manipulation;
-mod operand;
 mod parser;
 mod proc;
 mod u32;
@@ -15,7 +16,7 @@ use std::cell::RefCell;
 use std::rc::Rc;
 
 pub use empty::*;
-pub use operand::Operand;
+pub use instruction::Instruction;
 
 use std::collections::{HashMap, VecDeque};
 
@@ -26,10 +27,14 @@ use miden::{
 
 pub use self::proc::Proc;
 
+pub trait Program {
+    fn get_instructions(&self) -> VecDeque<Instruction>;
+}
+
 pub struct MidenProgram {
     pub stack: VecDeque<BaseElement>,
     pub advice_stack: VecDeque<u64>,
-    pub operand_stack: VecDeque<Operand>,
+    pub instructions: VecDeque<Instruction>,
 
     internal_programs: HashMap<String, Rc<RefCell<Proc>>>,
     internal_programs_order: Vec<String>,
@@ -50,7 +55,7 @@ impl MidenProgram {
     pub fn new() -> MidenProgram {
         MidenProgram {
             stack: VecDeque::from(vec![BaseElement::ZERO; 16]),
-            operand_stack: VecDeque::new(),
+            instructions: VecDeque::new(),
             advice_stack: VecDeque::new(),
 
             internal_programs: HashMap::new(),
@@ -80,36 +85,36 @@ impl MidenProgram {
         masm.push_str("begin\n");
 
         let mut scope = 1;
-        for op in self.operand_stack.iter() {
+        for op in self.instructions.iter() {
             match op {
-                Operand::IF | Operand::WHILE | Operand::REPEAT(_) => {
+                Instruction::IF | Instruction::WHILE | Instruction::REPEAT(_) => {
                     let tabs = "\t".repeat(scope);
                     masm.push_str(&format!("{}{}\n", tabs, op));
                     scope += 1;
                 }
-                Operand::ELSE => {
+                Instruction::ELSE => {
                     scope -= 1;
                     let tabs = "\t".repeat(scope);
                     masm.push_str(&format!("{}{}\n", tabs, op));
                     scope += 1;
                 }
-                Operand::END => {
+                Instruction::END => {
                     scope -= 1;
                     let tabs = "\t".repeat(scope);
                     masm.push_str(&format!("{}{}\n\n", tabs, op));
                 }
 
-                Operand::Error(e) => {
+                Instruction::Error(e) => {
                     let tabs = "\t".repeat(scope);
                     masm.push_str(&format!("\n{}#ERROR: {}\n", tabs, e));
                 }
 
-                Operand::CommentedOut(_) => {
+                Instruction::CommentedOut(_) => {
                     let tabs = "\t".repeat(scope);
                     masm.push_str(&format!("{}{}\n\n", tabs, op));
                 }
 
-                Operand::PRINT(_) => {}
+                Instruction::PRINT(_) => {}
                 _ => {
                     let tabs = "\t".repeat(scope);
                     masm.push_str(&format!("{}{}\n", tabs, op));
@@ -147,9 +152,9 @@ impl MidenProgram {
         println!("{}", self);
     }
 
-    /// Prints the operands in the operand stack.
+    /// Prints the operands in the instruction stack.
     pub fn print_operands(&self) {
-        println!("{:?}", self.operand_stack);
+        println!("{:?}", self.instructions);
     }
 
     /// Saves the MASM representation of the program to a file.
@@ -213,10 +218,17 @@ impl MidenProgram {
                 StackInputs::try_from_values(operand_stack.iter().map(|n| n.as_int())).unwrap();
 
             let mut i = 0;
+            let mut stack: VecDeque<BaseElement> = VecDeque::new();
             while i < operand_stack.len() {
-                self.stack.push_front(operand_stack[i]);
+                stack.push_front(operand_stack[i]);
                 i += 1;
             }
+
+            while stack.len() < 16 {
+                stack.push_back(BaseElement::ZERO);
+            }
+
+            self.stack = stack;
         }
         if let Some(mut advice_stack) = inputs.advice_stack {
             self.advice_inputs =
@@ -226,8 +238,6 @@ impl MidenProgram {
             while let Some(a) = advice_stack.pop() {
                 self.advice_stack.push_front(a);
             }
-
-            println!("advice stack: {:?}", self.advice_stack);
         }
         self
     }
@@ -243,11 +253,17 @@ impl MidenProgram {
     /// The program with the specified operand stack.
     pub fn with_operand_stack(mut self, operand_stack: Vec<BaseElement>) -> Self {
         let mut i = 0;
+        let mut stack: VecDeque<BaseElement> = VecDeque::new();
         while i < operand_stack.len() {
-            self.stack.push_front(operand_stack[i]);
+            stack.push_front(operand_stack[i]);
             i += 1;
         }
 
+        while stack.len() < 16 {
+            stack.push_back(BaseElement::ZERO);
+        }
+
+        self.stack = stack;
         self.stack_inputs =
             StackInputs::try_from_values(operand_stack.iter().map(|n| n.as_int())).unwrap();
         self
@@ -275,28 +291,34 @@ impl MidenProgram {
         self
     }
 
-    /// Adds the specified operands to the operand stack of the program.
+    /// Adds the specified instructions to the instruction stack of the program.
     ///
     /// # Arguments
     ///
-    /// * `operands` - The operands to add.
-    pub fn add_operands(&mut self, operands: &mut VecDeque<Operand>) {
-        for op in operands.iter() {
-            self.operand_stack.push_back(op.clone());
+    /// * `instruction` - The operands to add.
+    pub fn add_instructions(&mut self, instructions: &mut VecDeque<Instruction>) {
+        for instruction in instructions.iter() {
+            self.instructions.push_back(instruction.clone());
         }
-        self.execute_block(operands, 0);
+        self.execute_block(instructions, 0);
     }
 
-    pub fn add_operand(&mut self, operand: Operand) {
-        match self.is_valid_operand(&operand) {
+    /// Adds the specified instruction to the instruction stack of the program.
+    ///
+    /// # Arguments
+    ///
+    /// * `instruction` - The operands to add.
+    pub fn add_instruction(&mut self, instruction: Instruction) {
+        match self.is_valid_operand(&instruction) {
             Some(error) => {
-                self.operand_stack.push_back(Operand::Error(error.clone()));
-                self.operand_stack
-                    .push_back(Operand::CommentedOut(operand.to_string()));
+                self.instructions
+                    .push_back(Instruction::Error(error.clone()));
+                self.instructions
+                    .push_back(Instruction::CommentedOut(instruction.to_string()));
             }
             _ => {
-                self.operand_stack.push_back(operand.clone());
-                self.execute_operand(&operand);
+                self.instructions.push_back(instruction.clone());
+                self.execute_operand(&instruction);
             }
         }
     }
@@ -306,11 +328,11 @@ impl MidenProgram {
     /// # Arguments
     ///
     /// * `operands` - The operands to add.
-    pub fn add_program<F>(&mut self, program: F)
+    pub fn add_program<'a, T>(&'a mut self, program: &mut T)
     where
-        F: FnOnce() -> VecDeque<Operand>,
+        T: Program + 'a,
     {
-        self.add_operands(&mut program());
+        self.add_instructions(&mut program.get_instructions());
     }
 
     /// Adds a `PRINT` operand to the operand stack with the specified message.
@@ -319,7 +341,7 @@ impl MidenProgram {
     ///
     /// * `message` - The message to print.
     pub fn print(&mut self, message: &str) {
-        self.add_operand(Operand::PRINT(message.to_string()));
+        self.add_instruction(Instruction::PRINT(message.to_string()));
     }
 
     /// Appends a procedure to the internal programs of the program.
@@ -340,14 +362,11 @@ impl MidenProgram {
             self.add_proc(program);
         }
     }
+}
 
-    /// Returns a clone of the operand stack.
-    ///
-    /// # Returns
-    ///
-    /// A `VecDeque` containing the operands in the operand stack.
-    pub fn get_operands(&self) -> VecDeque<Operand> {
-        self.operand_stack.clone()
+impl Program for MidenProgram {
+    fn get_instructions(&self) -> VecDeque<Instruction> {
+        self.instructions.clone()
     }
 }
 

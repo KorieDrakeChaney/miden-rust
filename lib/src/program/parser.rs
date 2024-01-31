@@ -5,11 +5,11 @@ impl MidenProgram {
         let mut program = MidenProgram::new();
         let tokens = tokenize(masm);
 
-        let (mut operands, procedures) = parse(tokens)?;
+        let (mut instructions, procedures) = parse(tokens)?;
 
         program.add_procs(procedures);
 
-        program.add_operands(&mut operands);
+        program.add_instructions(&mut instructions);
 
         Ok(program)
     }
@@ -18,11 +18,11 @@ impl MidenProgram {
         let mut program = MidenProgram::new().with_inputs(inputs);
         let tokens = tokenize(masm);
 
-        let (mut operands, procedures) = parse(tokens)?;
+        let (mut instructions, procedures) = parse(tokens)?;
 
         program.add_procs(procedures);
 
-        program.add_operands(&mut operands);
+        program.add_instructions(&mut instructions);
 
         Ok(program)
     }
@@ -35,11 +35,11 @@ impl MidenProgram {
             Ok(file_string) => {
                 let tokens = tokenize(&file_string);
 
-                let (mut operands, procedures) = parse(tokens)?;
+                let (mut instructions, procedures) = parse(tokens)?;
 
                 program.add_procs(procedures);
 
-                program.add_operands(&mut operands);
+                program.add_instructions(&mut instructions);
 
                 Ok(program)
             }
@@ -55,11 +55,11 @@ impl MidenProgram {
             Ok(file_string) => {
                 let tokens = tokenize(&file_string);
 
-                let (mut operands, procedures) = parse(tokens)?;
+                let (mut instructions, procedures) = parse(tokens)?;
 
                 program.add_procs(procedures);
 
-                program.add_operands(&mut operands);
+                program.add_instructions(&mut instructions);
 
                 Ok(program)
             }

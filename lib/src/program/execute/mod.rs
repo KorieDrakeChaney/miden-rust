@@ -1,3 +1,4 @@
+mod advice;
 mod arithmetic;
 mod boolean;
 mod comparison;
@@ -23,23 +24,23 @@ use self::u32_arithmetic::execute_u32_arithmetic;
 use self::u32_bitwise::execute_u32_bitwise;
 use self::{boolean::execute_boolean, memory::execute_memory};
 
-use super::{MidenProgram, Operand};
+use super::{Instruction, MidenProgram};
 use math::{fields::f64::BaseElement, FieldElement};
 use std::collections::VecDeque;
 
 impl MidenProgram {
-    pub fn execute_block(&mut self, block: &mut VecDeque<Operand>, scope: usize) {
+    pub fn execute_block(&mut self, block: &mut VecDeque<Instruction>, scope: usize) {
         let mut index = scope;
         while let Some(op) = block.pop_front() {
             match self.is_valid_operand(&op) {
                 Some(error) => {
-                    if let Some(op) = self.operand_stack.get_mut(index) {
+                    if let Some(op) = self.instructions.get_mut(index) {
                         match op {
-                            Operand::Error(_) | Operand::CommentedOut(_) => {}
+                            Instruction::Error(_) | Instruction::CommentedOut(_) => {}
                             _ => {
-                                *op = Operand::CommentedOut(op.to_string());
-                                self.operand_stack
-                                    .insert(index, Operand::Error(error.clone()));
+                                *op = Instruction::CommentedOut(op.to_string());
+                                self.instructions
+                                    .insert(index, Instruction::Error(error.clone()));
                             }
                         }
                     }
@@ -52,7 +53,7 @@ impl MidenProgram {
             }
 
             match op {
-                Operand::IF => {
+                Instruction::IF => {
                     if let Some(n) = self.stack.pop_front() {
                         let mut if_block = VecDeque::new();
                         let mut else_block = VecDeque::new();
@@ -61,18 +62,18 @@ impl MidenProgram {
 
                         'if_block: while let Some(next_op) = block.pop_front() {
                             match next_op {
-                                Operand::ELSE => {
+                                Instruction::ELSE => {
                                     if if_scope_count == 1 {
                                         break 'if_block;
                                     } else {
                                         if_block.push_back(next_op);
                                     }
                                 }
-                                Operand::IF | Operand::WHILE | Operand::REPEAT(_) => {
+                                Instruction::IF | Instruction::WHILE | Instruction::REPEAT(_) => {
                                     if_scope_count += 1;
                                     if_block.push_back(next_op);
                                 }
-                                Operand::END => {
+                                Instruction::END => {
                                     if_scope_count -= 1;
                                     if if_scope_count == 0 {
                                         break 'if_block;
@@ -89,7 +90,7 @@ impl MidenProgram {
                         if if_scope_count > 0 {
                             'else_block: while let Some(next_op) = block.pop_front() {
                                 match next_op {
-                                    Operand::END => {
+                                    Instruction::END => {
                                         else_scope_count -= 1;
                                         if else_scope_count == 0 {
                                             break 'else_block;
@@ -97,7 +98,9 @@ impl MidenProgram {
                                             else_block.push_back(next_op);
                                         }
                                     }
-                                    Operand::WHILE | Operand::IF | Operand::REPEAT(_) => {
+                                    Instruction::WHILE
+                                    | Instruction::IF
+                                    | Instruction::REPEAT(_) => {
                                         else_scope_count += 1;
                                         else_block.push_back(next_op);
                                     }
@@ -125,12 +128,12 @@ impl MidenProgram {
                         }
                     }
                 }
-                Operand::WHILE => {
+                Instruction::WHILE => {
                     let mut while_block = VecDeque::new();
                     let mut scope_count = 1;
                     'while_block: while let Some(next_op) = block.pop_front() {
                         match next_op {
-                            Operand::END => {
+                            Instruction::END => {
                                 scope_count -= 1;
                                 if scope_count == 0 {
                                     break 'while_block;
@@ -138,7 +141,7 @@ impl MidenProgram {
                                     while_block.push_back(next_op);
                                 }
                             }
-                            Operand::WHILE | Operand::IF | Operand::REPEAT(_) => {
+                            Instruction::WHILE | Instruction::IF | Instruction::REPEAT(_) => {
                                 scope_count += 1;
                                 while_block.push_back(next_op);
                             }
@@ -159,12 +162,12 @@ impl MidenProgram {
                     }
                     index += while_block.len() + 1;
                 }
-                Operand::REPEAT(n) => {
+                Instruction::REPEAT(n) => {
                     let mut repeat_operands = VecDeque::new();
                     let mut scope_count = 1;
                     'outer: while let Some(next_op) = block.pop_front() {
                         match next_op {
-                            Operand::END => {
+                            Instruction::END => {
                                 scope_count -= 1;
                                 if scope_count == 0 {
                                     break 'outer;
@@ -172,7 +175,7 @@ impl MidenProgram {
                                     repeat_operands.push_back(next_op);
                                 }
                             }
-                            Operand::WHILE | Operand::IF | Operand::REPEAT(_) => {
+                            Instruction::WHILE | Instruction::IF | Instruction::REPEAT(_) => {
                                 scope_count += 1;
                                 repeat_operands.push_back(next_op);
                             }
@@ -188,7 +191,7 @@ impl MidenProgram {
                     index += repeat_operands.len() + 1;
                 }
 
-                Operand::Error(error) => {
+                Instruction::Error(error) => {
                     println!("Error: {}", error);
                 }
 
@@ -202,7 +205,7 @@ impl MidenProgram {
         }
     }
 
-    pub fn execute_operand(&mut self, op: &Operand) {
+    pub fn execute_operand(&mut self, op: &Instruction) {
         execute_arithmetic(self, op);
         execute_manipulation(self, op);
         execute_comparison(self, op);
@@ -214,7 +217,7 @@ impl MidenProgram {
         execute_conditional(self, op);
 
         match op {
-            Operand::AdvPush(n) => {
+            Instruction::AdvPush(n) => {
                 for _ in 0..*n {
                     if let Some(a) = self.advice_stack.pop_front() {
                         self.stack.push_front(BaseElement::from(a));
@@ -222,7 +225,7 @@ impl MidenProgram {
                 }
             }
 
-            Operand::AdvPipe => {
+            Instruction::AdvPipe => {
                 if let (s2, s1, s0, Some(a), t1, t0) = (
                     (
                         self.stack.pop_front(),
@@ -314,13 +317,13 @@ impl MidenProgram {
                 }
             }
 
-            Operand::Exec(name) => {
+            Instruction::Exec(name) => {
                 if let Some(program) = self.internal_programs.get(name).cloned() {
                     program.borrow_mut().execute(self);
                 }
             }
 
-            Operand::PRINT(message) => {
+            Instruction::PRINT(message) => {
                 println!("____________________________________________________\n");
                 println!("{}", message);
                 println!("stack : {:?}\n", self.stack);
@@ -329,11 +332,11 @@ impl MidenProgram {
                 println!("____________________________________________________\n");
             }
 
-            Operand::Error(error) => {
+            Instruction::Error(error) => {
                 println!("Error: {}", error);
             }
 
-            Operand::Assert => {
+            Instruction::Assert => {
                 if let Some(a) = self.stack.get(0) {
                     if *a == BaseElement::ONE {
                         self.stack.pop_front();
@@ -341,7 +344,7 @@ impl MidenProgram {
                 }
             }
 
-            Operand::AssertZ => {
+            Instruction::AssertZ => {
                 if let Some(a) = self.stack.get(0) {
                     if *a == BaseElement::ZERO {
                         self.stack.pop_front();
@@ -349,7 +352,7 @@ impl MidenProgram {
                 }
             }
 
-            Operand::AssertEqW => {
+            Instruction::AssertEqW => {
                 if let (Some(a), Some(b), Some(c), Some(d), Some(e), Some(f), Some(g), Some(h)) = (
                     self.stack.get(0),
                     self.stack.get(1),
@@ -368,7 +371,7 @@ impl MidenProgram {
                 }
             }
 
-            Operand::AssertEq => {
+            Instruction::AssertEq => {
                 if let (Some(b), Some(a)) = (self.stack.get(0), self.stack.get(1)) {
                     if a == b {
                         self.stack.pop_front();
@@ -386,6 +389,6 @@ impl MidenProgram {
     }
 
     pub fn exec(&mut self, name: &str) {
-        self.add_operand(Operand::Exec(name.to_string()));
+        self.add_instruction(Instruction::Exec(name.to_string()));
     }
 }

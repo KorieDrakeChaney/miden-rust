@@ -1,12 +1,12 @@
 use math::{fields::f64::BaseElement, StarkField};
 
-use crate::{MidenProgram, Operand};
+use crate::{Instruction, MidenProgram};
 
 use super::utils::U32_MAX;
 
-pub fn execute_u32_bitwise(program: &mut MidenProgram, operand: &Operand) {
+pub fn execute_u32_bitwise(program: &mut MidenProgram, operand: &Instruction) {
     match operand {
-        Operand::U32CheckedAnd => {
+        Instruction::U32CheckedAnd => {
             if let (Some(b), Some(a)) = (program.stack.pop_front(), program.stack.pop_front()) {
                 let a_int = a.as_int();
                 let b_int = b.as_int();
@@ -17,7 +17,7 @@ pub fn execute_u32_bitwise(program: &mut MidenProgram, operand: &Operand) {
             }
         }
 
-        Operand::U32CheckedOr => {
+        Instruction::U32CheckedOr => {
             if let (Some(b), Some(a)) = (program.stack.pop_front(), program.stack.pop_front()) {
                 let a_int = a.as_int();
                 let b_int = b.as_int();
@@ -28,7 +28,7 @@ pub fn execute_u32_bitwise(program: &mut MidenProgram, operand: &Operand) {
             }
         }
 
-        Operand::U32CheckedXor => {
+        Instruction::U32CheckedXor => {
             if let (Some(b), Some(a)) = (program.stack.pop_front(), program.stack.pop_front()) {
                 let a_int = a.as_int();
                 let b_int = b.as_int();
@@ -39,7 +39,7 @@ pub fn execute_u32_bitwise(program: &mut MidenProgram, operand: &Operand) {
             }
         }
 
-        Operand::U32CheckedNot => {
+        Instruction::U32CheckedNot => {
             if let Some(a) = program.stack.pop_front() {
                 let a_int = a.as_int();
 
@@ -47,7 +47,7 @@ pub fn execute_u32_bitwise(program: &mut MidenProgram, operand: &Operand) {
             }
         }
 
-        Operand::U32CheckedShl => {
+        Instruction::U32CheckedShl => {
             if let (Some(b), Some(a)) = (program.stack.pop_front(), program.stack.pop_front()) {
                 let a_int = a.as_int();
                 let b_int = b.as_int();
@@ -58,7 +58,7 @@ pub fn execute_u32_bitwise(program: &mut MidenProgram, operand: &Operand) {
             }
         }
 
-        Operand::U32CheckedShlImm(b) => {
+        Instruction::U32CheckedShlImm(b) => {
             if let Some(a) = program.stack.pop_front() {
                 let a_int = a.as_int();
 
@@ -68,7 +68,7 @@ pub fn execute_u32_bitwise(program: &mut MidenProgram, operand: &Operand) {
             }
         }
 
-        Operand::U32UncheckedShl => {
+        Instruction::U32UncheckedShl => {
             if let (Some(b), Some(a)) = (program.stack.pop_front(), program.stack.pop_front()) {
                 let a_int = a.as_int();
                 let b_int = b.as_int();
@@ -79,7 +79,7 @@ pub fn execute_u32_bitwise(program: &mut MidenProgram, operand: &Operand) {
             }
         }
 
-        Operand::U32UncheckedShlImm(b) => {
+        Instruction::U32UncheckedShlImm(b) => {
             if let Some(a) = program.stack.pop_front() {
                 let a_int = a.as_int();
 
@@ -89,7 +89,7 @@ pub fn execute_u32_bitwise(program: &mut MidenProgram, operand: &Operand) {
             }
         }
 
-        Operand::U32CheckedShr => {
+        Instruction::U32CheckedShr => {
             if let (Some(b), Some(a)) = (program.stack.pop_front(), program.stack.pop_front()) {
                 let a_int = a.as_int();
                 let b_int = b.as_int();
@@ -100,7 +100,7 @@ pub fn execute_u32_bitwise(program: &mut MidenProgram, operand: &Operand) {
             }
         }
 
-        Operand::U32CheckedShrImm(b) => {
+        Instruction::U32CheckedShrImm(b) => {
             if let Some(a) = program.stack.pop_front() {
                 let a_int = a.as_int();
 
@@ -110,7 +110,7 @@ pub fn execute_u32_bitwise(program: &mut MidenProgram, operand: &Operand) {
             }
         }
 
-        Operand::U32UncheckedShr => {
+        Instruction::U32UncheckedShr => {
             if let (Some(b), Some(a)) = (program.stack.pop_front(), program.stack.pop_front()) {
                 let a_int = a.as_int();
                 let b_int = b.as_int();
@@ -121,7 +121,7 @@ pub fn execute_u32_bitwise(program: &mut MidenProgram, operand: &Operand) {
             }
         }
 
-        Operand::U32UncheckedShrImm(b) => {
+        Instruction::U32UncheckedShrImm(b) => {
             if let Some(a) = program.stack.pop_front() {
                 let a_int = a.as_int();
 
@@ -131,7 +131,7 @@ pub fn execute_u32_bitwise(program: &mut MidenProgram, operand: &Operand) {
             }
         }
 
-        Operand::U32CheckedRotr => {
+        Instruction::U32CheckedRotr => {
             if let (Some(b), Some(a)) = (program.stack.pop_front(), program.stack.pop_front()) {
                 let a_int = a.as_int();
                 let b_int = b.as_int();
@@ -142,7 +142,7 @@ pub fn execute_u32_bitwise(program: &mut MidenProgram, operand: &Operand) {
             }
         }
 
-        Operand::U32CheckedRotrImm(b) => {
+        Instruction::U32CheckedRotrImm(b) => {
             if let Some(a) = program.stack.pop_front() {
                 let a_int = a.as_int();
                 let b_int = *b as u32;
@@ -153,7 +153,7 @@ pub fn execute_u32_bitwise(program: &mut MidenProgram, operand: &Operand) {
             }
         }
 
-        Operand::U32UncheckedRotr => {
+        Instruction::U32UncheckedRotr => {
             if let (Some(b), Some(a)) = (program.stack.pop_front(), program.stack.pop_front()) {
                 let a_int = a.as_int() as u32;
                 let b_int = b.as_int() as u32;
@@ -164,7 +164,7 @@ pub fn execute_u32_bitwise(program: &mut MidenProgram, operand: &Operand) {
             }
         }
 
-        Operand::U32UncheckedRotrImm(b) => {
+        Instruction::U32UncheckedRotrImm(b) => {
             if let Some(a) = program.stack.pop_front() {
                 let a_int = a.as_int() as u32;
                 let b_int = *b as u32;
@@ -175,7 +175,7 @@ pub fn execute_u32_bitwise(program: &mut MidenProgram, operand: &Operand) {
             }
         }
 
-        Operand::U32CheckedRotl => {
+        Instruction::U32CheckedRotl => {
             if let (Some(b), Some(a)) = (program.stack.pop_front(), program.stack.pop_front()) {
                 let a_int = a.as_int();
                 let b_int = b.as_int();
@@ -186,7 +186,7 @@ pub fn execute_u32_bitwise(program: &mut MidenProgram, operand: &Operand) {
             }
         }
 
-        Operand::U32CheckedRotlImm(b) => {
+        Instruction::U32CheckedRotlImm(b) => {
             if let Some(a) = program.stack.pop_front() {
                 let a_int = a.as_int();
                 let b_int = *b as u32;
@@ -197,7 +197,7 @@ pub fn execute_u32_bitwise(program: &mut MidenProgram, operand: &Operand) {
             }
         }
 
-        Operand::U32UncheckedRotl => {
+        Instruction::U32UncheckedRotl => {
             if let (Some(b), Some(a)) = (program.stack.pop_front(), program.stack.pop_front()) {
                 let a_int = a.as_int();
                 let b_int = b.as_int();
@@ -208,7 +208,7 @@ pub fn execute_u32_bitwise(program: &mut MidenProgram, operand: &Operand) {
             }
         }
 
-        Operand::U32UncheckedRotlImm(b) => {
+        Instruction::U32UncheckedRotlImm(b) => {
             if let Some(a) = program.stack.pop_front() {
                 let a_int = a.as_int();
                 let b_int = *b as u32;
@@ -219,7 +219,7 @@ pub fn execute_u32_bitwise(program: &mut MidenProgram, operand: &Operand) {
             }
         }
 
-        Operand::U32CheckedPopcnt => {
+        Instruction::U32CheckedPopcnt => {
             if let Some(a) = program.stack.pop_front() {
                 let a_int = a.as_int();
 
@@ -229,7 +229,7 @@ pub fn execute_u32_bitwise(program: &mut MidenProgram, operand: &Operand) {
             }
         }
 
-        Operand::U32UncheckedPopcnt => {
+        Instruction::U32UncheckedPopcnt => {
             if let Some(a) = program.stack.pop_front() {
                 let a_int = a.as_int();
                 program

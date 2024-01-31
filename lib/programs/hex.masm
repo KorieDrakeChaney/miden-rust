@@ -1,0 +1,62 @@
+begin
+	push.1
+	push.2
+	add
+	push.1
+	push.2
+	sub
+	push.1
+	push.2
+	mul
+	push.1
+	push.2
+	div
+	push.1
+	push.2
+	eq
+	push.1
+	push.2
+	lt
+	push.1
+	push.2
+	gt
+	push.1
+	push.2
+
+	#ERROR: NotBinaryValue(2), 2 is not binary
+	#and
+
+	push.1
+	push.2
+
+	#ERROR: NotBinaryValue(2), 2 is not binary
+	#or
+
+	push.1
+	push.2
+
+	#ERROR: NotBinaryValue(2), 2 is not binary
+	#xor
+
+	push.1
+	not
+	push.1
+	push.2
+	eqw
+	push.1
+	push.2
+	lt
+	push.1
+	push.2
+	gt
+	push.1
+	push.2
+	push.1
+	push.2
+	push.1
+	push.2
+	push.1
+	push.2
+end
+
+#stack output : [2, 1, 2, 1, 2, 1, 2, 1, 0, 1, 0, 2, 1, 0, 2, 1, 2, 1, 2, 1, 0, 1, 0, 9223372034707292161, 2, 18446744069414584320, 3, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0] 

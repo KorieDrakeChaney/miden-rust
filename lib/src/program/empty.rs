@@ -2,34 +2,36 @@ use std::collections::VecDeque;
 
 use math::fields::f64::BaseElement;
 
-use super::operand::Operand;
+use crate::Program;
+
+use super::instruction::{self, Instruction};
 
 pub struct EmptyProgram {
-    operands: VecDeque<Operand>,
+    instructions: VecDeque<Instruction>,
 }
 
 impl EmptyProgram {
     pub fn new() -> Self {
         Self {
-            operands: VecDeque::new(),
+            instructions: VecDeque::new(),
         }
     }
 
-    pub fn add_operand(&mut self, operand: Operand) {
-        self.operands.push_back(operand);
+    pub fn add_instruction(&mut self, instruction: Instruction) {
+        self.instructions.push_back(instruction);
     }
 
-    pub fn add_operands(&mut self, operands: VecDeque<Operand>) {
-        for op in operands {
-            self.operands.push_back(op);
+    pub fn add_operands(&mut self, instructions: VecDeque<Instruction>) {
+        for instruction in instructions {
+            self.instructions.push_back(instruction);
         }
     }
     /// Constructs a new `if-else` block in the Miden program.
     ///
     /// # Arguments
     ///
-    /// * `if_op` - A closure that returns the operands for the `if` block.
-    /// * `else_op` - A closure that returns the operands for the `else` block.
+    /// * `if_program` - A mutable reference to the program for the `if` block.
+    /// * `else_program` - A mutable reference to the program for the `else` block.
     ///
     /// # Example
     ///
@@ -39,32 +41,26 @@ impl EmptyProgram {
     /// fn main() {
     ///     let mut program = MidenProgram::new();
     ///     program.push(1);
-    ///     program.if_else(|| {
-    ///         let mut block = EmptyProgram::new();
-    ///         block.push(1);
-    ///         block.get_operands()},
-    ///     || {
-    ///         let mut block = EmptyProgram::new();
-    ///         block.push(5);
-    ///         block.get_operands()},
-    ///     );
+    ///     let mut if_program = EmptyProgram::new();
+    ///     if_program.push(1);
+    ///     let mut else_program = EmptyProgram::new();
+    ///     else_program.push(5);
+    ///     program.if_else_block(&mut if_program, &mut else_program);
     /// }
-    ///    
     /// ```
-    pub fn if_else<F1, F2>(&mut self, if_op: F1, else_op: F2)
+    pub fn if_else_block<'a, T>(&'a mut self, if_program: &mut T, else_program: &mut T)
     where
-        F1: FnOnce() -> VecDeque<Operand>,
-        F2: FnOnce() -> VecDeque<Operand>,
+        T: Program + 'a,
     {
         let mut temp_stack = VecDeque::new();
-        let mut if_operands = if_op();
-        let mut else_operands = else_op();
+        let mut if_instructions = if_program.get_instructions();
+        let mut else_instructions = else_program.get_instructions();
 
-        temp_stack.push_back(Operand::IF);
-        temp_stack.append(&mut if_operands);
-        temp_stack.push_back(Operand::ELSE);
-        temp_stack.append(&mut else_operands);
-        temp_stack.push_back(Operand::END);
+        temp_stack.push_back(Instruction::IF);
+        temp_stack.append(&mut if_instructions);
+        temp_stack.push_back(Instruction::ELSE);
+        temp_stack.append(&mut else_instructions);
+        temp_stack.push_back(Instruction::END);
 
         self.add_operands(temp_stack);
     }
@@ -72,7 +68,7 @@ impl EmptyProgram {
     ///
     /// # Arguments
     ///
-    /// * `block` - A closure that returns the operands for the `while` block.
+    /// * `program` - An instance of a type implementing the `Program` trait, which provides the instructions for the `while` block.
     ///
     /// # Example
     ///
@@ -81,31 +77,30 @@ impl EmptyProgram {
     ///
     /// fn main() {
     ///     let mut program = MidenProgram::new();
-    ///     program.while_block(|| {
-    ///         let mut block = EmptyProgram::new();
-    ///         block.push(1);
-    ///         block.increment();
-    ///         block.dup();
-    ///         block.neq_n(10);
-    ///
-    ///         block.get_operands()
-    ///     });
+    ///     program.push(1);
+    ///     program.push(1);
+    ///     let mut while_program = EmptyProgram::new();
+    ///     while_program.increment();
+    ///     while_program.dup();
+    ///     while_program.neq_n(10);
+    ///     program.while_block(&mut while_program);
     /// }
     /// ```
-    pub fn while_block<F>(&mut self, block: F)
+    pub fn while_block<'a, T>(&mut self, program: &mut T)
     where
-        F: FnOnce() -> VecDeque<Operand>,
+        T: Program + 'a,
     {
-        let mut block_operands = block();
-        block_operands.push_front(Operand::WHILE);
-        block_operands.push_back(Operand::END);
-        self.add_operands(block_operands);
+        let mut instructions = program.get_instructions();
+        instructions.push_front(Instruction::WHILE);
+        instructions.push_back(Instruction::END);
+        self.add_operands(instructions);
     }
     /// Constructs a new `repeat` block in the Miden program.
     ///
     /// # Arguments
+    ///
     /// * `n` - The number of times to repeat the block.
-    /// * `program` - A closure that returns the operands for the `repeat` block.
+    /// * `program` - A mutable reference to the program for the `repeat` block.
     ///
     /// # Example
     ///
@@ -114,28 +109,51 @@ impl EmptyProgram {
     ///
     /// fn main(){
     ///     let mut program = MidenProgram::new();
-    ///     program.repeat(5, || {
-    ///         let mut block = EmptyProgram::new();
-    ///         block.push(1);
-    ///         block.push(2);
-    ///         block.add();
-    ///
-    ///         block.get_operands()
-    ///     });
+    ///     let mut repeat_program = EmptyProgram::new();
+    ///     repeat_program.push(1);
+    ///     repeat_program.push(2);
+    ///     repeat_program.add();
+    ///     program.repeat(5, &mut repeat_program);
     /// }
-    ///
-    pub fn repeat<F>(&mut self, n: usize, program: F)
+    /// ```
+    pub fn repeat<'a, T>(&mut self, n: usize, program: &mut T)
     where
-        F: FnOnce() -> VecDeque<Operand>,
+        T: Program + 'a,
     {
-        let mut operands = program();
-        operands.push_front(Operand::REPEAT(n));
-        operands.push_back(Operand::END);
-        self.add_operands(operands);
+        let mut instructions = program.get_instructions();
+        instructions.push_front(Instruction::REPEAT(n));
+        instructions.push_back(Instruction::END);
+        self.add_operands(instructions);
     }
 
-    pub fn get_operands(&mut self) -> VecDeque<Operand> {
-        std::mem::take(&mut self.operands)
+    /// Constructs a new `if` block in the Miden program.
+    ///
+    /// # Arguments
+    ///
+    /// * `program` - A mutable reference to the program for the `if` block.
+    ///
+    /// # Example
+    ///
+    /// ```
+    /// use rust_masm::{MidenProgram, EmptyProgram};
+    ///
+    /// fn main(){
+    ///     let mut program = MidenProgram::new();
+    ///     let mut if_program = EmptyProgram::new();
+    ///     if_program.push(1);
+    ///     if_program.push(2);
+    ///     if_program.add();
+    ///     program.if_block(&mut if_program);
+    /// }
+    /// ```
+    pub fn if_block<'a, T>(&mut self, program: &mut T)
+    where
+        T: Program + 'a,
+    {
+        let mut instructions = program.get_instructions();
+        instructions.push_front(Instruction::IF);
+        instructions.push_back(Instruction::END);
+        self.add_operands(instructions);
     }
 
     /// Pushes a print instruction to the stack with a message.
@@ -144,671 +162,677 @@ impl EmptyProgram {
     ///
     /// * `message` - The message to print.
     pub fn print(&mut self, message: &str) {
-        self.add_operand(Operand::PRINT(message.to_string()));
+        self.add_instruction(Instruction::PRINT(message.to_string()));
     }
 
-    /// Pushes `Drop` command onto the stack.
+    /// Pushes `Drop` instruction onto the stack.
     pub fn drop(&mut self) {
-        self.add_operand(Operand::Drop);
+        self.add_instruction(Instruction::Drop);
     }
 
-    /// Pushes `Swap` command onto the stack.
+    /// Pushes `Swap` instruction onto the stack.
     pub fn swap(&mut self) {
-        self.add_operand(Operand::Swap(1));
+        self.add_instruction(Instruction::Swap(1));
     }
 
-    /// Pushes `Swap` command with value `n` onto the stack.
+    /// Pushes `Swap` instruction with value `n` onto the stack.
     ///     
     /// # Arguments
     ///
     /// * `n` - The value to swap
     pub fn swap_n(&mut self, n: usize) {
-        self.add_operand(Operand::Swap(n));
+        self.add_instruction(Instruction::Swap(n));
     }
 
-    /// Pushes `Dup` command onto the stack.
+    /// Pushes `Dup` instruction onto the stack.
     pub fn dup(&mut self) {
-        self.add_operand(Operand::Dup(1));
+        self.add_instruction(Instruction::Dup(0));
     }
 
-    /// Pushes `Dup` command with value `n` onto the stack.
+    /// Pushes `Dup` instruction with value `n` onto the stack.
     ///
     /// # Arguments
     ///
     /// * `n` - The value to duplicate.
     pub fn dup_n(&mut self, n: usize) {
-        self.add_operand(Operand::Dup(n));
+        self.add_instruction(Instruction::Dup(n));
     }
 
-    /// Pushes `SwapW` command onto the stack.
+    /// Pushes `SwapW` instruction onto the stack.
     pub fn swapw(&mut self) {
-        self.add_operand(Operand::SwapW(1));
+        self.add_instruction(Instruction::SwapW(1));
     }
 
-    /// Pushes `SwapW` command with value `n` onto the stack.
+    /// Pushes `SwapW` instruction with value `n` onto the stack.
     ///
     /// # Arguments
     ///
     /// * `n` - The value to swap.
     pub fn swapw_n(&mut self, n: usize) {
-        self.add_operand(Operand::SwapW(n));
+        self.add_instruction(Instruction::SwapW(n));
     }
 
-    /// Pushes `PadW` command onto the stack.
+    /// Pushes `PadW` instruction onto the stack.
     pub fn padw(&mut self) {
-        self.add_operand(Operand::PadW);
+        self.add_instruction(Instruction::PadW);
     }
 
-    /// Pushes `MovUp` command with value `n` onto the stack.
+    /// Pushes `MovUp` instruction with value `n` onto the stack.
     ///
     /// # Arguments
     ///
     /// * `n` - The value to move up.
     pub fn movup_n(&mut self, n: usize) {
-        self.add_operand(Operand::MovUp(n));
+        self.add_instruction(Instruction::MovUp(n));
     }
 
-    /// Pushes `MovUpW` command with value `n` onto the stack.
+    /// Pushes `MovUpW` instruction with value `n` onto the stack.
     ///
     /// # Arguments
     ///
     /// * `n` - The value to move up.
     pub fn movupw_n(&mut self, n: usize) {
-        self.add_operand(Operand::MovUpW(n));
+        self.add_instruction(Instruction::MovUpW(n));
     }
 
-    /// Pushes `MovDn` command with value `n` onto the stack.
+    /// Pushes `MovDn` instruction with value `n` onto the stack.
     ///
     /// # Arguments
     ///
     /// * `n` - The value to move down.
     pub fn movdn_n(&mut self, n: usize) {
-        self.add_operand(Operand::MovDn(n));
+        self.add_instruction(Instruction::MovDn(n));
     }
 
-    /// Pushes `MovDnW` command with value `n` onto the stack.
+    /// Pushes `MovDnW` instruction with value `n` onto the stack.
     ///
     /// # Arguments
     ///
     /// * `n` - The value to move down.
     pub fn movdnw_n(&mut self, n: usize) {
-        self.add_operand(Operand::MovDnW(n));
+        self.add_instruction(Instruction::MovDnW(n));
     }
 
-    /// Pushes `Add` command onto the stack.
+    /// Pushes `Add` instruction onto the stack.
     pub fn add(&mut self) {
-        self.add_operand(Operand::Add);
+        self.add_instruction(Instruction::Add);
     }
 
-    /// Pushes `AddImm` command with value `n` onto the stack.
+    /// Pushes `AddImm` instruction with value `n` onto the stack.
     ///
     /// # Arguments
     ///
     /// * `n` - The value to add.
     pub fn add_n(&mut self, n: u64) {
-        self.add_operand(Operand::AddImm(BaseElement::from(n)));
+        self.add_instruction(Instruction::AddImm(BaseElement::from(n)));
     }
 
-    /// Pushes `Sub` command onto the stack.
+    /// Pushes `Sub` instruction onto the stack.
     pub fn sub(&mut self) {
-        self.add_operand(Operand::Sub);
+        self.add_instruction(Instruction::Sub);
     }
 
-    /// Pushes `SubImm` command with value `n` onto the stack.
+    /// Pushes `SubImm` instruction with value `n` onto the stack.
     ///
     /// # Arguments
     ///
     /// * `n` - The value to subtract.
     pub fn sub_n(&mut self, n: u64) {
-        self.add_operand(Operand::SubImm(BaseElement::from(n)));
+        self.add_instruction(Instruction::SubImm(BaseElement::from(n)));
     }
 
-    /// Pushes `Mul` command onto the stack.
+    /// Pushes `Mul` instruction onto the stack.
     pub fn mul(&mut self) {
-        self.add_operand(Operand::Mul);
+        self.add_instruction(Instruction::Mul);
     }
 
-    /// Pushes `MulImm` command with value `n` onto the stack.
+    /// Pushes `MulImm` instruction with value `n` onto the stack.
     ///
     /// # Arguments
     ///
     /// * `n` - The value to multiply.
     pub fn mul_n(&mut self, n: u64) {
-        self.add_operand(Operand::MulImm(BaseElement::from(n)));
+        self.add_instruction(Instruction::MulImm(BaseElement::from(n)));
     }
 
-    /// Pushes `Div` command onto the stack.
+    /// Pushes `Div` instruction onto the stack.
     pub fn div(&mut self) {
-        self.add_operand(Operand::Div);
+        self.add_instruction(Instruction::Div);
     }
 
-    /// Pushes `DivImm` command with value `n` onto the stack.
+    /// Pushes `DivImm` instruction with value `n` onto the stack.
     ///
     /// # Arguments
     ///
     /// * `n` - The value to divide.
     pub fn div_n(&mut self, n: u64) {
-        self.add_operand(Operand::DivImm(BaseElement::from(n)));
+        self.add_instruction(Instruction::DivImm(BaseElement::from(n)));
     }
 
-    /// Pushes `Neg` command onto the stack.
+    /// Pushes `Neg` instruction onto the stack.
     pub fn neg(&mut self) {
-        self.add_operand(Operand::Neg);
+        self.add_instruction(Instruction::Neg);
     }
 
-    /// Pushes `Inv` command onto the stack.
+    /// Pushes `Inv` instruction onto the stack.
     pub fn inv(&mut self) {
-        self.add_operand(Operand::Inv);
+        self.add_instruction(Instruction::Inv);
     }
 
-    /// Pushes `Pow2` command onto the stack.
+    /// Pushes `Pow2` instruction onto the stack.
     pub fn pow2(&mut self) {
-        self.add_operand(Operand::Pow2);
+        self.add_instruction(Instruction::Pow2);
     }
 
-    /// Pushes `Exp` command onto the stack.
+    /// Pushes `Exp` instruction onto the stack.
     pub fn exp(&mut self) {
-        self.add_operand(Operand::Exp);
+        self.add_instruction(Instruction::Exp);
     }
 
-    /// Pushes `ExpImm` command with value `n` onto the stack.
+    /// Pushes `ExpImm` instruction with value `n` onto the stack.
     ///
     /// # Arguments
     ///
     /// * `n` - The value to exponentiate.
     pub fn exp_n(&mut self, n: u64) {
-        self.add_operand(Operand::ExpImm(n));
+        self.add_instruction(Instruction::ExpImm(n));
     }
 
-    /// Pushes `And` command onto the stack.
+    /// Pushes `And` instruction onto the stack.
     pub fn and(&mut self) {
-        self.add_operand(Operand::And);
+        self.add_instruction(Instruction::And);
     }
 
-    /// Pushes `Or` command onto the stack.
+    /// Pushes `Or` instruction onto the stack.
     pub fn or(&mut self) {
-        self.add_operand(Operand::Or);
+        self.add_instruction(Instruction::Or);
     }
 
-    /// Pushes `Xor` command onto the stack.
+    /// Pushes `Xor` instruction onto the stack.
     pub fn xor(&mut self) {
-        self.add_operand(Operand::Xor);
+        self.add_instruction(Instruction::Xor);
     }
 
     pub fn not(&mut self) {
-        self.add_operand(Operand::Not);
+        self.add_instruction(Instruction::Not);
     }
 
-    /// Pushes `Eq` command onto the stack.
+    /// Pushes `Eq` instruction onto the stack.
     pub fn eq(&mut self) {
-        self.add_operand(Operand::Eq);
+        self.add_instruction(Instruction::Eq);
     }
 
-    /// Pushes `EqImm` command with value `n` onto the stack.
+    /// Pushes `EqImm` instruction with value `n` onto the stack.
     ///
     /// # Arguments
     ///
     /// * `n` - The value to compare for equality.
     pub fn eq_n(&mut self, n: u64) {
-        self.add_operand(Operand::EqImm(BaseElement::from(n)));
+        self.add_instruction(Instruction::EqImm(BaseElement::from(n)));
     }
 
-    /// Pushes `Neq` command onto the stack.
+    /// Pushes `Neq` instruction onto the stack.
     pub fn neq(&mut self) {
-        self.add_operand(Operand::Neq);
+        self.add_instruction(Instruction::Neq);
     }
 
-    /// Pushes `NeqImm` command with value `n` onto the stack.
+    /// Pushes `NeqImm` instruction with value `n` onto the stack.
     ///
     /// # Arguments
     ///
     /// * `n` - The value to compare for inequality.
     pub fn neq_n(&mut self, n: u64) {
-        self.add_operand(Operand::NeqImm(BaseElement::from(n)));
+        self.add_instruction(Instruction::NeqImm(BaseElement::from(n)));
     }
 
-    /// Pushes `Lt` command onto the stack.
+    /// Pushes `Lt` instruction onto the stack.
     pub fn lt(&mut self) {
-        self.add_operand(Operand::Lt);
+        self.add_instruction(Instruction::Lt);
     }
 
-    /// Pushes `Lte` command onto the stack.
+    /// Pushes `Lte` instruction onto the stack.
     pub fn lte(&mut self) {
-        self.add_operand(Operand::Lte);
+        self.add_instruction(Instruction::Lte);
     }
 
-    /// Pushes `Gt` command onto the stack.
+    /// Pushes `Gt` instruction onto the stack.
     pub fn gt(&mut self) {
-        self.add_operand(Operand::Gt);
+        self.add_instruction(Instruction::Gt);
     }
 
-    /// Pushes `Gte` command onto the stack.
+    /// Pushes `Gte` instruction onto the stack.
     pub fn gte(&mut self) {
-        self.add_operand(Operand::Gte);
+        self.add_instruction(Instruction::Gte);
     }
 
-    /// Pushes `IsOdd` command onto the stack.
+    /// Pushes `IsOdd` instruction onto the stack.
     pub fn is_odd(&mut self) {
-        self.add_operand(Operand::IsOdd);
+        self.add_instruction(Instruction::IsOdd);
     }
 
-    /// Pushes `Eqw` command onto the stack.
+    /// Pushes `Eqw` instruction onto the stack.
     pub fn eqw(&mut self) {
-        self.add_operand(Operand::EqW);
+        self.add_instruction(Instruction::EqW);
     }
 
-    /// Pushes `MemLoad` command onto the stack.
+    /// Pushes `MemLoad` instruction onto the stack.
     pub fn mem_load(&mut self) {
-        self.add_operand(Operand::MemLoad);
+        self.add_instruction(Instruction::MemLoad);
     }
 
-    /// Pushes `MemLoadImm` command with value `n` onto the stack.
+    /// Pushes `MemLoadImm` instruction with value `n` onto the stack.
     ///
     /// # Arguments
     ///
     /// * `n` - The address to load from memory.
     pub fn mem_load_n(&mut self, n: u32) {
-        self.add_operand(Operand::MemLoadImm(n));
+        self.add_instruction(Instruction::MemLoadImm(n));
     }
 
-    /// Pushes `MemLoadW` command onto the stack.
+    /// Pushes `MemLoadW` instruction onto the stack.
     pub fn mem_load_w(&mut self) {
-        self.add_operand(Operand::MemLoadW);
+        self.add_instruction(Instruction::MemLoadW);
     }
 
-    /// Pushes `MemLoadWImm` command with value `n` onto the stack.
+    /// Pushes `MemLoadWImm` instruction with value `n` onto the stack.
     ///
     /// # Arguments
     ///
     /// * `n` - The address to load from memory.
     pub fn mem_load_w_n(&mut self, n: u32) {
-        self.add_operand(Operand::MemLoadWImm(n));
+        self.add_instruction(Instruction::MemLoadWImm(n));
     }
 
-    /// Pushes `MemStore` command onto the stack.
+    /// Pushes `MemStore` instruction onto the stack.
     pub fn mem_store(&mut self) {
-        self.add_operand(Operand::MemStore);
+        self.add_instruction(Instruction::MemStore);
     }
 
-    /// Pushes `MemStoreImm` command with value `n` onto the stack.
+    /// Pushes `MemStoreImm` instruction with value `n` onto the stack.
     ///
     /// # Arguments
     ///
     /// * `n` - The address to store in memory.
     pub fn mem_store_n(&mut self, n: u32) {
-        self.add_operand(Operand::MemStoreImm(n));
+        self.add_instruction(Instruction::MemStoreImm(n));
     }
 
-    /// Pushes `MemStoreW` command onto the stack.
+    /// Pushes `MemStoreW` instruction onto the stack.
     pub fn mem_store_w(&mut self) {
-        self.add_operand(Operand::MemStoreW);
+        self.add_instruction(Instruction::MemStoreW);
     }
 
-    /// Pushes `MemStoreWImm` command with value `n` onto the stack.
+    /// Pushes `MemStoreWImm` instruction with value `n` onto the stack.
     ///
     /// # Arguments
     ///
     /// * `n` - The address to store in memory.
     pub fn mem_store_w_n(&mut self, n: u32) {
-        self.add_operand(Operand::MemStoreWImm(n));
+        self.add_instruction(Instruction::MemStoreWImm(n));
     }
 
-    /// Pushes `LocLoad` command with value `n` onto the stack.
+    /// Pushes `LocLoad` instruction with value `n` onto the stack.
     ///
     /// # Arguments
     ///
     /// * `n` - The address to load from local storage.
     pub fn loc_load(&mut self, n: u16) {
-        self.add_operand(Operand::LocLoad(n));
+        self.add_instruction(Instruction::LocLoad(n));
     }
 
-    /// Pushes `LocLoadW` command with value `n` onto the stack.
+    /// Pushes `LocLoadW` instruction with value `n` onto the stack.
     ///
     /// # Arguments
     ///
     /// * `n` - The address to load from local storage.
     pub fn loc_load_w(&mut self, n: u16) {
-        self.add_operand(Operand::LocLoadW(n));
+        self.add_instruction(Instruction::LocLoadW(n));
     }
 
-    /// Pushes `LocStore` command with value `n` onto the stack.
+    /// Pushes `LocStore` instruction with value `n` onto the stack.
     ///
     /// # Arguments
     ///
     /// * `n` - The address to store in local storage.
     pub fn loc_store(&mut self, n: u16) {
-        self.add_operand(Operand::LocStore(n));
+        self.add_instruction(Instruction::LocStore(n));
     }
 
-    /// Pushes `LocStoreW` command with value `n` onto the stack.
+    /// Pushes `LocStoreW` instruction with value `n` onto the stack.
     ///
     /// # Arguments
     ///
     /// * `n` - The address to store in local storage.
     pub fn loc_store_w(&mut self, n: u16) {
-        self.add_operand(Operand::LocStoreW(n));
+        self.add_instruction(Instruction::LocStoreW(n));
     }
 
-    /// Pushes `Push` command with value `n` onto the stack.
+    /// Pushes `Push` instruction with value `n` onto the stack.
     ///
     /// # Arguments
     ///
     /// * `n` - The value to push onto the stack.
     pub fn push(&mut self, n: u64) {
-        self.add_operand(Operand::Push(BaseElement::from(n)));
+        self.add_instruction(Instruction::Push(BaseElement::from(n)));
     }
 
-    /// Pushes `AdvPush` command with value `n` onto the stack.
+    /// Pushes `AdvPush` instruction with value `n` onto the stack.
     ///
     /// # Arguments
     ///
     /// * `n` - The value to push onto the stack.
     pub fn adv_push(&mut self, n: usize) {
-        self.add_operand(Operand::AdvPush(n));
+        self.add_instruction(Instruction::AdvPush(n));
     }
 
     pub fn exec(&mut self, name: &str) {
-        self.add_operand(Operand::Exec(name.to_string()));
+        self.add_instruction(Instruction::Exec(name.to_string()));
     }
 
-    /// Pushes `Increment` command onto the stack.
+    /// Pushes `Increment` instruction onto the stack.
     pub fn increment(&mut self) {
-        self.add_operand(Operand::Increment);
+        self.add_instruction(Instruction::Increment);
     }
 
-    /// Pushes `Decrement` command onto the stack.
+    /// Pushes `Decrement` instruction onto the stack.
     pub fn decrement(&mut self) {
-        self.add_operand(Operand::Decrement);
+        self.add_instruction(Instruction::Decrement);
     }
 
     pub fn u32checked_add(&mut self) {
-        self.add_operand(Operand::U32CheckedAdd);
+        self.add_instruction(Instruction::U32CheckedAdd);
     }
 
     pub fn u32checked_add_n(&mut self, n: u32) {
-        self.add_operand(Operand::U32CheckedAddImm(n));
+        self.add_instruction(Instruction::U32CheckedAddImm(n));
     }
 
     pub fn u32overflowing_add(&mut self) {
-        self.add_operand(Operand::U32OverflowingAdd);
+        self.add_instruction(Instruction::U32OverflowingAdd);
     }
 
     pub fn u32overflowing_add_n(&mut self, n: u32) {
-        self.add_operand(Operand::U32OverflowingAddImm(n));
+        self.add_instruction(Instruction::U32OverflowingAddImm(n));
     }
 
     pub fn u32wrapping_add(&mut self) {
-        self.add_operand(Operand::U32WrappingAdd);
+        self.add_instruction(Instruction::U32WrappingAdd);
     }
 
     pub fn u32wrapping_add_n(&mut self, n: u32) {
-        self.add_operand(Operand::U32WrappingAddImm(n));
+        self.add_instruction(Instruction::U32WrappingAddImm(n));
     }
 
     pub fn u32checked_sub(&mut self) {
-        self.add_operand(Operand::U32CheckedSub);
+        self.add_instruction(Instruction::U32CheckedSub);
     }
 
     pub fn u32checked_sub_n(&mut self, n: u32) {
-        self.add_operand(Operand::U32CheckedSubImm(n));
+        self.add_instruction(Instruction::U32CheckedSubImm(n));
     }
 
     pub fn u32overflowing_sub(&mut self) {
-        self.add_operand(Operand::U32OverflowingSub);
+        self.add_instruction(Instruction::U32OverflowingSub);
     }
 
     pub fn u32overflowing_sub_n(&mut self, n: u32) {
-        self.add_operand(Operand::U32OverflowingSubImm(n));
+        self.add_instruction(Instruction::U32OverflowingSubImm(n));
     }
 
     pub fn u32wrapping_sub(&mut self) {
-        self.add_operand(Operand::U32WrappingSub);
+        self.add_instruction(Instruction::U32WrappingSub);
     }
 
     pub fn u32wrapping_sub_n(&mut self, n: u32) {
-        self.add_operand(Operand::U32WrappingSubImm(n));
+        self.add_instruction(Instruction::U32WrappingSubImm(n));
     }
 
     pub fn u32checked_mul(&mut self) {
-        self.add_operand(Operand::U32CheckedMul);
+        self.add_instruction(Instruction::U32CheckedMul);
     }
 
     pub fn u32checked_mul_n(&mut self, n: u32) {
-        self.add_operand(Operand::U32CheckedMulImm(n));
+        self.add_instruction(Instruction::U32CheckedMulImm(n));
     }
 
     pub fn u32overflowing_mul(&mut self) {
-        self.add_operand(Operand::U32OverflowingMul);
+        self.add_instruction(Instruction::U32OverflowingMul);
     }
 
     pub fn u32overflowing_mul_n(&mut self, n: u32) {
-        self.add_operand(Operand::U32OverflowingMulImm(n));
+        self.add_instruction(Instruction::U32OverflowingMulImm(n));
     }
 
     pub fn u32wrapping_mul(&mut self) {
-        self.add_operand(Operand::U32WrappingMul);
+        self.add_instruction(Instruction::U32WrappingMul);
     }
 
     pub fn u32wrapping_mul_n(&mut self, n: u32) {
-        self.add_operand(Operand::U32WrappingMulImm(n));
+        self.add_instruction(Instruction::U32WrappingMulImm(n));
     }
 
     pub fn u32checked_div(&mut self) {
-        self.add_operand(Operand::U32CheckedDiv);
+        self.add_instruction(Instruction::U32CheckedDiv);
     }
 
     pub fn u32checked_div_n(&mut self, n: u32) {
-        self.add_operand(Operand::U32CheckedDivImm(n));
+        self.add_instruction(Instruction::U32CheckedDivImm(n));
     }
 
     pub fn u32unchecked_div(&mut self) {
-        self.add_operand(Operand::U32UncheckedDiv);
+        self.add_instruction(Instruction::U32UncheckedDiv);
     }
 
     pub fn u32unchecked_div_n(&mut self, n: u32) {
-        self.add_operand(Operand::U32UncheckedDivImm(n));
+        self.add_instruction(Instruction::U32UncheckedDivImm(n));
     }
 
     pub fn u32overflowing_madd(&mut self) {
-        self.add_operand(Operand::U32OverflowingMadd);
+        self.add_instruction(Instruction::U32OverflowingMadd);
     }
 
     pub fn u32wrapping_madd(&mut self) {
-        self.add_operand(Operand::U32WrappingMadd);
+        self.add_instruction(Instruction::U32WrappingMadd);
     }
 
     pub fn u32checked_mod(&mut self) {
-        self.add_operand(Operand::U32CheckedMod);
+        self.add_instruction(Instruction::U32CheckedMod);
     }
 
     pub fn u32checked_mod_n(&mut self, n: u32) {
-        self.add_operand(Operand::U32CheckedModImm(n));
+        self.add_instruction(Instruction::U32CheckedModImm(n));
     }
 
     pub fn u32unchecked_mod(&mut self) {
-        self.add_operand(Operand::U32UncheckedMod);
+        self.add_instruction(Instruction::U32UncheckedMod);
     }
 
     pub fn u32unchecked_mod_n(&mut self, n: u32) {
-        self.add_operand(Operand::U32UncheckedModImm(n));
+        self.add_instruction(Instruction::U32UncheckedModImm(n));
     }
 
     pub fn u32checked_divmod(&mut self) {
-        self.add_operand(Operand::U32CheckedDivMod);
+        self.add_instruction(Instruction::U32CheckedDivMod);
     }
 
     pub fn u32checked_divmod_n(&mut self, n: u32) {
-        self.add_operand(Operand::U32CheckedDivModImm(n));
+        self.add_instruction(Instruction::U32CheckedDivModImm(n));
     }
 
     pub fn u32unchecked_divmod(&mut self) {
-        self.add_operand(Operand::U32UncheckedDivMod);
+        self.add_instruction(Instruction::U32UncheckedDivMod);
     }
 
     pub fn u32unchecked_divmod_n(&mut self, n: u32) {
-        self.add_operand(Operand::U32UncheckedDivModImm(n));
+        self.add_instruction(Instruction::U32UncheckedDivModImm(n));
     }
 
     // bitwise
 
     pub fn u32checked_and(&mut self) {
-        self.add_operand(Operand::U32CheckedAnd);
+        self.add_instruction(Instruction::U32CheckedAnd);
     }
 
     pub fn u32checked_or(&mut self) {
-        self.add_operand(Operand::U32CheckedOr);
+        self.add_instruction(Instruction::U32CheckedOr);
     }
 
     pub fn u32checked_xor(&mut self) {
-        self.add_operand(Operand::U32CheckedXor);
+        self.add_instruction(Instruction::U32CheckedXor);
     }
 
     pub fn u32checked_not(&mut self) {
-        self.add_operand(Operand::U32CheckedNot);
+        self.add_instruction(Instruction::U32CheckedNot);
     }
 
     pub fn u32checked_shl(&mut self) {
-        self.add_operand(Operand::U32CheckedShl);
+        self.add_instruction(Instruction::U32CheckedShl);
     }
 
     pub fn u32checked_shl_n(&mut self, n: u32) {
-        self.add_operand(Operand::U32CheckedShlImm(n));
+        self.add_instruction(Instruction::U32CheckedShlImm(n));
     }
 
     pub fn u32unchecked_shl(&mut self) {
-        self.add_operand(Operand::U32UncheckedShl);
+        self.add_instruction(Instruction::U32UncheckedShl);
     }
 
     pub fn u32unchecked_shl_n(&mut self, n: u32) {
-        self.add_operand(Operand::U32UncheckedShlImm(n));
+        self.add_instruction(Instruction::U32UncheckedShlImm(n));
     }
 
     pub fn u32checked_shr(&mut self) {
-        self.add_operand(Operand::U32CheckedShr);
+        self.add_instruction(Instruction::U32CheckedShr);
     }
 
     pub fn u32checked_shr_n(&mut self, n: u32) {
-        self.add_operand(Operand::U32CheckedShrImm(n));
+        self.add_instruction(Instruction::U32CheckedShrImm(n));
     }
 
     pub fn u32unchecked_shr(&mut self) {
-        self.add_operand(Operand::U32UncheckedShr);
+        self.add_instruction(Instruction::U32UncheckedShr);
     }
 
     pub fn u32unchecked_shr_n(&mut self, n: u32) {
-        self.add_operand(Operand::U32UncheckedShrImm(n));
+        self.add_instruction(Instruction::U32UncheckedShrImm(n));
     }
 
     pub fn u32checked_rotl(&mut self) {
-        self.add_operand(Operand::U32CheckedRotl);
+        self.add_instruction(Instruction::U32CheckedRotl);
     }
 
     pub fn u32checked_rotl_n(&mut self, n: u32) {
-        self.add_operand(Operand::U32CheckedRotlImm(n));
+        self.add_instruction(Instruction::U32CheckedRotlImm(n));
     }
 
     pub fn u32unchecked_rotl(&mut self) {
-        self.add_operand(Operand::U32UncheckedRotl);
+        self.add_instruction(Instruction::U32UncheckedRotl);
     }
 
     pub fn u32unchecked_rotl_n(&mut self, n: u32) {
-        self.add_operand(Operand::U32UncheckedRotlImm(n));
+        self.add_instruction(Instruction::U32UncheckedRotlImm(n));
     }
 
     pub fn u32checked_rotr(&mut self) {
-        self.add_operand(Operand::U32CheckedRotr);
+        self.add_instruction(Instruction::U32CheckedRotr);
     }
 
     pub fn u32checked_rotr_n(&mut self, n: u32) {
-        self.add_operand(Operand::U32CheckedRotrImm(n));
+        self.add_instruction(Instruction::U32CheckedRotrImm(n));
     }
 
     pub fn u32unchecked_rotr(&mut self) {
-        self.add_operand(Operand::U32UncheckedRotr);
+        self.add_instruction(Instruction::U32UncheckedRotr);
     }
 
     pub fn u32unchecked_rotr_n(&mut self, n: u32) {
-        self.add_operand(Operand::U32UncheckedRotrImm(n));
+        self.add_instruction(Instruction::U32UncheckedRotrImm(n));
     }
 
     pub fn u32checked_popcnt(&mut self) {
-        self.add_operand(Operand::U32CheckedPopcnt);
+        self.add_instruction(Instruction::U32CheckedPopcnt);
     }
 
     pub fn u32unchecked_popcnt(&mut self) {
-        self.add_operand(Operand::U32UncheckedPopcnt);
+        self.add_instruction(Instruction::U32UncheckedPopcnt);
     }
 
     // comparison
 
     pub fn u32checked_eq(&mut self) {
-        self.add_operand(Operand::U32CheckedEq);
+        self.add_instruction(Instruction::U32CheckedEq);
     }
 
     pub fn u32checked_eq_n(&mut self, n: u32) {
-        self.add_operand(Operand::U32CheckedEqImm(n));
+        self.add_instruction(Instruction::U32CheckedEqImm(n));
     }
 
     pub fn u32checked_neq(&mut self) {
-        self.add_operand(Operand::U32CheckedNeq);
+        self.add_instruction(Instruction::U32CheckedNeq);
     }
 
     pub fn u32checked_neq_n(&mut self, n: u32) {
-        self.add_operand(Operand::U32CheckedNeqImm(n));
+        self.add_instruction(Instruction::U32CheckedNeqImm(n));
     }
 
     pub fn u32checked_lt(&mut self) {
-        self.add_operand(Operand::U32CheckedLt);
+        self.add_instruction(Instruction::U32CheckedLt);
     }
 
     pub fn u32unchecked_lt(&mut self) {
-        self.add_operand(Operand::U32UncheckedLt);
+        self.add_instruction(Instruction::U32UncheckedLt);
     }
 
     pub fn u32checked_lte(&mut self) {
-        self.add_operand(Operand::U32CheckedLte);
+        self.add_instruction(Instruction::U32CheckedLte);
     }
 
     pub fn u32unchecked_lte(&mut self) {
-        self.add_operand(Operand::U32UncheckedLte);
+        self.add_instruction(Instruction::U32UncheckedLte);
     }
 
     pub fn u32checked_gt(&mut self) {
-        self.add_operand(Operand::U32CheckedGt);
+        self.add_instruction(Instruction::U32CheckedGt);
     }
 
     pub fn u32unchecked_gt(&mut self) {
-        self.add_operand(Operand::U32UncheckedGt);
+        self.add_instruction(Instruction::U32UncheckedGt);
     }
 
     pub fn u32checked_gte(&mut self) {
-        self.add_operand(Operand::U32CheckedGte);
+        self.add_instruction(Instruction::U32CheckedGte);
     }
 
     pub fn u32unchecked_gte(&mut self) {
-        self.add_operand(Operand::U32UncheckedGte);
+        self.add_instruction(Instruction::U32UncheckedGte);
     }
 
     pub fn u32checked_min(&mut self) {
-        self.add_operand(Operand::U32CheckedMin);
+        self.add_instruction(Instruction::U32CheckedMin);
     }
 
     pub fn u32unchecked_min(&mut self) {
-        self.add_operand(Operand::U32UncheckedMin);
+        self.add_instruction(Instruction::U32UncheckedMin);
     }
 
     pub fn u32checked_max(&mut self) {
-        self.add_operand(Operand::U32CheckedMax);
+        self.add_instruction(Instruction::U32CheckedMax);
     }
 
     pub fn u32unchecked_max(&mut self) {
-        self.add_operand(Operand::U32UncheckedMax);
+        self.add_instruction(Instruction::U32UncheckedMax);
     }
 
     pub fn add_program<F>(&mut self, program: F)
     where
-        F: FnOnce() -> VecDeque<Operand>,
+        F: FnOnce() -> VecDeque<Instruction>,
     {
         self.add_operands(program());
+    }
+}
+
+impl Program for EmptyProgram {
+    fn get_instructions(&self) -> VecDeque<Instruction> {
+        self.instructions.clone()
     }
 }

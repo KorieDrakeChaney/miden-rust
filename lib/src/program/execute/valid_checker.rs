@@ -1,13 +1,13 @@
 use math::{fields::f64::BaseElement, FieldElement, StarkField};
 
-use crate::{program::error::MidenProgramError, MidenProgram, Operand};
+use crate::{program::error::MidenProgramError, Instruction, MidenProgram};
 
 use super::utils::{max, U32_MAX};
 
 impl MidenProgram {
-    pub fn is_valid_operand(&mut self, operand: &Operand) -> Option<MidenProgramError> {
+    pub fn is_valid_operand(&mut self, operand: &Instruction) -> Option<MidenProgramError> {
         match operand {
-            Operand::CDrop | Operand::CSwap | Operand::CDropW | Operand::CSwapW => {
+            Instruction::CDrop | Instruction::CSwap | Instruction::CDropW | Instruction::CSwapW => {
                 if let Some(c) = self.stack.get(0) {
                     if *c != BaseElement::ZERO && *c != BaseElement::ONE {
                         return Some(MidenProgramError::NotBinaryValue(c.as_int()));
@@ -15,31 +15,31 @@ impl MidenProgram {
                 }
             }
 
-            Operand::Ext2Div | Operand::Div => {
+            Instruction::Ext2Div | Instruction::Div => {
                 if let Some(a) = self.stack.get(0) {
                     if *a == BaseElement::ZERO {
                         return Some(MidenProgramError::DivideByZero);
                     }
                 }
             }
-            Operand::Ext2Inv => {
+            Instruction::Ext2Inv => {
                 if let (Some(a1), Some(a0)) = (self.stack.get(0), self.stack.get(1)) {
                     if *a0 == BaseElement::ZERO || *a1 == BaseElement::ZERO {
                         return Some(MidenProgramError::ZeroInvertInvalid);
                     }
                 }
             }
-            Operand::Inv => {
+            Instruction::Inv => {
                 if let Some(a) = self.stack.get(0) {
                     if *a == BaseElement::ZERO {
                         return Some(MidenProgramError::ZeroInvertInvalid);
                     }
                 }
             }
-            Operand::AdvPush(n) => {
+            Instruction::AdvPush(n) => {
                 if !(*n >= 1 && *n <= 16) {
                     return Some(MidenProgramError::InvalidParameter(
-                        Operand::AdvPush(*n).to_string(),
+                        Instruction::AdvPush(*n).to_string(),
                         *n,
                         1,
                         16,
@@ -52,70 +52,70 @@ impl MidenProgram {
                 }
             }
             // Manipulation
-            Operand::Dup(n) => {
+            Instruction::Dup(n) => {
                 if !(*n <= 15) {
                     return Some(MidenProgramError::InvalidParameter(
-                        Operand::Dup(*n).to_string(),
+                        Instruction::Dup(*n).to_string(),
                         *n,
                         0,
                         15,
                     ));
                 }
             }
-            Operand::Swap(n) => {
+            Instruction::Swap(n) => {
                 if !(*n > 0 && *n <= 15) {
                     return Some(MidenProgramError::InvalidParameter(
-                        Operand::Swap(*n).to_string(),
+                        Instruction::Swap(*n).to_string(),
                         *n,
                         1,
                         15,
                     ));
                 }
             }
-            Operand::SwapW(n) => {
+            Instruction::SwapW(n) => {
                 if !(*n > 0 && *n <= 3) {
                     return Some(MidenProgramError::InvalidParameter(
-                        Operand::Swap(*n).to_string(),
+                        Instruction::Swap(*n).to_string(),
                         *n,
                         1,
                         3,
                     ));
                 }
             }
-            Operand::MovDn(n) => {
+            Instruction::MovDn(n) => {
                 if !(*n >= 2 && *n <= 15) {
                     return Some(MidenProgramError::InvalidParameter(
-                        Operand::MovDn(*n).to_string(),
+                        Instruction::MovDn(*n).to_string(),
                         *n,
                         2,
                         3,
                     ));
                 }
             }
-            Operand::MovDnW(n) => {
+            Instruction::MovDnW(n) => {
                 if !(*n >= 2 && *n <= 3) {
                     return Some(MidenProgramError::InvalidParameter(
-                        Operand::MovDnW(*n).to_string(),
+                        Instruction::MovDnW(*n).to_string(),
                         *n,
                         2,
                         15,
                     ));
                 }
             }
-            Operand::MovUp(n) => {
+            Instruction::MovUp(n) => {
                 if !(*n >= 2 && *n <= 15) {
                     return Some(MidenProgramError::InvalidParameter(
-                        Operand::MovUp(*n).to_string(),
+                        Instruction::MovUp(*n).to_string(),
                         *n,
                         1,
                         15,
                     ));
                 }
             }
-            Operand::MovUpW(n) => {
+            Instruction::MovUpW(n) => {
                 if !(*n >= 2 && *n <= 3) {
                     return Some(MidenProgramError::InvalidParameter(
-                        Operand::MovUpW(*n).to_string(),
+                        Instruction::MovUpW(*n).to_string(),
                         *n,
                         1,
                         3,
@@ -124,7 +124,7 @@ impl MidenProgram {
             }
 
             // Boolean
-            Operand::Xor | Operand::And | Operand::Or => {
+            Instruction::Xor | Instruction::And | Instruction::Or => {
                 if let (Some(b), Some(a)) = (self.stack.get(0), self.stack.get(1)) {
                     let a_int = a.as_int();
                     let b_int = b.as_int();
@@ -137,7 +137,7 @@ impl MidenProgram {
                 }
             }
 
-            Operand::Not | Operand::U32CheckedPopcnt => {
+            Instruction::Not | Instruction::U32CheckedPopcnt => {
                 if let Some(a) = self.stack.get(0) {
                     let a_int = a.as_int();
                     if a_int != 1 && a_int != 0 {
@@ -146,7 +146,7 @@ impl MidenProgram {
                 }
             }
 
-            Operand::U32CheckedAdd => {
+            Instruction::U32CheckedAdd => {
                 if let (Some(b), Some(a)) = (self.stack.get(0), self.stack.get(1)) {
                     let a_int = a.as_int();
                     let b_int = b.as_int();
@@ -160,7 +160,7 @@ impl MidenProgram {
                 }
             }
 
-            Operand::U32CheckedAddImm(b) => {
+            Instruction::U32CheckedAddImm(b) => {
                 if let Some(a) = self.stack.get(0) {
                     let a_int = a.as_int();
                     let b_int = *b as u64;
@@ -174,7 +174,7 @@ impl MidenProgram {
                 }
             }
 
-            Operand::U32CheckedSub => {
+            Instruction::U32CheckedSub => {
                 if let (Some(b), Some(a)) = (self.stack.get(0), self.stack.get(1)) {
                     let a_int = a.as_int();
                     let b_int = b.as_int();
@@ -191,7 +191,7 @@ impl MidenProgram {
                 }
             }
 
-            Operand::U32CheckedSubImm(b) => {
+            Instruction::U32CheckedSubImm(b) => {
                 if let Some(a) = self.stack.get(0) {
                     let a_int = a.as_int();
                     let b_int = *b as u64;
@@ -208,7 +208,7 @@ impl MidenProgram {
                 }
             }
 
-            Operand::U32CheckedMul => {
+            Instruction::U32CheckedMul => {
                 if let (Some(b), Some(a)) = (self.stack.get(0), self.stack.get(1)) {
                     let a_int = a.as_int();
                     let b_int = b.as_int();
@@ -222,7 +222,7 @@ impl MidenProgram {
                 }
             }
 
-            Operand::U32CheckedMulImm(b) => {
+            Instruction::U32CheckedMulImm(b) => {
                 if let Some(a) = self.stack.get(0) {
                     let a_int = a.as_int();
                     let b_int = *b as u64;
@@ -236,7 +236,7 @@ impl MidenProgram {
                 }
             }
 
-            Operand::U32CheckedDiv => {
+            Instruction::U32CheckedDiv => {
                 if let (Some(b), Some(a)) = (self.stack.get(0), self.stack.get(1)) {
                     let a_int = a.as_int();
                     let b_int = b.as_int();
@@ -253,14 +253,14 @@ impl MidenProgram {
                 }
             }
 
-            Operand::U32CheckedDivImm(b) => {
+            Instruction::U32CheckedDivImm(b) => {
                 if let Some(a) = self.stack.get(0) {
                     let a_int = a.as_int();
                     let b_int = *b as u64;
 
                     if b_int == 0 {
                         return Some(MidenProgramError::InvalidParameter(
-                            Operand::U32CheckedDivImm(*b).to_string(),
+                            Instruction::U32CheckedDivImm(*b).to_string(),
                             *b as usize,
                             1,
                             U32_MAX as usize,
@@ -275,7 +275,7 @@ impl MidenProgram {
                 }
             }
 
-            Operand::U32CheckedMod => {
+            Instruction::U32CheckedMod => {
                 if let (Some(b), Some(a)) = (self.stack.get(0), self.stack.get(1)) {
                     let a_int = a.as_int();
                     let b_int = b.as_int();
@@ -288,14 +288,14 @@ impl MidenProgram {
                 }
             }
 
-            Operand::U32CheckedModImm(b) => {
+            Instruction::U32CheckedModImm(b) => {
                 if let Some(a) = self.stack.get(0) {
                     let a_int = a.as_int();
                     let b_int = *b as u64;
 
                     if b_int == 0 {
                         return Some(MidenProgramError::InvalidParameter(
-                            Operand::U32CheckedModImm(*b).to_string(),
+                            Instruction::U32CheckedModImm(*b).to_string(),
                             *b as usize,
                             1,
                             U32_MAX as usize,
@@ -306,7 +306,7 @@ impl MidenProgram {
                 }
             }
 
-            Operand::U32CheckedDivMod => {
+            Instruction::U32CheckedDivMod => {
                 if let (Some(b), Some(a)) = (self.stack.get(0), self.stack.get(1)) {
                     let a_int = a.as_int();
                     let b_int = b.as_int();
@@ -319,14 +319,14 @@ impl MidenProgram {
                 }
             }
 
-            Operand::U32CheckedDivModImm(b) => {
+            Instruction::U32CheckedDivModImm(b) => {
                 if let Some(a) = self.stack.get(0) {
                     let a_int = a.as_int();
                     let b_int = *b as u64;
 
                     if b_int == 0 {
                         return Some(MidenProgramError::InvalidParameter(
-                            Operand::U32CheckedDivModImm(*b).to_string(),
+                            Instruction::U32CheckedDivModImm(*b).to_string(),
                             *b as usize,
                             1,
                             U32_MAX as usize,
@@ -337,7 +337,7 @@ impl MidenProgram {
                 }
             }
 
-            Operand::U32CheckedAnd | Operand::U32CheckedOr | Operand::U32CheckedXor => {
+            Instruction::U32CheckedAnd | Instruction::U32CheckedOr | Instruction::U32CheckedXor => {
                 if let (Some(b), Some(a)) = (self.stack.get(0), self.stack.get(1)) {
                     let a_int = a.as_int();
                     let b_int = b.as_int();
@@ -348,7 +348,7 @@ impl MidenProgram {
                 }
             }
 
-            Operand::U32CheckedNot => {
+            Instruction::U32CheckedNot => {
                 if let Some(a) = self.stack.get(0) {
                     let a_int = a.as_int();
 
@@ -356,14 +356,14 @@ impl MidenProgram {
                 }
             }
 
-            Operand::U32CheckedShl => {
+            Instruction::U32CheckedShl => {
                 if let (Some(b), Some(a)) = (self.stack.get(0), self.stack.get(1)) {
                     let a_int = a.as_int();
                     let b_int = b.as_int();
 
                     if b_int > 31 {
                         return Some(MidenProgramError::TopValueInvalid(
-                            Operand::U32CheckedShl.to_string(),
+                            Instruction::U32CheckedShl.to_string(),
                             b_int as usize,
                             0,
                             30,
@@ -374,14 +374,14 @@ impl MidenProgram {
                 }
             }
 
-            Operand::U32CheckedShlImm(b) => {
+            Instruction::U32CheckedShlImm(b) => {
                 if let Some(a) = self.stack.get(0) {
                     let a_int = a.as_int();
                     let b_int = *b as u64;
 
                     if b_int > 31 {
                         return Some(MidenProgramError::InvalidParameter(
-                            Operand::U32CheckedShlImm(*b).to_string(),
+                            Instruction::U32CheckedShlImm(*b).to_string(),
                             b_int as usize,
                             0,
                             30,
@@ -391,14 +391,14 @@ impl MidenProgram {
                     }
                 }
             }
-            Operand::U32CheckedShr => {
+            Instruction::U32CheckedShr => {
                 if let (Some(b), Some(a)) = (self.stack.get(0), self.stack.get(1)) {
                     let a_int = a.as_int();
                     let b_int = b.as_int();
 
                     if b_int > 31 {
                         return Some(MidenProgramError::TopValueInvalid(
-                            Operand::U32CheckedShr.to_string(),
+                            Instruction::U32CheckedShr.to_string(),
                             b_int as usize,
                             0,
                             30,
@@ -408,14 +408,14 @@ impl MidenProgram {
                     }
                 }
             }
-            Operand::U32CheckedShrImm(b) => {
+            Instruction::U32CheckedShrImm(b) => {
                 if let Some(a) = self.stack.get(0) {
                     let a_int = a.as_int();
                     let b_int = *b as u64;
 
                     if b_int > 31 {
                         return Some(MidenProgramError::InvalidParameter(
-                            Operand::U32CheckedShrImm(*b).to_string(),
+                            Instruction::U32CheckedShrImm(*b).to_string(),
                             b_int as usize,
                             0,
                             30,
@@ -425,14 +425,14 @@ impl MidenProgram {
                     }
                 }
             }
-            Operand::U32CheckedRotr => {
+            Instruction::U32CheckedRotr => {
                 if let (Some(b), Some(a)) = (self.stack.get(0), self.stack.get(1)) {
                     let a_int = a.as_int();
                     let b_int = b.as_int();
 
                     if b_int > 31 {
                         return Some(MidenProgramError::TopValueInvalid(
-                            Operand::U32CheckedRotr.to_string(),
+                            Instruction::U32CheckedRotr.to_string(),
                             b_int as usize,
                             0,
                             30,
@@ -442,14 +442,14 @@ impl MidenProgram {
                     }
                 }
             }
-            Operand::U32CheckedRotrImm(b) => {
+            Instruction::U32CheckedRotrImm(b) => {
                 if let Some(a) = self.stack.get(0) {
                     let a_int = a.as_int();
                     let b_int = *b as u64;
 
                     if b_int > 31 {
                         return Some(MidenProgramError::InvalidParameter(
-                            Operand::U32CheckedRotrImm(*b).to_string(),
+                            Instruction::U32CheckedRotrImm(*b).to_string(),
                             b_int as usize,
                             0,
                             30,
@@ -459,14 +459,14 @@ impl MidenProgram {
                     }
                 }
             }
-            Operand::U32CheckedRotl => {
+            Instruction::U32CheckedRotl => {
                 if let (Some(b), Some(a)) = (self.stack.get(0), self.stack.get(1)) {
                     let a_int = a.as_int();
                     let b_int = b.as_int();
 
                     if b_int > 31 {
                         return Some(MidenProgramError::TopValueInvalid(
-                            Operand::U32CheckedRotl.to_string(),
+                            Instruction::U32CheckedRotl.to_string(),
                             b_int as usize,
                             0,
                             30,
@@ -476,14 +476,14 @@ impl MidenProgram {
                     }
                 }
             }
-            Operand::U32CheckedRotlImm(b) => {
+            Instruction::U32CheckedRotlImm(b) => {
                 if let Some(a) = self.stack.get(0) {
                     let a_int = a.as_int();
                     let b_int = *b as u64;
 
                     if b_int > 31 {
                         return Some(MidenProgramError::InvalidParameter(
-                            Operand::U32CheckedRotlImm(*b).to_string(),
+                            Instruction::U32CheckedRotlImm(*b).to_string(),
                             b_int as usize,
                             0,
                             30,

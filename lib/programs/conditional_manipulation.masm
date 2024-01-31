@@ -1,12 +1,27 @@
 begin
-	push.4660
-	push.22136
-	push.36882
-	push.43981
-	push.4660
-	push.22136
-	push.36882
-	push.43981
+	push.1
+	push.2
+	eq
+	push.1
+	push.2
+	eq
+	push.1
+	push.2
+	eqw
+	push.1
+	push.2
+	lt
+	push.1
+	push.2
+	gt
+	push.1
+	push.2
+	push.1
+	push.2
+	push.1
+	push.2
+	push.1
+	push.2
 end
 
-#stack output : [43981, 36882, 22136, 4660, 43981, 36882, 22136, 4660, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0] 
+#stack output : [2, 1, 2, 1, 2, 1, 2, 1, 0, 1, 0, 2, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0] 
