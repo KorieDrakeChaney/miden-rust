@@ -1,78 +1,81 @@
 begin
-	push.1
-	push.2
+	push.4626
+	push.8482
 	add
-	push.1
-	push.2
+	push.8465
+	push.8482
 	sub
-	push.1
-	push.2
+	push.4641
+	push.8482
 	mul
-	push.1
-	push.2
+	push.4641
+	push.4641
 	div
-	push.1
-	push.2
+	push.4641
+	push.4641
 	eq
-	push.1
-	push.2
+	push.4641
+	push.4641
 	lt
-	push.1
-	push.2
+	push.4641
+	push.4641
 	gt
-	push.1
-	push.2
+	push.4641
+	push.4641
 
-	#ERROR: NotBinaryValue(2), 2 is not binary
+	#ERROR: NotBinaryValue(4641), 4641 is not binary
 	#and
 
-	push.1
-	push.2
+	push.4641
+	push.4641
 
-	#ERROR: NotBinaryValue(2), 2 is not binary
+	#ERROR: NotBinaryValue(4641), 4641 is not binary
 	#or
 
-	push.1
-	push.2
+	push.4641
+	push.4641
 
-	#ERROR: NotBinaryValue(2), 2 is not binary
+	#ERROR: NotBinaryValue(4641), 4641 is not binary
 	#xor
 
-	push.1
-	not
-	push.1
-	push.2
-	eqw
-	push.1
-	push.2
-	lt
-	push.1
-	push.2
-	gt
-	push.1
-	push.2
+	push.4641
 
-	#ERROR: NotBinaryValue(2), 2 is not binary
+	#ERROR: NotBinaryValue(4641), 4641 is not binary
+	#not
+
+	push.4641
+	push.4641
+	eqw
+	push.4641
+	push.4641
+	lt
+	push.4641
+	push.4641
+	gt
+	push.4641
+	push.4641
+
+	#ERROR: NotBinaryValue(4641), 4641 is not binary
 	#cswap
 
-	push.1
-	push.2
+	push.4641
+	push.4641
 
-	#ERROR: NotBinaryValue(2), 2 is not binary
+	#ERROR: NotBinaryValue(4641), 4641 is not binary
 	#cswapw
 
-	push.1
-	push.2
+	push.4641
+	push.4641
 
-	#ERROR: NotBinaryValue(2), 2 is not binary
+	#ERROR: NotBinaryValue(4641), 4641 is not binary
 	#cdrop
 
-	push.1
-	push.2
+	push.4641
+	push.4641
 
-	#ERROR: NotBinaryValue(2), 2 is not binary
+	#ERROR: NotBinaryValue(4641), 4641 is not binary
 	#cdropw
 
 end
 
-#stack output : [2, 1, 2, 1, 2, 1, 2, 1, 0, 1, 0, 2, 1, 0, 2, 1, 2, 1, 2, 1, 0, 1, 0, 9223372034707292161, 2, 18446744069414584320, 3, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0] 
+#stack output : [4641, 4641, 4641, 4641, 4641, 4641, 4641, 4641, 0, 0, 1, 4641, 4641, 4641, 4641, 4641, 4641, 4641, 4641, 4641, 0, 0, 1, 1, 39364962, 18446744069414584304, 13108, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0] 

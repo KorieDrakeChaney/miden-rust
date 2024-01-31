@@ -34,7 +34,7 @@ pub fn parse_push(op: &Token) -> Result<Vec<Instruction>, String> {
             Err(_) => {
                 if op.parts[1].starts_with("0x") {
                     let hex_str = &op.parts[1][2..];
-                    if hex_str.len() < 16 {
+                    if hex_str.len() < 16 && hex_str.len() % 2 == 0 && hex_str.len() != 0 {
                         return Ok(vec![Instruction::Push(BaseElement::from(parse_hex(
                             hex_str,
                         )?))]);

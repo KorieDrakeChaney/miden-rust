@@ -472,58 +472,58 @@ fn test_hex() {
     let program = MidenProgram::parse(
         "
         begin
-            push.0x1
-            push.0x2
+            push.0x1212
+            push.0x2122
             add
-            push.0x1
-            push.0x2
+            push.0x2111
+            push.0x2122
             sub
-            push.0x1
-            push.0x2
+            push.0x1221
+            push.0x2122
             mul
-            push.0x1
-            push.0x2
+            push.0x1221
+            push.0x1221
             div
-            push.0x1
-            push.0x2
+            push.0x1221
+            push.0x1221
             eq
-            push.0x1
-            push.0x2
+            push.0x1221
+            push.0x1221
             lt
-            push.0x1
-            push.0x2
+            push.0x1221
+            push.0x1221
             gt
-            push.0x1
-            push.0x2
+            push.0x1221
+            push.0x1221
             and
-            push.0x1
-            push.0x2
+            push.0x1221
+            push.0x1221
             or
-            push.0x1
-            push.0x2
+            push.0x1221
+            push.0x1221
             xor
-            push.0x1
+            push.0x1221
             not
-            push.0x1
-            push.0x2
+            push.0x1221
+            push.0x1221
             eqw
-            push.0x1
-            push.0x2
+            push.0x1221
+            push.0x1221
             lt
-            push.0x1
-            push.0x2
+            push.0x1221
+            push.0x1221
             gt
-            push.0x1
-            push.0x2
+            push.0x1221
+            push.0x1221
             cswap
-            push.0x1
-            push.0x2
+            push.0x1221
+            push.0x1221
             cswapw
-            push.0x1
-            push.0x2
+            push.0x1221
+            push.0x1221
             cdrop
-            push.0x1
-            push.0x2
+            push.0x1221
+            push.0x1221
             cdropw
         end
         ",
@@ -541,33 +541,33 @@ fn test_hex() {
             .map(|x| x.into())
             .collect::<Vec<u64>>(),
         vec![
-            2,
-            1,
-            2,
-            1,
-            2,
-            1,
-            2,
-            1,
+            4641,
+            4641,
+            4641,
+            4641,
+            4641,
+            4641,
+            4641,
+            4641,
+            0,
             0,
             1,
+            4641,
+            4641,
+            4641,
+            4641,
+            4641,
+            4641,
+            4641,
+            4641,
+            4641,
             0,
-            2,
-            1,
-            0,
-            2,
-            1,
-            2,
-            1,
-            2,
-            1,
             0,
             1,
-            0,
-            9223372034707292161,
-            2,
-            18446744069414584320,
-            3,
+            1,
+            39364962,
+            18446744069414584304,
+            13108,
             0,
             0,
             0,
@@ -584,7 +584,7 @@ fn test_hex() {
             0,
             0,
             0
-        ]
+        ],
     )
 }
 
