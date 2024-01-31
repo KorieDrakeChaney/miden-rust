@@ -171,7 +171,7 @@ impl MidenProgram {
     ///
     /// # Returns
     ///
-    /// The result of the proof as an `Option<u64>`.
+    /// The result of the proof as an `Option<ExecutionProof>`.
 
     pub fn prove(&mut self) -> Option<ExecutionProof> {
         let assembler = Assembler::default();

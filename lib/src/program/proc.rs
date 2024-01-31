@@ -12,6 +12,22 @@ pub struct Proc {
 }
 
 impl Proc {
+    /// Creates a new procedure with the given name.
+    ///
+    /// # Arguments
+    ///
+    /// * `name` - The name of the procedure.
+    ///
+    /// # Returns
+    ///
+    /// A new Proc instance.
+    ///
+    /// # Example
+    ///
+    /// ```
+    /// use rust_masm::Proc;
+    /// let proc = Proc::new("my_proc");
+    /// ```
     pub fn new(name: &str) -> Self {
         Self {
             name: name.to_string(),
@@ -19,7 +35,19 @@ impl Proc {
             loc_count: 0,
         }
     }
-
+    /// Converts the procedure into a Miden assembly string.
+    ///
+    /// # Returns
+    ///
+    /// A string containing the Miden assembly code for the procedure.
+    ///
+    /// # Example
+    ///
+    /// ```
+    /// use rust_masm::Proc;
+    /// let proc = Proc::new("my_proc");
+    /// let masm = proc.get_masm();
+    /// ```
     pub fn get_masm(&self) -> String {
         let mut masm: String = String::new();
         masm.push_str(&format!("proc.{}", self.name));
@@ -244,12 +272,12 @@ impl Proc {
         self.instructions.push_back(operand);
     }
 
-    pub fn add_instructions(&mut self, instructions: VecDeque<Instruction>) {
+    pub(crate) fn add_instructions(&mut self, instructions: VecDeque<Instruction>) {
         self.instructions
             .append(&mut instructions.into_iter().collect());
     }
 
-    pub fn execute_block(
+    pub(crate) fn execute_block(
         &mut self,
         program: &mut MidenProgram,
         block: &mut VecDeque<Instruction>,
@@ -257,7 +285,6 @@ impl Proc {
     ) {
         let mut index = scope;
         while let Some(operand) = block.pop_front() {
-            println!("operand: {:?}", operand);
             match program.is_valid_operand(&operand) {
                 Some(error) => {
                     if let Some(op) = self.instructions.get_mut(index) {
@@ -424,11 +451,11 @@ impl Proc {
         }
     }
 
-    pub fn execute(&mut self, program: &mut MidenProgram) {
+    pub(crate) fn execute(&mut self, program: &mut MidenProgram) {
         self.execute_block(program, &mut self.instructions.clone(), 0);
     }
 
-    pub fn execute_operand(&mut self, program: &mut MidenProgram, operand: &Instruction) {
+    pub(crate) fn execute_operand(&mut self, program: &mut MidenProgram, operand: &Instruction) {
         match operand {
             Instruction::LocLoad(key) => {
                 if *key >= self.loc_count {
@@ -509,17 +536,17 @@ impl Proc {
         self.add_instruction(Instruction::PRINT(message.to_string()));
     }
 
-    /// Pushes `Drop` command onto the stack.
+    /// Pushes `Drop` instruction onto the stack.
     pub fn drop(&mut self) {
         self.add_instruction(Instruction::Drop);
     }
 
-    /// Pushes `Swap` command onto the stack.
+    /// Pushes `Swap` instruction onto the stack.
     pub fn swap(&mut self) {
         self.add_instruction(Instruction::Swap(1));
     }
 
-    /// Pushes `Swap` command with value `n` onto the stack.
+    /// Pushes `Swap` instruction with value `n` onto the stack.
     ///     
     /// # Arguments
     ///
@@ -528,12 +555,12 @@ impl Proc {
         self.add_instruction(Instruction::Swap(n));
     }
 
-    /// Pushes `Dup` command onto the stack.
+    /// Pushes `Dup` instruction onto the stack.
     pub fn dup(&mut self) {
         self.add_instruction(Instruction::Dup(1));
     }
 
-    /// Pushes `Dup` command with value `n` onto the stack.
+    /// Pushes `Dup` instruction with value `n` onto the stack.
     ///
     /// # Arguments
     ///
@@ -542,12 +569,12 @@ impl Proc {
         self.add_instruction(Instruction::Dup(n));
     }
 
-    /// Pushes `SwapW` command onto the stack.
+    /// Pushes `SwapW` instruction onto the stack.
     pub fn swapw(&mut self) {
         self.add_instruction(Instruction::SwapW(1));
     }
 
-    /// Pushes `SwapW` command with value `n` onto the stack.
+    /// Pushes `SwapW` instruction with value `n` onto the stack.
     ///
     /// # Arguments
     ///
@@ -556,12 +583,12 @@ impl Proc {
         self.add_instruction(Instruction::SwapW(n));
     }
 
-    /// Pushes `PadW` command onto the stack.
+    /// Pushes `PadW` instruction onto the stack.
     pub fn padw(&mut self) {
         self.add_instruction(Instruction::PadW);
     }
 
-    /// Pushes `MovUp` command with value `n` onto the stack.
+    /// Pushes `MovUp` instruction with value `n` onto the stack.
     ///
     /// # Arguments
     ///
@@ -570,7 +597,7 @@ impl Proc {
         self.add_instruction(Instruction::MovUp(n));
     }
 
-    /// Pushes `MovUpW` command with value `n` onto the stack.
+    /// Pushes `MovUpW` instruction with value `n` onto the stack.
     ///
     /// # Arguments
     ///
@@ -579,7 +606,7 @@ impl Proc {
         self.add_instruction(Instruction::MovUpW(n));
     }
 
-    /// Pushes `MovDn` command with value `n` onto the stack.
+    /// Pushes `MovDn` instruction with value `n` onto the stack.
     ///
     /// # Arguments
     ///
@@ -588,7 +615,7 @@ impl Proc {
         self.add_instruction(Instruction::MovDn(n));
     }
 
-    /// Pushes `MovDnW` command with value `n` onto the stack.
+    /// Pushes `MovDnW` instruction with value `n` onto the stack.
     ///
     /// # Arguments
     ///
@@ -597,12 +624,12 @@ impl Proc {
         self.add_instruction(Instruction::MovDnW(n));
     }
 
-    /// Pushes `Add` command onto the stack.
+    /// Pushes `Add` instruction onto the stack.
     pub fn add(&mut self) {
         self.add_instruction(Instruction::Add);
     }
 
-    /// Pushes `AddImm` command with value `n` onto the stack.
+    /// Pushes `AddImm` instruction with value `n` onto the stack.
     ///
     /// # Arguments
     ///
@@ -611,12 +638,12 @@ impl Proc {
         self.add_instruction(Instruction::AddImm(BaseElement::from(n)));
     }
 
-    /// Pushes `Sub` command onto the stack.
+    /// Pushes `Sub` instruction onto the stack.
     pub fn sub(&mut self) {
         self.add_instruction(Instruction::Sub);
     }
 
-    /// Pushes `SubImm` command with value `n` onto the stack.
+    /// Pushes `SubImm` instruction with value `n` onto the stack.
     ///
     /// # Arguments
     ///
@@ -625,12 +652,12 @@ impl Proc {
         self.add_instruction(Instruction::SubImm(BaseElement::from(n)));
     }
 
-    /// Pushes `Mul` command onto the stack.
+    /// Pushes `Mul` instruction onto the stack.
     pub fn mul(&mut self) {
         self.add_instruction(Instruction::Mul);
     }
 
-    /// Pushes `MulImm` command with value `n` onto the stack.
+    /// Pushes `MulImm` instruction with value `n` onto the stack.
     ///
     /// # Arguments
     ///
@@ -639,12 +666,12 @@ impl Proc {
         self.add_instruction(Instruction::MulImm(BaseElement::from(n)));
     }
 
-    /// Pushes `Div` command onto the stack.
+    /// Pushes `Div` instruction onto the stack.
     pub fn div(&mut self) {
         self.add_instruction(Instruction::Div);
     }
 
-    /// Pushes `DivImm` command with value `n` onto the stack.
+    /// Pushes `DivImm` instruction with value `n` onto the stack.
     ///
     /// # Arguments
     ///
@@ -653,27 +680,27 @@ impl Proc {
         self.add_instruction(Instruction::DivImm(BaseElement::from(n)));
     }
 
-    /// Pushes `Neg` command onto the stack.
+    /// Pushes `Neg` instruction onto the stack.
     pub fn neg(&mut self) {
         self.add_instruction(Instruction::Neg);
     }
 
-    /// Pushes `Inv` command onto the stack.
+    /// Pushes `Inv` instruction onto the stack.
     pub fn inv(&mut self) {
         self.add_instruction(Instruction::Inv);
     }
 
-    /// Pushes `Pow2` command onto the stack.
+    /// Pushes `Pow2` instruction onto the stack.
     pub fn pow2(&mut self) {
         self.add_instruction(Instruction::Pow2);
     }
 
-    /// Pushes `Exp` command onto the stack.
+    /// Pushes `Exp` instruction onto the stack.
     pub fn exp(&mut self) {
         self.add_instruction(Instruction::Exp);
     }
 
-    /// Pushes `ExpImm` command with value `n` onto the stack.
+    /// Pushes `ExpImm` instruction with value `n` onto the stack.
     ///
     /// # Arguments
     ///
@@ -682,17 +709,17 @@ impl Proc {
         self.add_instruction(Instruction::ExpImm(n));
     }
 
-    /// Pushes `And` command onto the stack.
+    /// Pushes `And` instruction onto the stack.
     pub fn and(&mut self) {
         self.add_instruction(Instruction::And);
     }
 
-    /// Pushes `Or` command onto the stack.
+    /// Pushes `Or` instruction onto the stack.
     pub fn or(&mut self) {
         self.add_instruction(Instruction::Or);
     }
 
-    /// Pushes `Xor` command onto the stack.
+    /// Pushes `Xor` instruction onto the stack.
     pub fn xor(&mut self) {
         self.add_instruction(Instruction::Xor);
     }
@@ -701,12 +728,12 @@ impl Proc {
         self.add_instruction(Instruction::Not);
     }
 
-    /// Pushes `Eq` command onto the stack.
+    /// Pushes `Eq` instruction onto the stack.
     pub fn eq(&mut self) {
         self.add_instruction(Instruction::Eq);
     }
 
-    /// Pushes `EqImm` command with value `n` onto the stack.
+    /// Pushes `EqImm` instruction with value `n` onto the stack.
     ///
     /// # Arguments
     ///
@@ -715,12 +742,12 @@ impl Proc {
         self.add_instruction(Instruction::EqImm(BaseElement::from(n)));
     }
 
-    /// Pushes `Neq` command onto the stack.
+    /// Pushes `Neq` instruction onto the stack.
     pub fn neq(&mut self) {
         self.add_instruction(Instruction::Neq);
     }
 
-    /// Pushes `NeqImm` command with value `n` onto the stack.
+    /// Pushes `NeqImm` instruction with value `n` onto the stack.
     ///
     /// # Arguments
     ///
@@ -729,42 +756,42 @@ impl Proc {
         self.add_instruction(Instruction::NeqImm(BaseElement::from(n)));
     }
 
-    /// Pushes `Lt` command onto the stack.
+    /// Pushes `Lt` instruction onto the stack.
     pub fn lt(&mut self) {
         self.add_instruction(Instruction::Lt);
     }
 
-    /// Pushes `Lte` command onto the stack.
+    /// Pushes `Lte` instruction onto the stack.
     pub fn lte(&mut self) {
         self.add_instruction(Instruction::Lte);
     }
 
-    /// Pushes `Gt` command onto the stack.
+    /// Pushes `Gt` instruction onto the stack.
     pub fn gt(&mut self) {
         self.add_instruction(Instruction::Gt);
     }
 
-    /// Pushes `Gte` command onto the stack.
+    /// Pushes `Gte` instruction onto the stack.
     pub fn gte(&mut self) {
         self.add_instruction(Instruction::Gte);
     }
 
-    /// Pushes `IsOdd` command onto the stack.
+    /// Pushes `IsOdd` instruction onto the stack.
     pub fn is_odd(&mut self) {
         self.add_instruction(Instruction::IsOdd);
     }
 
-    /// Pushes `Eqw` command onto the stack.
+    /// Pushes `Eqw` instruction onto the stack.
     pub fn eqw(&mut self) {
         self.add_instruction(Instruction::EqW);
     }
 
-    /// Pushes `MemLoad` command onto the stack.
+    /// Pushes `MemLoad` instruction onto the stack.
     pub fn mem_load(&mut self) {
         self.add_instruction(Instruction::MemLoad);
     }
 
-    /// Pushes `MemLoadImm` command with value `n` onto the stack.
+    /// Pushes `MemLoadImm` instruction with value `n` onto the stack.
     ///
     /// # Arguments
     ///
@@ -773,12 +800,12 @@ impl Proc {
         self.add_instruction(Instruction::MemLoadImm(n));
     }
 
-    /// Pushes `MemLoadW` command onto the stack.
+    /// Pushes `MemLoadW` instruction onto the stack.
     pub fn mem_load_w(&mut self) {
         self.add_instruction(Instruction::MemLoadW);
     }
 
-    /// Pushes `MemLoadWImm` command with value `n` onto the stack.
+    /// Pushes `MemLoadWImm` instruction with value `n` onto the stack.
     ///
     /// # Arguments
     ///
@@ -787,12 +814,12 @@ impl Proc {
         self.add_instruction(Instruction::MemLoadWImm(n));
     }
 
-    /// Pushes `MemStore` command onto the stack.
+    /// Pushes `MemStore` instruction onto the stack.
     pub fn mem_store(&mut self) {
         self.add_instruction(Instruction::MemStore);
     }
 
-    /// Pushes `MemStoreImm` command with value `n` onto the stack.
+    /// Pushes `MemStoreImm` instruction with value `n` onto the stack.
     ///
     /// # Arguments
     ///
@@ -801,12 +828,12 @@ impl Proc {
         self.add_instruction(Instruction::MemStoreImm(n));
     }
 
-    /// Pushes `MemStoreW` command onto the stack.
+    /// Pushes `MemStoreW` instruction onto the stack.
     pub fn mem_store_w(&mut self) {
         self.add_instruction(Instruction::MemStoreW);
     }
 
-    /// Pushes `MemStoreWImm` command with value `n` onto the stack.
+    /// Pushes `MemStoreWImm` instruction with value `n` onto the stack.
     ///
     /// # Arguments
     ///
@@ -815,7 +842,7 @@ impl Proc {
         self.add_instruction(Instruction::MemStoreWImm(n));
     }
 
-    /// Pushes `LocLoad` command with value `n` onto the stack.
+    /// Pushes `LocLoad` instruction with value `n` onto the stack.
     ///
     /// # Arguments
     ///
@@ -824,7 +851,7 @@ impl Proc {
         self.add_instruction(Instruction::LocLoad(n));
     }
 
-    /// Pushes `LocLoadW` command with value `n` onto the stack.
+    /// Pushes `LocLoadW` instruction with value `n` onto the stack.
     ///
     /// # Arguments
     ///
@@ -833,7 +860,7 @@ impl Proc {
         self.add_instruction(Instruction::LocLoadW(n));
     }
 
-    /// Pushes `LocStore` command with value `n` onto the stack.
+    /// Pushes `LocStore` instruction with value `n` onto the stack.
     ///
     /// # Arguments
     ///
@@ -842,7 +869,7 @@ impl Proc {
         self.add_instruction(Instruction::LocStore(n));
     }
 
-    /// Pushes `LocStoreW` command with value `n` onto the stack.
+    /// Pushes `LocStoreW` instruction with value `n` onto the stack.
     ///
     /// # Arguments
     ///
@@ -851,7 +878,7 @@ impl Proc {
         self.add_instruction(Instruction::LocStoreW(n));
     }
 
-    /// Pushes `Push` command with value `n` onto the stack.
+    /// Pushes `Push` instruction with value `n` onto the stack.
     ///
     /// # Arguments
     ///
@@ -860,7 +887,7 @@ impl Proc {
         self.add_instruction(Instruction::Push(BaseElement::from(n)));
     }
 
-    /// Pushes `AdvPush` command with value `n` onto the stack.
+    /// Pushes `AdvPush` instruction with value `n` onto the stack.
     ///
     /// # Arguments
     ///
@@ -873,305 +900,466 @@ impl Proc {
         self.add_instruction(Instruction::Exec(name.to_string()));
     }
 
-    /// Pushes `Increment` command onto the stack.
+    /// Pushes `Increment` instruction onto the stack.
     pub fn increment(&mut self) {
         self.add_instruction(Instruction::Increment);
     }
 
-    /// Pushes `Decrement` command onto the stack.
+    /// Pushes `Decrement` instruction onto the stack.
     pub fn decrement(&mut self) {
         self.add_instruction(Instruction::Decrement);
     }
 
-    pub fn u32checked_add(&mut self) {
-        self.add_instruction(Instruction::U32CheckedAdd);
-    }
-
+    /// Pushes `U32CheckedAddImm` instruction onto the stack with a given immediate value.
+    ///
+    /// # Arguments
+    ///
+    /// * `n` - The immediate value to add.
     pub fn u32checked_add_n(&mut self, n: u32) {
         self.add_instruction(Instruction::U32CheckedAddImm(n));
     }
 
+    /// Pushes `U32OverflowingAdd` instruction onto the stack.
     pub fn u32overflowing_add(&mut self) {
         self.add_instruction(Instruction::U32OverflowingAdd);
     }
 
+    /// Pushes `U32OverflowingAddImm` instruction onto the stack with a given immediate value.
+    ///
+    /// # Arguments
+    ///
+    /// * `n` - The immediate value to add.
     pub fn u32overflowing_add_n(&mut self, n: u32) {
         self.add_instruction(Instruction::U32OverflowingAddImm(n));
     }
 
+    /// Pushes `U32WrappingAdd` instruction onto the stack.
     pub fn u32wrapping_add(&mut self) {
         self.add_instruction(Instruction::U32WrappingAdd);
     }
 
+    /// Pushes `U32WrappingAddImm` instruction onto the stack with a given immediate value.
+    ///
+    /// # Arguments
+    ///
+    /// * `n` - The immediate value to add.
     pub fn u32wrapping_add_n(&mut self, n: u32) {
         self.add_instruction(Instruction::U32WrappingAddImm(n));
     }
 
+    /// Pushes `U32CheckedSub` instruction onto the stack.
     pub fn u32checked_sub(&mut self) {
         self.add_instruction(Instruction::U32CheckedSub);
     }
 
+    /// Pushes `U32CheckedSubImm` instruction onto the stack with a given immediate value.
+    ///
+    /// # Arguments
+    ///
+    /// * `n` - The immediate value to subtract.
     pub fn u32checked_sub_n(&mut self, n: u32) {
         self.add_instruction(Instruction::U32CheckedSubImm(n));
     }
 
+    /// Pushes `U32OverflowingSub` instruction onto the stack.
     pub fn u32overflowing_sub(&mut self) {
         self.add_instruction(Instruction::U32OverflowingSub);
     }
 
+    /// Pushes `U32OverflowingSubImm` instruction onto the stack with a given immediate value.
+    ///
+    /// # Arguments
+    ///
+    /// * `n` - The immediate value to subtract.
     pub fn u32overflowing_sub_n(&mut self, n: u32) {
         self.add_instruction(Instruction::U32OverflowingSubImm(n));
     }
 
+    /// Pushes `U32WrappingSub` instruction onto the stack.
     pub fn u32wrapping_sub(&mut self) {
         self.add_instruction(Instruction::U32WrappingSub);
     }
 
+    /// Pushes `U32WrappingSubImm` instruction onto the stack with a given immediate value.
+    ///
+    /// # Arguments
+    ///
+    /// * `n` - The immediate value to subtract.
     pub fn u32wrapping_sub_n(&mut self, n: u32) {
         self.add_instruction(Instruction::U32WrappingSubImm(n));
     }
 
+    /// Pushes `U32CheckedMul` instruction onto the stack.
     pub fn u32checked_mul(&mut self) {
         self.add_instruction(Instruction::U32CheckedMul);
     }
 
+    /// Pushes `U32CheckedMulImm` instruction onto the stack with a given immediate value.
+    ///
+    /// # Arguments
+    ///
+    /// * `n` - The immediate value to multiply.
     pub fn u32checked_mul_n(&mut self, n: u32) {
         self.add_instruction(Instruction::U32CheckedMulImm(n));
     }
 
+    /// Pushes `U32OverflowingMul` instruction onto the stack.
     pub fn u32overflowing_mul(&mut self) {
         self.add_instruction(Instruction::U32OverflowingMul);
     }
 
+    /// Pushes `U32OverflowingMulImm` instruction onto the stack with a given immediate value.
+    ///
+    /// # Arguments
+    ///
+    /// * `n` - The immediate value to multiply.
     pub fn u32overflowing_mul_n(&mut self, n: u32) {
         self.add_instruction(Instruction::U32OverflowingMulImm(n));
     }
 
+    /// Pushes `U32WrappingMul` instruction onto the stack.
     pub fn u32wrapping_mul(&mut self) {
         self.add_instruction(Instruction::U32WrappingMul);
     }
 
+    /// Pushes `U32WrappingMulImm` instruction onto the stack with a given immediate value.
+    ///
+    /// # Arguments
+    ///
+    /// * `n` - The immediate value to multiply.
     pub fn u32wrapping_mul_n(&mut self, n: u32) {
         self.add_instruction(Instruction::U32WrappingMulImm(n));
     }
 
+    /// Pushes `U32CheckedDiv` instruction onto the stack.
     pub fn u32checked_div(&mut self) {
         self.add_instruction(Instruction::U32CheckedDiv);
     }
 
+    /// Pushes `U32CheckedDivImm` instruction onto the stack with a given immediate value.
+    ///
+    /// # Arguments
+    ///
+    /// * `n` - The immediate value to divide.
     pub fn u32checked_div_n(&mut self, n: u32) {
         self.add_instruction(Instruction::U32CheckedDivImm(n));
     }
 
+    /// Pushes `U32UncheckedDiv` instruction onto the stack.
     pub fn u32unchecked_div(&mut self) {
         self.add_instruction(Instruction::U32UncheckedDiv);
     }
 
+    /// Pushes `U32UncheckedDivImm` instruction onto the stack with a given immediate value.
+    ///
+    /// # Arguments
+    ///
+    /// * `n` - The immediate value to divide.
     pub fn u32unchecked_div_n(&mut self, n: u32) {
         self.add_instruction(Instruction::U32UncheckedDivImm(n));
     }
 
+    /// Pushes `U32OverflowingMadd` instruction onto the stack.
     pub fn u32overflowing_madd(&mut self) {
         self.add_instruction(Instruction::U32OverflowingMadd);
     }
 
+    /// Pushes `U32WrappingMadd` instruction onto the stack.
     pub fn u32wrapping_madd(&mut self) {
         self.add_instruction(Instruction::U32WrappingMadd);
     }
 
+    /// Pushes `U32CheckedMod` instruction onto the stack.
     pub fn u32checked_mod(&mut self) {
         self.add_instruction(Instruction::U32CheckedMod);
     }
 
+    /// Pushes `U32CheckedModImm` instruction onto the stack with a given immediate value.
+    ///
+    /// # Arguments
+    ///
+    /// * `n` - The immediate value to mod.
     pub fn u32checked_mod_n(&mut self, n: u32) {
         self.add_instruction(Instruction::U32CheckedModImm(n));
     }
 
+    /// Pushes `U32UncheckedMod` instruction onto the stack.
     pub fn u32unchecked_mod(&mut self) {
         self.add_instruction(Instruction::U32UncheckedMod);
     }
 
+    /// Pushes `U32UncheckedModImm` instruction onto the stack with a given immediate value.
+    ///
+    /// # Arguments
+    ///
+    /// * `n` - The immediate value to mod.
     pub fn u32unchecked_mod_n(&mut self, n: u32) {
         self.add_instruction(Instruction::U32UncheckedModImm(n));
     }
 
+    /// Pushes `U32CheckedDivMod` instruction onto the stack.
     pub fn u32checked_divmod(&mut self) {
         self.add_instruction(Instruction::U32CheckedDivMod);
     }
 
+    /// Pushes `U32CheckedDivModImm` instruction onto the stack with a given immediate value.
+    ///
+    /// # Arguments
+    ///
+    /// * `n` - The immediate value to divmod.
     pub fn u32checked_divmod_n(&mut self, n: u32) {
         self.add_instruction(Instruction::U32CheckedDivModImm(n));
     }
 
+    /// Pushes `U32UncheckedDivMod` instruction onto the stack.
     pub fn u32unchecked_divmod(&mut self) {
         self.add_instruction(Instruction::U32UncheckedDivMod);
     }
 
+    /// Pushes `U32UncheckedDivModImm` instruction onto the stack with a given immediate value.
+    ///
+    /// # Arguments
+    ///
+    /// * `n` - The immediate value to divmod.
     pub fn u32unchecked_divmod_n(&mut self, n: u32) {
         self.add_instruction(Instruction::U32UncheckedDivModImm(n));
     }
 
-    // bitwise
-
+    /// Pushes `U32CheckedAnd` instruction onto the stack.
     pub fn u32checked_and(&mut self) {
         self.add_instruction(Instruction::U32CheckedAnd);
     }
 
+    /// Pushes `U32CheckedOr` instruction onto the stack.
     pub fn u32checked_or(&mut self) {
         self.add_instruction(Instruction::U32CheckedOr);
     }
 
+    /// Pushes `U32CheckedXor` instruction onto the stack.
     pub fn u32checked_xor(&mut self) {
         self.add_instruction(Instruction::U32CheckedXor);
     }
 
+    /// Pushes `U32CheckedNot` instruction onto the stack.
     pub fn u32checked_not(&mut self) {
         self.add_instruction(Instruction::U32CheckedNot);
     }
 
+    /// Pushes `U32CheckedShl` instruction onto the stack.
     pub fn u32checked_shl(&mut self) {
         self.add_instruction(Instruction::U32CheckedShl);
     }
 
+    /// Pushes `U32CheckedShlImm` instruction onto the stack with a given immediate value.
+    ///
+    /// # Arguments
+    ///
+    /// * `n` - The immediate value to shift left.
     pub fn u32checked_shl_n(&mut self, n: u32) {
         self.add_instruction(Instruction::U32CheckedShlImm(n));
     }
 
+    /// Pushes `U32UncheckedShl` instruction onto the stack.
     pub fn u32unchecked_shl(&mut self) {
         self.add_instruction(Instruction::U32UncheckedShl);
     }
 
+    /// Pushes `U32UncheckedShlImm` instruction onto the stack with a given immediate value.
+    ///
+    /// # Arguments
+    ///
+    /// * `n` - The immediate value to shift left.
     pub fn u32unchecked_shl_n(&mut self, n: u32) {
         self.add_instruction(Instruction::U32UncheckedShlImm(n));
     }
 
+    /// Pushes `U32CheckedShr` instruction onto the stack.
     pub fn u32checked_shr(&mut self) {
         self.add_instruction(Instruction::U32CheckedShr);
     }
 
+    /// Pushes `U32CheckedShrImm` instruction onto the stack with a given immediate value.
+    ///
+    /// # Arguments
+    ///
+    /// * `n` - The immediate value to shift right.
     pub fn u32checked_shr_n(&mut self, n: u32) {
         self.add_instruction(Instruction::U32CheckedShrImm(n));
     }
 
+    /// Pushes `U32UncheckedShr` instruction onto the stack.
     pub fn u32unchecked_shr(&mut self) {
         self.add_instruction(Instruction::U32UncheckedShr);
     }
 
+    /// Pushes `U32UncheckedShrImm` instruction onto the stack with a given immediate value.
+    ///
+    /// # Arguments
+    ///
+    /// * `n` - The immediate value to shift right.
     pub fn u32unchecked_shr_n(&mut self, n: u32) {
         self.add_instruction(Instruction::U32UncheckedShrImm(n));
     }
 
+    /// Pushes `U32CheckedRotl` instruction onto the stack.
     pub fn u32checked_rotl(&mut self) {
         self.add_instruction(Instruction::U32CheckedRotl);
     }
 
+    /// Pushes `U32CheckedRotlImm` instruction onto the stack with a given immediate value.
+    ///
+    /// # Arguments
+    ///
+    /// * `n` - The immediate value to rotate left.
     pub fn u32checked_rotl_n(&mut self, n: u32) {
         self.add_instruction(Instruction::U32CheckedRotlImm(n));
     }
 
+    /// Pushes `U32UncheckedRotl` instruction onto the stack.
     pub fn u32unchecked_rotl(&mut self) {
         self.add_instruction(Instruction::U32UncheckedRotl);
     }
 
+    /// Pushes `U32UncheckedRotlImm` instruction onto the stack with a given immediate value.
+    ///
+    /// # Arguments
+    ///
+    /// * `n` - The immediate value to rotate left.
     pub fn u32unchecked_rotl_n(&mut self, n: u32) {
         self.add_instruction(Instruction::U32UncheckedRotlImm(n));
     }
 
+    /// Pushes `U32CheckedRotr` instruction onto the stack.
     pub fn u32checked_rotr(&mut self) {
         self.add_instruction(Instruction::U32CheckedRotr);
     }
 
+    /// Pushes `U32CheckedRotrImm` instruction onto the stack with a given immediate value.
+    ///
+    /// # Arguments
+    ///
+    /// * `n` - The immediate value to rotate right.
     pub fn u32checked_rotr_n(&mut self, n: u32) {
         self.add_instruction(Instruction::U32CheckedRotrImm(n));
     }
 
+    /// Pushes `U32UncheckedRotr` instruction onto the stack.
     pub fn u32unchecked_rotr(&mut self) {
         self.add_instruction(Instruction::U32UncheckedRotr);
     }
 
+    /// Pushes `U32UncheckedRotrImm` instruction onto the stack with a given immediate value.
+    ///
+    /// # Arguments
+    ///
+    /// * `n` - The immediate value to rotate right.
     pub fn u32unchecked_rotr_n(&mut self, n: u32) {
         self.add_instruction(Instruction::U32UncheckedRotrImm(n));
     }
 
+    /// Pushes `U32CheckedPopcnt` instruction onto the stack.
     pub fn u32checked_popcnt(&mut self) {
         self.add_instruction(Instruction::U32CheckedPopcnt);
     }
 
+    /// Pushes `U32UncheckedPopcnt` instruction onto the stack.
     pub fn u32unchecked_popcnt(&mut self) {
         self.add_instruction(Instruction::U32UncheckedPopcnt);
     }
 
-    // comparison
-
+    /// Pushes `U32CheckedEq` instruction onto the stack.
     pub fn u32checked_eq(&mut self) {
         self.add_instruction(Instruction::U32CheckedEq);
     }
 
+    /// Pushes `U32CheckedEqImm` instruction onto the stack with a given immediate value.
+    ///
+    /// # Arguments
+    ///
+    /// * `n` - The immediate value to compare for equality.
     pub fn u32checked_eq_n(&mut self, n: u32) {
         self.add_instruction(Instruction::U32CheckedEqImm(n));
     }
 
+    /// Pushes `U32CheckedNeq` instruction onto the stack.
     pub fn u32checked_neq(&mut self) {
         self.add_instruction(Instruction::U32CheckedNeq);
     }
 
+    /// Pushes `U32CheckedNeqImm` instruction onto the stack with a given immediate value.
+    ///
+    /// # Arguments
+    ///
+    /// * `n` - The immediate value to compare for inequality.
     pub fn u32checked_neq_n(&mut self, n: u32) {
         self.add_instruction(Instruction::U32CheckedNeqImm(n));
     }
 
+    /// Pushes `U32CheckedLt` instruction onto the stack.
     pub fn u32checked_lt(&mut self) {
         self.add_instruction(Instruction::U32CheckedLt);
     }
 
+    /// Pushes `U32UncheckedLt` instruction onto the stack.
     pub fn u32unchecked_lt(&mut self) {
         self.add_instruction(Instruction::U32UncheckedLt);
     }
 
+    /// Pushes `U32CheckedLte` instruction onto the stack.
     pub fn u32checked_lte(&mut self) {
         self.add_instruction(Instruction::U32CheckedLte);
     }
 
+    /// Pushes `U32UncheckedLte` instruction onto the stack.
     pub fn u32unchecked_lte(&mut self) {
         self.add_instruction(Instruction::U32UncheckedLte);
     }
 
+    /// Pushes `U32CheckedGt` instruction onto the stack.
     pub fn u32checked_gt(&mut self) {
         self.add_instruction(Instruction::U32CheckedGt);
     }
 
+    /// Pushes `U32UncheckedGt` instruction onto the stack.
     pub fn u32unchecked_gt(&mut self) {
         self.add_instruction(Instruction::U32UncheckedGt);
     }
 
+    /// Pushes `U32CheckedGte` instruction onto the stack.
     pub fn u32checked_gte(&mut self) {
         self.add_instruction(Instruction::U32CheckedGte);
     }
 
+    /// Pushes `U32UncheckedGte` instruction onto the stack.
     pub fn u32unchecked_gte(&mut self) {
         self.add_instruction(Instruction::U32UncheckedGte);
     }
 
+    /// Pushes `U32CheckedMin` instruction onto the stack.
     pub fn u32checked_min(&mut self) {
         self.add_instruction(Instruction::U32CheckedMin);
     }
 
+    /// Pushes `U32UncheckedMin` instruction onto the stack.
     pub fn u32unchecked_min(&mut self) {
         self.add_instruction(Instruction::U32UncheckedMin);
     }
 
+    /// Pushes `U32CheckedMax` instruction onto the stack.
     pub fn u32checked_max(&mut self) {
         self.add_instruction(Instruction::U32CheckedMax);
     }
 
+    /// Pushes `U32UncheckedMax` instruction onto the stack.
     pub fn u32unchecked_max(&mut self) {
         self.add_instruction(Instruction::U32UncheckedMax);
     }
 
-    pub fn add_program<F>(&mut self, program: F)
+    pub fn add_program<'a, T>(&'a mut self, program: &mut T)
     where
-        F: FnOnce() -> VecDeque<Instruction>,
+        T: Program + 'a,
     {
-        self.add_instructions(program());
+        self.add_instructions(program.get_instructions());
     }
 }
 
