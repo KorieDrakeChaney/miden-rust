@@ -129,7 +129,7 @@ pub fn parse(tokens: Vec<Token>) -> Result<(VecDeque<Instruction>, Vec<Proc>), S
                         }
                         scope += 1;
                     } else {
-                        return Err(format!("Expected `true` after if, found {:?}", parts[1]));
+                        return Err(format!("Expected `true` after if, found {}", parts[1]));
                     }
                 }
                 _ => {
@@ -384,7 +384,7 @@ pub fn parse(tokens: Vec<Token>) -> Result<(VecDeque<Instruction>, Vec<Proc>), S
                         }
                         scope += 1;
                     } else {
-                        return Err(format!("Expected `true` after while, found {:?}", parts[1]));
+                        return Err(format!("Expected `true` after while, found {}", parts[1]));
                     }
                 }
                 _ => {
@@ -408,10 +408,7 @@ pub fn parse(tokens: Vec<Token>) -> Result<(VecDeque<Instruction>, Vec<Proc>), S
                         scope += 1;
                     }
                     Err(_) => {
-                        return Err(format!(
-                            "Expected number after repeat, found {:?}",
-                            parts[1]
-                        ));
+                        return Err(format!("Expected number after repeat, found {}", parts[1]));
                     }
                 },
                 _ => {
@@ -1143,7 +1140,7 @@ pub fn parse(tokens: Vec<Token>) -> Result<(VecDeque<Instruction>, Vec<Proc>), S
             }
 
             _ => {
-                return Err(format!("Unknown instruction {:?}", parts[0]));
+                return Err(format!("Unknown instruction {}", parts[0]));
             }
         }
     }
