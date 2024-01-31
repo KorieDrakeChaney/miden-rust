@@ -22,7 +22,8 @@ use std::collections::{HashMap, VecDeque};
 
 use math::{fields::f64::BaseElement, FieldElement, StarkField};
 use miden::{
-    prove, AdviceInputs, Assembler, DefaultHost, MemAdviceProvider, ProvingOptions, StackInputs,
+    prove, AdviceInputs, Assembler, DefaultHost, ExecutionProof, MemAdviceProvider, ProvingOptions,
+    StackInputs,
 };
 
 pub use self::proc::Proc;
@@ -172,7 +173,7 @@ impl MidenProgram {
     ///
     /// The result of the proof as an `Option<u64>`.
 
-    pub fn prove(&mut self) -> Option<u64> {
+    pub fn prove(&mut self) -> Option<ExecutionProof> {
         let assembler = Assembler::default();
         let masm = self.get_masm();
 
@@ -182,22 +183,18 @@ impl MidenProgram {
 
                 let host = DefaultHost::new(advice_provider);
 
-                let (outputs, _) = prove(
+                if let Ok((outputs, proof)) = prove(
                     &program,
                     self.stack_inputs.clone(),
                     host,
                     ProvingOptions::default(),
-                )
-                .unwrap();
-
-                if let Some(output) = outputs.stack().first() {
-                    return Some(*output);
+                ) {
+                    Some(proof)
                 } else {
-                    return None;
+                    None
                 }
             }
-            Err(e) => {
-                println!("{}", e);
+            Err(_) => {
                 return None;
             }
         }

@@ -388,7 +388,7 @@ fn test_masm() {
 
 #[test]
 fn test_error_handling() {
-    let mut program = MidenProgram::parse(
+    let program = MidenProgram::parse(
         "
         begin
             push.1
@@ -403,12 +403,19 @@ fn test_error_handling() {
 
     program.save("programs/test.masm");
 
-    assert_eq!(Some(program.stack[0].into()), program.prove());
+    assert_eq!(
+        program
+            .stack
+            .into_iter()
+            .map(|x| x.into())
+            .collect::<Vec<u64>>(),
+        vec![2, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0]
+    );
 }
 
 #[test]
 fn test_conditional_manipulation() {
-    let mut program = MidenProgram::parse(
+    let program = MidenProgram::parse(
         "
         begin
             push.1
@@ -447,7 +454,17 @@ fn test_conditional_manipulation() {
 
     program.save("programs/conditional_manipulation.masm");
 
-    assert_eq!(Some(program.stack[0].into()), program.prove());
+    assert_eq!(
+        program
+            .stack
+            .into_iter()
+            .map(|x| x.into())
+            .collect::<Vec<u64>>(),
+        vec![
+            2, 1, 2, 1, 2, 1, 2, 1, 0, 1, 0, 2, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+            0, 0
+        ]
+    );
 }
 
 #[test]

@@ -18,7 +18,7 @@
 - [x] U32 Error handling
 - [ ] U32 documentation
 - [ ] U32 for CLI
-- [ ] Hashing and Merkle trees
+- [ ] Hashing and Merkle trees !
 - [ ] Environment inputs
 - [ ] Extension Field Operations Documentation
 - [ ] Extension Field Operations for CLI
