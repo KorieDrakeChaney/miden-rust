@@ -242,7 +242,7 @@ fn test_collatz() {
 
 #[test]
 fn test_comparison() {
-    let mut program = MidenProgram::parse_from_file_with_inputs(
+    let program = MidenProgram::parse_from_file_with_inputs(
         "examples/comparison.masm",
         Inputs::from_file("inputs/comparison.json"),
     )

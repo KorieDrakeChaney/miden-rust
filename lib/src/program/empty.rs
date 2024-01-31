@@ -4,7 +4,7 @@ use math::fields::f64::BaseElement;
 
 use crate::Program;
 
-use super::instruction::{self, Instruction};
+use super::instruction::Instruction;
 
 pub struct EmptyProgram {
     instructions: VecDeque<Instruction>,
