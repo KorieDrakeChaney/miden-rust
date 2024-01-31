@@ -25,7 +25,7 @@ use self::u32_bitwise::execute_u32_bitwise;
 use self::{boolean::execute_boolean, memory::execute_memory};
 
 use super::{Instruction, MidenProgram};
-use math::{fields::f64::BaseElement, FieldElement};
+use miden::math::{Felt, FieldElement};
 use std::collections::VecDeque;
 
 impl MidenProgram {
@@ -111,7 +111,7 @@ impl MidenProgram {
                             }
                         }
 
-                        if n == BaseElement::ONE {
+                        if n == Felt::ONE {
                             if if_block.len() > 0 {
                                 self.execute_block(&mut if_block.clone(), index);
                             }
@@ -153,7 +153,7 @@ impl MidenProgram {
 
                     'while_loop: loop {
                         if let Some(n) = self.stack.pop_front() {
-                            if n == BaseElement::ONE {
+                            if n == Felt::ONE {
                                 self.execute_block(&mut while_block.clone(), index);
                             } else {
                                 break 'while_loop;
@@ -200,7 +200,7 @@ impl MidenProgram {
                 }
             }
             while self.stack.len() < 16 {
-                self.stack.push_back(BaseElement::from(0_u64));
+                self.stack.push_back(Felt::from(0_u64));
             }
         }
     }
@@ -220,7 +220,7 @@ impl MidenProgram {
             Instruction::AdvPush(n) => {
                 for _ in 0..*n {
                     if let Some(a) = self.advice_stack.pop_front() {
-                        self.stack.push_front(BaseElement::from(a));
+                        self.stack.push_front(Felt::from(a));
                     }
                 }
             }
@@ -259,48 +259,38 @@ impl MidenProgram {
                         self.advice_stack.pop_front(),
                     ),
                 ) {
-                    self.stack.push_front(a + BaseElement::from(2_u64));
+                    self.stack.push_front(a + Felt::from(2_u64));
                     // S0
                     if let (Some(d), Some(c), Some(b), Some(a)) = s0 {
-                        self.stack.push_front(BaseElement::from(a));
-                        self.stack.push_front(BaseElement::from(b));
-                        self.stack.push_front(BaseElement::from(c));
-                        self.stack.push_front(BaseElement::from(d));
+                        self.stack.push_front(Felt::from(a));
+                        self.stack.push_front(Felt::from(b));
+                        self.stack.push_front(Felt::from(c));
+                        self.stack.push_front(Felt::from(d));
                     }
                     // S1
                     if let (Some(_), Some(_), Some(_), Some(_)) = s1 {
                         if let (Some(d), Some(c), Some(b), Some(a)) = t0 {
-                            self.stack.push_front(BaseElement::from(a));
-                            self.stack.push_front(BaseElement::from(b));
-                            self.stack.push_front(BaseElement::from(c));
-                            self.stack.push_front(BaseElement::from(d));
+                            self.stack.push_front(Felt::from(a));
+                            self.stack.push_front(Felt::from(b));
+                            self.stack.push_front(Felt::from(c));
+                            self.stack.push_front(Felt::from(d));
                             self.ram_memory.insert(
                                 1,
-                                [
-                                    BaseElement::from(a),
-                                    BaseElement::from(b),
-                                    BaseElement::from(c),
-                                    BaseElement::from(d),
-                                ],
+                                [Felt::from(a), Felt::from(b), Felt::from(c), Felt::from(d)],
                             );
                         }
                     }
                     // S2
                     if let (Some(_), Some(_), Some(_), Some(_)) = s2 {
                         if let (Some(d), Some(c), Some(b), Some(a)) = t1 {
-                            self.stack.push_front(BaseElement::from(a));
-                            self.stack.push_front(BaseElement::from(b));
-                            self.stack.push_front(BaseElement::from(c));
-                            self.stack.push_front(BaseElement::from(d));
+                            self.stack.push_front(Felt::from(a));
+                            self.stack.push_front(Felt::from(b));
+                            self.stack.push_front(Felt::from(c));
+                            self.stack.push_front(Felt::from(d));
 
                             self.ram_memory.insert(
                                 0,
-                                [
-                                    BaseElement::from(a),
-                                    BaseElement::from(b),
-                                    BaseElement::from(c),
-                                    BaseElement::from(d),
-                                ],
+                                [Felt::from(a), Felt::from(b), Felt::from(c), Felt::from(d)],
                             );
                         }
                     }
@@ -312,7 +302,7 @@ impl MidenProgram {
                         self.advice_stack.pop_front(),
                         self.advice_stack.pop_front(),
                     ) {
-                        self.stack.push_front(BaseElement::from(a));
+                        self.stack.push_front(Felt::from(a));
                     }
                 }
             }
@@ -338,7 +328,7 @@ impl MidenProgram {
 
             Instruction::Assert => {
                 if let Some(a) = self.stack.get(0) {
-                    if *a == BaseElement::ONE {
+                    if *a == Felt::ONE {
                         self.stack.pop_front();
                     }
                 }
@@ -346,7 +336,7 @@ impl MidenProgram {
 
             Instruction::Assertz => {
                 if let Some(a) = self.stack.get(0) {
-                    if *a == BaseElement::ZERO {
+                    if *a == Felt::ZERO {
                         self.stack.pop_front();
                     }
                 }
@@ -384,7 +374,7 @@ impl MidenProgram {
         }
 
         while self.stack.len() < 16 {
-            self.stack.push_back(BaseElement::from(0_u64));
+            self.stack.push_back(Felt::from(0_u64));
         }
     }
 

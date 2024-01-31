@@ -1,4 +1,4 @@
-use math::{fields::f64::BaseElement, FieldElement};
+use miden::math::{Felt, FieldElement};
 
 use crate::{Instruction, MidenProgram};
 
@@ -28,7 +28,7 @@ pub fn execute_manipulation(program: &mut MidenProgram, operand: &Instruction) {
 
         Instruction::PadW => {
             for _ in 0..4 {
-                program.stack.push_front(BaseElement::ZERO);
+                program.stack.push_front(Felt::ZERO);
             }
         }
         Instruction::SwapW(n) => {

@@ -1,6 +1,6 @@
 use std::ops::Neg;
 
-use math::{fields::f64::BaseElement, FieldElement};
+use miden::math::{Felt, FieldElement};
 
 use crate::{Instruction, MidenProgram};
 
@@ -38,7 +38,7 @@ pub fn execute_extensions(program: &mut MidenProgram, operand: &Instruction) {
                 program.stack.push_front((a0 + a1) * (b0 + b1));
                 program
                     .stack
-                    .push_front((a0 * b0) - BaseElement::from(2_u64) * (a1 * b1));
+                    .push_front((a0 * b0) - Felt::from(2_u64) * (a1 * b1));
             }
         }
         Instruction::Ext2Div => {

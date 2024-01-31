@@ -1,6 +1,59 @@
-use math::fields::f64::BaseElement;
-
 use super::error::MidenProgramError;
+use miden::math::Felt;
+#[derive(Clone, Copy, PartialEq, Eq, Debug)]
+pub enum SignatureKind {
+    RpoFalcon512,
+}
+
+impl std::fmt::Display for SignatureKind {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        match self {
+            Self::RpoFalcon512 => write!(f, "rpo_falcon512"),
+        }
+    }
+}
+
+#[derive(Clone, Copy, PartialEq, Eq, Debug)]
+pub enum AdviceInjector {
+    PushMapVal,
+    PushMapValImm(u8),
+    PushMapValN,
+    PushMapValNImm(u8),
+    PushMtNode,
+    PushU64div,
+    PushExt2intt,
+    PushSmtGet,
+    PushSmtSet,
+    PushSmtPeek,
+    InsertMem,
+    InsertHdword,
+    InsertHdwordImm(u8),
+    InsertHperm,
+    PushSignature(SignatureKind),
+}
+
+impl std::fmt::Display for AdviceInjector {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        use AdviceInjector::*;
+        match self {
+            PushU64div => write!(f, "push_u64div"),
+            PushExt2intt => write!(f, "push_ext2intt"),
+            PushSmtGet => write!(f, "push_smtget"),
+            PushSmtSet => write!(f, "push_smtset"),
+            PushSmtPeek => write!(f, "push_smtpeek"),
+            PushMapVal => write!(f, "push_mapval"),
+            PushMapValImm(offset) => write!(f, "push_mapval.{offset}"),
+            PushMapValN => write!(f, "push_mapvaln"),
+            PushMapValNImm(offset) => write!(f, "push_mapvaln.{offset}"),
+            PushMtNode => write!(f, "push_mtnode"),
+            InsertMem => write!(f, "insert_mem"),
+            InsertHdword => write!(f, "insert_hdword"),
+            InsertHdwordImm(domain) => write!(f, "insert_hdword.{domain}"),
+            InsertHperm => writeln!(f, "insert_hperm"),
+            PushSignature(kind) => write!(f, "push_sig.{kind}"),
+        }
+    }
+}
 
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub enum Instruction {
@@ -10,7 +63,7 @@ pub enum Instruction {
     AssertEq,
     AssertEqW,
 
-    Push(BaseElement),
+    Push(Felt),
     Drop,
     DropW,
     Dup(usize),   // 1-15
@@ -28,13 +81,13 @@ pub enum Instruction {
 
     // Arithmetic and Boolean operations
     Add,
-    AddImm(BaseElement),
+    AddImm(Felt),
     Sub,
-    SubImm(BaseElement),
+    SubImm(Felt),
     Mul,
-    MulImm(BaseElement),
+    MulImm(Felt),
     Div,
-    DivImm(BaseElement),
+    DivImm(Felt),
     Neg,
     Inv,
     Incr,
@@ -49,9 +102,9 @@ pub enum Instruction {
 
     // Comparison operations
     Eq,
-    EqImm(BaseElement),
+    EqImm(Felt),
     Neq,
-    NeqImm(BaseElement),
+    NeqImm(Felt),
     EqW,
     Lt,
     Lte,

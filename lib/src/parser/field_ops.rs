@@ -1,4 +1,4 @@
-use math::fields::f64::BaseElement;
+use miden::math::Felt;
 
 use crate::Instruction;
 
@@ -11,7 +11,7 @@ pub fn parse_add(op: &Token) -> Result<Instruction, String> {
         2 => {
             let num = op.parts[1].parse::<u64>();
             match num {
-                Ok(num) => Ok(Instruction::AddImm(BaseElement::from(num))),
+                Ok(num) => Ok(Instruction::AddImm(Felt::from(num))),
                 Err(_) => Err(format!("parameter '{}' is invalid", op.parts[1])),
             }
         }
@@ -26,7 +26,7 @@ pub fn parse_sub(op: &Token) -> Result<Instruction, String> {
         2 => {
             let num = op.parts[1].parse::<u64>();
             match num {
-                Ok(num) => Ok(Instruction::SubImm(BaseElement::from(num))),
+                Ok(num) => Ok(Instruction::SubImm(Felt::from(num))),
                 Err(_) => Err(format!("parameter '{}' is invalid", op.parts[1])),
             }
         }
@@ -41,7 +41,7 @@ pub fn parse_mul(op: &Token) -> Result<Instruction, String> {
         2 => {
             let num = op.parts[1].parse::<u64>();
             match num {
-                Ok(num) => Ok(Instruction::MulImm(BaseElement::from(num))),
+                Ok(num) => Ok(Instruction::MulImm(Felt::from(num))),
                 Err(_) => Err(format!("parameter '{}' is invalid", op.parts[1])),
             }
         }
@@ -56,7 +56,7 @@ pub fn parse_div(op: &Token) -> Result<Instruction, String> {
         2 => {
             let num = op.parts[1].parse::<u64>();
             match num {
-                Ok(num) => Ok(Instruction::DivImm(BaseElement::from(num))),
+                Ok(num) => Ok(Instruction::DivImm(Felt::from(num))),
                 Err(_) => Err(format!("parameter '{}' is invalid", op.parts[1])),
             }
         }
@@ -71,7 +71,7 @@ pub fn parse_eq(op: &Token) -> Result<Instruction, String> {
         2 => {
             let num = op.parts[1].parse::<u64>();
             match num {
-                Ok(num) => Ok(Instruction::EqImm(BaseElement::from(num))),
+                Ok(num) => Ok(Instruction::EqImm(Felt::from(num))),
                 Err(_) => Err(format!("parameter '{}' is invalid", op.parts[1])),
             }
         }
@@ -86,7 +86,7 @@ pub fn parse_neq(op: &Token) -> Result<Instruction, String> {
         2 => {
             let num = op.parts[1].parse::<u64>();
             match num {
-                Ok(num) => Ok(Instruction::NeqImm(BaseElement::from(num))),
+                Ok(num) => Ok(Instruction::NeqImm(Felt::from(num))),
                 Err(_) => Err(format!("parameter '{}' is invalid", op.parts[1])),
             }
         }

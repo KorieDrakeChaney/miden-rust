@@ -1,6 +1,6 @@
 use std::ops::Neg;
 
-use math::{fields::f64::BaseElement, FieldElement};
+use miden::math::{Felt, FieldElement};
 
 use crate::{Instruction, MidenProgram};
 
@@ -59,9 +59,7 @@ pub fn execute_arithmetic(program: &mut MidenProgram, operand: &Instruction) {
 
         Instruction::Pow2 => {
             if let Some(a) = program.stack.pop_front() {
-                program
-                    .stack
-                    .push_front(BaseElement::from(2_u64).exp(a.into()));
+                program.stack.push_front(Felt::from(2_u64).exp(a.into()));
             }
         }
 
@@ -79,13 +77,13 @@ pub fn execute_arithmetic(program: &mut MidenProgram, operand: &Instruction) {
 
         Instruction::Increment => {
             if let Some(a) = program.stack.pop_front() {
-                program.stack.push_front(a + BaseElement::ONE);
+                program.stack.push_front(a + Felt::ONE);
             }
         }
 
         Instruction::Decrement => {
             if let Some(a) = program.stack.pop_front() {
-                program.stack.push_front(a - BaseElement::ONE);
+                program.stack.push_front(a - Felt::ONE);
             }
         }
 

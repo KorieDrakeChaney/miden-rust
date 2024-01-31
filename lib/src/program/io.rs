@@ -1,4 +1,4 @@
-use math::fields::f64::BaseElement;
+use miden::math::Felt;
 
 use super::{error::MidenProgramError, Instruction, MidenProgram};
 
@@ -9,7 +9,7 @@ impl MidenProgram {
     ///
     /// * `value` - The value to push onto the stack.
     pub fn push(&mut self, value: u64) {
-        self.add_instruction(Instruction::Push(BaseElement::from(value)));
+        self.add_instruction(Instruction::Push(Felt::from(value)));
     }
     /// Pushes the nth advice onto the stack.
     ///

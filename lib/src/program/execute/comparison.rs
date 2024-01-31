@@ -1,4 +1,4 @@
-use math::{fields::f64::BaseElement, FieldElement, StarkField};
+use miden::math::{Felt, FieldElement, StarkField};
 
 use crate::{Instruction, MidenProgram};
 
@@ -7,19 +7,19 @@ pub fn execute_comparison(program: &mut MidenProgram, operand: &Instruction) {
         Instruction::Eq => {
             if let (Some(b), Some(a)) = (program.stack.pop_front(), program.stack.pop_front()) {
                 if a == b {
-                    program.stack.push_front(BaseElement::ONE);
+                    program.stack.push_front(Felt::ONE);
                 } else {
-                    program.stack.push_front(BaseElement::ZERO);
+                    program.stack.push_front(Felt::ZERO);
                 }
             }
         }
 
         Instruction::EqImm(b) => {
             if let Some(a) = program.stack.pop_front() {
-                if a == BaseElement::from(*b) {
-                    program.stack.push_front(BaseElement::ONE);
+                if a == Felt::from(*b) {
+                    program.stack.push_front(Felt::ONE);
                 } else {
-                    program.stack.push_front(BaseElement::ZERO);
+                    program.stack.push_front(Felt::ZERO);
                 }
             }
         }
@@ -36,9 +36,9 @@ pub fn execute_comparison(program: &mut MidenProgram, operand: &Instruction) {
                 program.stack.get(7),
             ) {
                 if a == e && b == f && c == g && d == h {
-                    program.stack.push_front(BaseElement::ONE);
+                    program.stack.push_front(Felt::ONE);
                 } else {
-                    program.stack.push_front(BaseElement::ZERO);
+                    program.stack.push_front(Felt::ZERO);
                 }
             }
         }
@@ -46,9 +46,9 @@ pub fn execute_comparison(program: &mut MidenProgram, operand: &Instruction) {
         Instruction::Lt => {
             if let (Some(b), Some(a)) = (program.stack.pop_front(), program.stack.pop_front()) {
                 if a.as_int() < b.as_int() {
-                    program.stack.push_front(BaseElement::ONE);
+                    program.stack.push_front(Felt::ONE);
                 } else {
-                    program.stack.push_front(BaseElement::ZERO);
+                    program.stack.push_front(Felt::ZERO);
                 }
             }
         }
@@ -56,9 +56,9 @@ pub fn execute_comparison(program: &mut MidenProgram, operand: &Instruction) {
         Instruction::Gt => {
             if let (Some(b), Some(a)) = (program.stack.pop_front(), program.stack.pop_front()) {
                 if a.as_int() > b.as_int() {
-                    program.stack.push_front(BaseElement::ONE);
+                    program.stack.push_front(Felt::ONE);
                 } else {
-                    program.stack.push_front(BaseElement::ZERO);
+                    program.stack.push_front(Felt::ZERO);
                 }
             }
         }
@@ -66,9 +66,9 @@ pub fn execute_comparison(program: &mut MidenProgram, operand: &Instruction) {
         Instruction::Lte => {
             if let (Some(b), Some(a)) = (program.stack.pop_front(), program.stack.pop_front()) {
                 if a.as_int() <= b.as_int() {
-                    program.stack.push_front(BaseElement::ONE);
+                    program.stack.push_front(Felt::ONE);
                 } else {
-                    program.stack.push_front(BaseElement::ZERO);
+                    program.stack.push_front(Felt::ZERO);
                 }
             }
         }
@@ -76,9 +76,9 @@ pub fn execute_comparison(program: &mut MidenProgram, operand: &Instruction) {
         Instruction::Gte => {
             if let (Some(b), Some(a)) = (program.stack.pop_front(), program.stack.pop_front()) {
                 if a.as_int() >= b.as_int() {
-                    program.stack.push_front(BaseElement::ONE);
+                    program.stack.push_front(Felt::ONE);
                 } else {
-                    program.stack.push_front(BaseElement::ZERO);
+                    program.stack.push_front(Felt::ZERO);
                 }
             }
         }
@@ -86,19 +86,19 @@ pub fn execute_comparison(program: &mut MidenProgram, operand: &Instruction) {
         Instruction::Neq => {
             if let (Some(b), Some(a)) = (program.stack.pop_front(), program.stack.pop_front()) {
                 if a != b {
-                    program.stack.push_front(BaseElement::ONE);
+                    program.stack.push_front(Felt::ONE);
                 } else {
-                    program.stack.push_front(BaseElement::ZERO);
+                    program.stack.push_front(Felt::ZERO);
                 }
             }
         }
 
         Instruction::NeqImm(b) => {
             if let Some(a) = program.stack.pop_front() {
-                if a != BaseElement::from(*b) {
-                    program.stack.push_front(BaseElement::ONE);
+                if a != Felt::from(*b) {
+                    program.stack.push_front(Felt::ONE);
                 } else {
-                    program.stack.push_front(BaseElement::ZERO);
+                    program.stack.push_front(Felt::ZERO);
                 }
             }
         }
@@ -106,9 +106,9 @@ pub fn execute_comparison(program: &mut MidenProgram, operand: &Instruction) {
         Instruction::IsOdd => {
             if let Some(a) = program.stack.pop_front() {
                 if a.as_int() % 2 == 1 {
-                    program.stack.push_front(BaseElement::ONE);
+                    program.stack.push_front(Felt::ONE);
                 } else {
-                    program.stack.push_front(BaseElement::ZERO);
+                    program.stack.push_front(Felt::ZERO);
                 }
             }
         }

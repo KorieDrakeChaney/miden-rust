@@ -1,8 +1,6 @@
-use std::collections::VecDeque;
-
-use math::{fields::f64::BaseElement, FieldElement};
-
 use crate::{Instruction, MidenProgram, Program};
+use miden::math::{Felt, FieldElement};
+use std::collections::VecDeque;
 
 #[derive(Clone, Debug, PartialEq)]
 pub struct Proc {
@@ -331,7 +329,7 @@ impl Proc {
 
                     'while_loop: loop {
                         if let Some(n) = program.stack.pop_front() {
-                            if n == BaseElement::ONE {
+                            if n == Felt::ONE {
                                 self.execute_block(program, &mut while_block.clone(), index);
                             } else {
                                 break 'while_loop;
@@ -398,7 +396,7 @@ impl Proc {
                             }
                         }
 
-                        if n == BaseElement::ONE {
+                        if n == Felt::ONE {
                             if if_block.len() > 0 {
                                 self.execute_block(program, &mut if_block, index);
                             }
@@ -464,7 +462,7 @@ impl Proc {
                 if let Some([_, _, _, a]) = program.loc_memory.get(&key) {
                     program.stack.push_front(*a);
                 } else {
-                    program.stack.push_front(BaseElement::ZERO);
+                    program.stack.push_front(Felt::ZERO);
                 }
             }
 
@@ -484,10 +482,10 @@ impl Proc {
                         program.stack.push_front(*b);
                         program.stack.push_front(*a);
                     } else {
-                        program.stack.push_front(BaseElement::ZERO);
-                        program.stack.push_front(BaseElement::ZERO);
-                        program.stack.push_front(BaseElement::ZERO);
-                        program.stack.push_front(BaseElement::ZERO);
+                        program.stack.push_front(Felt::ZERO);
+                        program.stack.push_front(Felt::ZERO);
+                        program.stack.push_front(Felt::ZERO);
+                        program.stack.push_front(Felt::ZERO);
                     }
                 }
             }
@@ -497,10 +495,9 @@ impl Proc {
                     self.loc_count = key + 1;
                 }
                 if let Some(a) = program.stack.pop_front() {
-                    program.loc_memory.insert(
-                        *key,
-                        [BaseElement::ZERO, BaseElement::ZERO, BaseElement::ZERO, a],
-                    );
+                    program
+                        .loc_memory
+                        .insert(*key, [Felt::ZERO, Felt::ZERO, Felt::ZERO, a]);
                 }
             }
 
@@ -635,7 +632,7 @@ impl Proc {
     ///
     /// * `n` - The value to add.
     pub fn add_n(&mut self, n: u64) {
-        self.add_instruction(Instruction::AddImm(BaseElement::from(n)));
+        self.add_instruction(Instruction::AddImm(Felt::from(n)));
     }
 
     /// Pushes `Sub` instruction onto the stack.
@@ -649,7 +646,7 @@ impl Proc {
     ///
     /// * `n` - The value to subtract.
     pub fn sub_n(&mut self, n: u64) {
-        self.add_instruction(Instruction::SubImm(BaseElement::from(n)));
+        self.add_instruction(Instruction::SubImm(Felt::from(n)));
     }
 
     /// Pushes `Mul` instruction onto the stack.
@@ -663,7 +660,7 @@ impl Proc {
     ///
     /// * `n` - The value to multiply.
     pub fn mul_n(&mut self, n: u64) {
-        self.add_instruction(Instruction::MulImm(BaseElement::from(n)));
+        self.add_instruction(Instruction::MulImm(Felt::from(n)));
     }
 
     /// Pushes `Div` instruction onto the stack.
@@ -677,7 +674,7 @@ impl Proc {
     ///
     /// * `n` - The value to divide.
     pub fn div_n(&mut self, n: u64) {
-        self.add_instruction(Instruction::DivImm(BaseElement::from(n)));
+        self.add_instruction(Instruction::DivImm(Felt::from(n)));
     }
 
     /// Pushes `Neg` instruction onto the stack.
@@ -739,7 +736,7 @@ impl Proc {
     ///
     /// * `n` - The value to compare for equality.
     pub fn eq_n(&mut self, n: u64) {
-        self.add_instruction(Instruction::EqImm(BaseElement::from(n)));
+        self.add_instruction(Instruction::EqImm(Felt::from(n)));
     }
 
     /// Pushes `Neq` instruction onto the stack.
@@ -753,7 +750,7 @@ impl Proc {
     ///
     /// * `n` - The value to compare for inequality.
     pub fn neq_n(&mut self, n: u64) {
-        self.add_instruction(Instruction::NeqImm(BaseElement::from(n)));
+        self.add_instruction(Instruction::NeqImm(Felt::from(n)));
     }
 
     /// Pushes `Lt` instruction onto the stack.
@@ -884,7 +881,7 @@ impl Proc {
     ///
     /// * `n` - The value to push onto the stack.
     pub fn push(&mut self, n: u64) {
-        self.add_instruction(Instruction::Push(BaseElement::from(n)));
+        self.add_instruction(Instruction::Push(Felt::from(n)));
     }
 
     /// Pushes `AdvPush` instruction with value `n` onto the stack.

@@ -20,8 +20,9 @@ pub use instruction::Instruction;
 
 use std::collections::{HashMap, VecDeque};
 
-use math::{fields::f64::BaseElement, FieldElement, StarkField};
 use miden::{
+    crypto::MerkleStore,
+    math::{Felt, FieldElement, StarkField},
     prove, AdviceInputs, Assembler, DefaultHost, ExecutionProof, MemAdviceProvider, ProvingOptions,
     StackInputs,
 };
@@ -33,9 +34,11 @@ pub trait Program {
 }
 
 pub struct MidenProgram {
-    pub stack: VecDeque<BaseElement>,
+    pub stack: VecDeque<Felt>,
     pub advice_stack: VecDeque<u64>,
     pub instructions: VecDeque<Instruction>,
+    pub advice_map: Option<HashMap<String, Vec<u64>>>,
+    pub merkle_store: Option<MerkleStore>,
 
     internal_programs: HashMap<String, Rc<RefCell<Proc>>>,
     internal_programs_order: Vec<String>,
@@ -43,8 +46,8 @@ pub struct MidenProgram {
     stack_inputs: StackInputs,
     advice_inputs: AdviceInputs,
 
-    ram_memory: HashMap<u32, [BaseElement; 4]>,
-    loc_memory: HashMap<u16, [BaseElement; 4]>,
+    ram_memory: HashMap<u32, [Felt; 4]>,
+    loc_memory: HashMap<u16, [Felt; 4]>,
 }
 
 impl MidenProgram {
@@ -55,9 +58,11 @@ impl MidenProgram {
     /// A new `MidenProgram`.
     pub fn new() -> MidenProgram {
         MidenProgram {
-            stack: VecDeque::from(vec![BaseElement::ZERO; 16]),
+            stack: VecDeque::from(vec![Felt::ZERO; 16]),
             instructions: VecDeque::new(),
             advice_stack: VecDeque::new(),
+            advice_map: None,
+            merkle_store: None,
 
             internal_programs: HashMap::new(),
             internal_programs_order: Vec::new(),
@@ -125,7 +130,10 @@ impl MidenProgram {
 
         masm.push_str(&format!("end\n\n"));
 
-        masm.push_str(&format!("#stack output : {:?} \n", &self.stack));
+        masm.push_str(&format!(
+            "#stack output : {:?} \n",
+            &self.stack.iter().map(|n| n.as_int()).collect::<Vec<u64>>()
+        ));
 
         masm
     }
@@ -135,7 +143,7 @@ impl MidenProgram {
     /// # Returns
     ///
     /// A reference to the `VecDeque` representing the stack.
-    pub fn get_stack(&self) -> &VecDeque<BaseElement> {
+    pub fn get_stack(&self) -> &VecDeque<Felt> {
         &self.stack
     }
 
@@ -144,7 +152,7 @@ impl MidenProgram {
     /// # Returns
     ///
     /// A reference to the `HashMap` representing the RAM memory.
-    pub fn get_ram_memory(&self) -> &HashMap<u32, [BaseElement; 4]> {
+    pub fn get_ram_memory(&self) -> &HashMap<u32, [Felt; 4]> {
         &self.ram_memory
     }
 
@@ -172,7 +180,6 @@ impl MidenProgram {
     /// # Returns
     ///
     /// The result of the proof as an `Option<ExecutionProof>`.
-
     pub fn prove(&mut self) -> Option<ExecutionProof> {
         let assembler = Assembler::default();
         let masm = self.get_masm();
@@ -210,32 +217,49 @@ impl MidenProgram {
     ///
     /// The program with the specified inputs.
     pub fn with_inputs(mut self, inputs: Inputs) -> Self {
-        if let Some(operand_stack) = inputs.operand_stack {
-            self.stack_inputs =
-                StackInputs::try_from_values(operand_stack.iter().map(|n| n.as_int())).unwrap();
+        let operand_stack: Vec<Felt> = inputs
+            .operand_stack
+            .iter()
+            .map(|n| Felt::from(*n))
+            .collect();
 
-            let mut i = 0;
-            let mut stack: VecDeque<BaseElement> = VecDeque::new();
-            while i < operand_stack.len() {
-                stack.push_front(operand_stack[i]);
-                i += 1;
-            }
+        self.stack_inputs = StackInputs::new(operand_stack.clone());
 
-            while stack.len() < 16 {
-                stack.push_back(BaseElement::ZERO);
-            }
-
-            self.stack = stack;
+        let mut i = 0;
+        let mut stack: VecDeque<Felt> = VecDeque::new();
+        while i < operand_stack.len() {
+            stack.push_front(operand_stack[i].into());
+            i += 1;
         }
-        if let Some(mut advice_stack) = inputs.advice_stack {
-            self.advice_inputs =
-                AdviceInputs::with_stack_values(AdviceInputs::default(), advice_stack.clone())
-                    .unwrap();
 
-            while let Some(a) = advice_stack.pop() {
-                self.advice_stack.push_front(a);
+        while stack.len() < 16 {
+            stack.push_back(Felt::ZERO);
+        }
+
+        self.stack = stack;
+
+        if let Some(advice_stack) = inputs.advice_stack.clone() {
+            self.advice_inputs = self
+                .advice_inputs
+                .with_stack_values(advice_stack.clone())
+                .unwrap();
+            self.advice_stack = VecDeque::from(advice_stack);
+        }
+
+        if let Some(_) = inputs.advice_map {
+            let map = inputs.parse_advice_map().unwrap().unwrap();
+            self.advice_inputs = self.advice_inputs.with_map(map);
+            self.advice_map = inputs.advice_map.clone();
+        }
+
+        if let Some(_) = inputs.merkle_store {
+            let store = inputs.parse_merkle_store().unwrap();
+            if let Some(store) = store {
+                self.advice_inputs = self.advice_inputs.with_merkle_store(store.clone());
+                self.merkle_store = Some(store);
             }
         }
+
         self
     }
 
@@ -248,16 +272,16 @@ impl MidenProgram {
     /// # Returns
     ///
     /// The program with the specified operand stack.
-    pub fn with_operand_stack(mut self, operand_stack: Vec<BaseElement>) -> Self {
+    pub fn with_operand_stack(mut self, operand_stack: Vec<Felt>) -> Self {
         let mut i = 0;
-        let mut stack: VecDeque<BaseElement> = VecDeque::new();
+        let mut stack: VecDeque<Felt> = VecDeque::new();
         while i < operand_stack.len() {
             stack.push_front(operand_stack[i]);
             i += 1;
         }
 
         while stack.len() < 16 {
-            stack.push_back(BaseElement::ZERO);
+            stack.push_back(Felt::ZERO);
         }
 
         self.stack = stack;

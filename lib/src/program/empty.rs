@@ -1,6 +1,6 @@
 use std::collections::VecDeque;
 
-use math::fields::f64::BaseElement;
+use miden::math::Felt;
 
 use crate::Program;
 
@@ -264,7 +264,7 @@ impl EmptyProgram {
     ///
     /// * `n` - The value to add.
     pub fn add_n(&mut self, n: u64) {
-        self.add_instruction(Instruction::AddImm(BaseElement::from(n)));
+        self.add_instruction(Instruction::AddImm(Felt::from(n)));
     }
 
     /// Pushes `Sub` instruction onto the stack.
@@ -278,7 +278,7 @@ impl EmptyProgram {
     ///
     /// * `n` - The value to subtract.
     pub fn sub_n(&mut self, n: u64) {
-        self.add_instruction(Instruction::SubImm(BaseElement::from(n)));
+        self.add_instruction(Instruction::SubImm(Felt::from(n)));
     }
 
     /// Pushes `Mul` instruction onto the stack.
@@ -292,7 +292,7 @@ impl EmptyProgram {
     ///
     /// * `n` - The value to multiply.
     pub fn mul_n(&mut self, n: u64) {
-        self.add_instruction(Instruction::MulImm(BaseElement::from(n)));
+        self.add_instruction(Instruction::MulImm(Felt::from(n)));
     }
 
     /// Pushes `Div` instruction onto the stack.
@@ -306,7 +306,7 @@ impl EmptyProgram {
     ///
     /// * `n` - The value to divide.
     pub fn div_n(&mut self, n: u64) {
-        self.add_instruction(Instruction::DivImm(BaseElement::from(n)));
+        self.add_instruction(Instruction::DivImm(Felt::from(n)));
     }
 
     /// Pushes `Neg` instruction onto the stack.
@@ -368,7 +368,7 @@ impl EmptyProgram {
     ///
     /// * `n` - The value to compare for equality.
     pub fn eq_n(&mut self, n: u64) {
-        self.add_instruction(Instruction::EqImm(BaseElement::from(n)));
+        self.add_instruction(Instruction::EqImm(Felt::from(n)));
     }
 
     /// Pushes `Neq` instruction onto the stack.
@@ -382,7 +382,7 @@ impl EmptyProgram {
     ///
     /// * `n` - The value to compare for inequality.
     pub fn neq_n(&mut self, n: u64) {
-        self.add_instruction(Instruction::NeqImm(BaseElement::from(n)));
+        self.add_instruction(Instruction::NeqImm(Felt::from(n)));
     }
 
     /// Pushes `Lt` instruction onto the stack.
@@ -513,7 +513,7 @@ impl EmptyProgram {
     ///
     /// * `n` - The value to push onto the stack.
     pub fn push(&mut self, n: u64) {
-        self.add_instruction(Instruction::Push(BaseElement::from(n)));
+        self.add_instruction(Instruction::Push(Felt::from(n)));
     }
 
     /// Pushes `AdvPush` instruction with value `n` onto the stack.

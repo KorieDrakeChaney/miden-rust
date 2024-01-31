@@ -1,4 +1,4 @@
-use math::fields::f64::BaseElement;
+use miden::math::Felt;
 
 use super::{Instruction, MidenProgram};
 
@@ -13,7 +13,7 @@ impl MidenProgram {
     ///
     /// * `n` - The number to add to the top value on the stack.
     pub fn add_n(&mut self, n: u64) {
-        self.add_instruction(Instruction::AddImm(BaseElement::from(n)));
+        self.add_instruction(Instruction::AddImm(Felt::from(n)));
     }
 
     /// Subtracts the first value from the second value on the stack.
@@ -27,7 +27,7 @@ impl MidenProgram {
     ///
     /// * `n` - The number to subtract from the top value on the stack.
     pub fn sub_n(&mut self, n: u64) {
-        self.add_instruction(Instruction::SubImm(BaseElement::from(n)));
+        self.add_instruction(Instruction::SubImm(Felt::from(n)));
     }
 
     /// Multiplies the top two values on the stack.
@@ -41,7 +41,7 @@ impl MidenProgram {
     ///
     /// * `n` - The number to multiply the top value on the stack by.
     pub fn mul_n(&mut self, n: u64) {
-        self.add_instruction(Instruction::MulImm(BaseElement::from(n)));
+        self.add_instruction(Instruction::MulImm(Felt::from(n)));
     }
 
     /// Divides the first value into the second value on the stack.
@@ -55,7 +55,7 @@ impl MidenProgram {
     ///
     /// * `n` - The number to divide the top value on the stack by.
     pub fn div_n(&mut self, n: u64) {
-        self.add_instruction(Instruction::DivImm(BaseElement::from(n)));
+        self.add_instruction(Instruction::DivImm(Felt::from(n)));
     }
 
     /// Negates the top value on the stack.
@@ -134,7 +134,7 @@ impl MidenProgram {
     ///
     /// * `n` - The number to compare the top value on the stack to.
     pub fn eq_n(&mut self, n: u64) {
-        self.add_instruction(Instruction::EqImm(BaseElement::from(n)));
+        self.add_instruction(Instruction::EqImm(Felt::from(n)));
     }
 
     /// Checks if the top two values on the stack are not equal.
@@ -148,7 +148,7 @@ impl MidenProgram {
     ///
     /// * `n` - The number to compare the top value on the stack to.
     pub fn neq_n(&mut self, n: u64) {
-        self.add_instruction(Instruction::NeqImm(BaseElement::from(n)));
+        self.add_instruction(Instruction::NeqImm(Felt::from(n)));
     }
 
     /// Checks if the second top value on the stack is less than the top value.

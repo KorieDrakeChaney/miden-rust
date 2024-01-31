@@ -1,4 +1,4 @@
-use math::{fields::f64::BaseElement, StarkField};
+use miden::math::{Felt, StarkField};
 
 use crate::{Instruction, MidenProgram};
 
@@ -13,7 +13,7 @@ pub fn execute_u32_bitwise(program: &mut MidenProgram, operand: &Instruction) {
 
                 program
                     .stack
-                    .push_front(BaseElement::from(a_int as u32 & b_int as u32));
+                    .push_front(Felt::from(a_int as u32 & b_int as u32));
             }
         }
 
@@ -24,7 +24,7 @@ pub fn execute_u32_bitwise(program: &mut MidenProgram, operand: &Instruction) {
 
                 program
                     .stack
-                    .push_front(BaseElement::from(a_int as u32 | b_int as u32));
+                    .push_front(Felt::from(a_int as u32 | b_int as u32));
             }
         }
 
@@ -35,7 +35,7 @@ pub fn execute_u32_bitwise(program: &mut MidenProgram, operand: &Instruction) {
 
                 program
                     .stack
-                    .push_front(BaseElement::from(a_int as u32 ^ b_int as u32));
+                    .push_front(Felt::from(a_int as u32 ^ b_int as u32));
             }
         }
 
@@ -43,7 +43,7 @@ pub fn execute_u32_bitwise(program: &mut MidenProgram, operand: &Instruction) {
             if let Some(a) = program.stack.pop_front() {
                 let a_int = a.as_int();
 
-                program.stack.push_front(BaseElement::from(!a_int as u32));
+                program.stack.push_front(Felt::from(!a_int as u32));
             }
         }
 
@@ -52,7 +52,7 @@ pub fn execute_u32_bitwise(program: &mut MidenProgram, operand: &Instruction) {
                 let a_int = a.as_int();
                 let b_int = b.as_int();
 
-                program.stack.push_front(BaseElement::from(
+                program.stack.push_front(Felt::from(
                     (a_int * 2_i32.pow(b_int as u32) as u64) % U32_MAX,
                 ));
             }
@@ -64,7 +64,7 @@ pub fn execute_u32_bitwise(program: &mut MidenProgram, operand: &Instruction) {
 
                 program
                     .stack
-                    .push_front(BaseElement::from((a_int * 2_i32.pow(*b) as u64) % U32_MAX));
+                    .push_front(Felt::from((a_int * 2_i32.pow(*b) as u64) % U32_MAX));
             }
         }
 
@@ -73,7 +73,7 @@ pub fn execute_u32_bitwise(program: &mut MidenProgram, operand: &Instruction) {
                 let a_int = a.as_int();
                 let b_int = b.as_int();
 
-                program.stack.push_front(BaseElement::from(
+                program.stack.push_front(Felt::from(
                     (a_int * 2_i32.pow(b_int as u32) as u64) % U32_MAX,
                 ));
             }
@@ -85,7 +85,7 @@ pub fn execute_u32_bitwise(program: &mut MidenProgram, operand: &Instruction) {
 
                 program
                     .stack
-                    .push_front(BaseElement::from((a_int * 2_i32.pow(*b) as u64) % U32_MAX));
+                    .push_front(Felt::from((a_int * 2_i32.pow(*b) as u64) % U32_MAX));
             }
         }
 
@@ -94,7 +94,7 @@ pub fn execute_u32_bitwise(program: &mut MidenProgram, operand: &Instruction) {
                 let a_int = a.as_int();
                 let b_int = b.as_int();
 
-                program.stack.push_front(BaseElement::from(
+                program.stack.push_front(Felt::from(
                     (a_int / 2_i32.pow(b_int as u32) as u64) % U32_MAX,
                 ));
             }
@@ -106,7 +106,7 @@ pub fn execute_u32_bitwise(program: &mut MidenProgram, operand: &Instruction) {
 
                 program
                     .stack
-                    .push_front(BaseElement::from((a_int / 2_i32.pow(*b) as u64) % U32_MAX));
+                    .push_front(Felt::from((a_int / 2_i32.pow(*b) as u64) % U32_MAX));
             }
         }
 
@@ -115,7 +115,7 @@ pub fn execute_u32_bitwise(program: &mut MidenProgram, operand: &Instruction) {
                 let a_int = a.as_int();
                 let b_int = b.as_int();
 
-                program.stack.push_front(BaseElement::from(
+                program.stack.push_front(Felt::from(
                     (a_int / 2_i32.pow(b_int as u32) as u64) % U32_MAX,
                 ));
             }
@@ -127,7 +127,7 @@ pub fn execute_u32_bitwise(program: &mut MidenProgram, operand: &Instruction) {
 
                 program
                     .stack
-                    .push_front(BaseElement::from((a_int / 2_i32.pow(*b) as u64) % U32_MAX));
+                    .push_front(Felt::from((a_int / 2_i32.pow(*b) as u64) % U32_MAX));
             }
         }
 
@@ -138,7 +138,7 @@ pub fn execute_u32_bitwise(program: &mut MidenProgram, operand: &Instruction) {
 
                 program
                     .stack
-                    .push_front(BaseElement::from((a_int as u32).rotate_right(b_int as u32)));
+                    .push_front(Felt::from((a_int as u32).rotate_right(b_int as u32)));
             }
         }
 
@@ -149,7 +149,7 @@ pub fn execute_u32_bitwise(program: &mut MidenProgram, operand: &Instruction) {
 
                 program
                     .stack
-                    .push_front(BaseElement::from((a_int as u32).rotate_right(b_int)));
+                    .push_front(Felt::from((a_int as u32).rotate_right(b_int)));
             }
         }
 
@@ -160,7 +160,7 @@ pub fn execute_u32_bitwise(program: &mut MidenProgram, operand: &Instruction) {
 
                 program
                     .stack
-                    .push_front(BaseElement::from((a_int as u32).rotate_right(b_int as u32)));
+                    .push_front(Felt::from((a_int as u32).rotate_right(b_int as u32)));
             }
         }
 
@@ -171,7 +171,7 @@ pub fn execute_u32_bitwise(program: &mut MidenProgram, operand: &Instruction) {
 
                 program
                     .stack
-                    .push_front(BaseElement::from((a_int as u32).rotate_right(b_int)));
+                    .push_front(Felt::from((a_int as u32).rotate_right(b_int)));
             }
         }
 
@@ -182,7 +182,7 @@ pub fn execute_u32_bitwise(program: &mut MidenProgram, operand: &Instruction) {
 
                 program
                     .stack
-                    .push_front(BaseElement::from((a_int as u32).rotate_left(b_int as u32)));
+                    .push_front(Felt::from((a_int as u32).rotate_left(b_int as u32)));
             }
         }
 
@@ -193,7 +193,7 @@ pub fn execute_u32_bitwise(program: &mut MidenProgram, operand: &Instruction) {
 
                 program
                     .stack
-                    .push_front(BaseElement::from((a_int as u32).rotate_left(b_int)));
+                    .push_front(Felt::from((a_int as u32).rotate_left(b_int)));
             }
         }
 
@@ -204,7 +204,7 @@ pub fn execute_u32_bitwise(program: &mut MidenProgram, operand: &Instruction) {
 
                 program
                     .stack
-                    .push_front(BaseElement::from((a_int as u32).rotate_left(b_int as u32)));
+                    .push_front(Felt::from((a_int as u32).rotate_left(b_int as u32)));
             }
         }
 
@@ -215,7 +215,7 @@ pub fn execute_u32_bitwise(program: &mut MidenProgram, operand: &Instruction) {
 
                 program
                     .stack
-                    .push_front(BaseElement::from((a_int as u32).rotate_left(b_int)));
+                    .push_front(Felt::from((a_int as u32).rotate_left(b_int)));
             }
         }
 
@@ -225,7 +225,7 @@ pub fn execute_u32_bitwise(program: &mut MidenProgram, operand: &Instruction) {
 
                 program
                     .stack
-                    .push_front(BaseElement::from(((a_int as u32) as u32).count_ones()));
+                    .push_front(Felt::from(((a_int as u32) as u32).count_ones()));
             }
         }
 
@@ -234,7 +234,7 @@ pub fn execute_u32_bitwise(program: &mut MidenProgram, operand: &Instruction) {
                 let a_int = a.as_int();
                 program
                     .stack
-                    .push_front(BaseElement::from(((a_int as u32) as u32).count_ones()));
+                    .push_front(Felt::from(((a_int as u32) as u32).count_ones()));
             }
         }
 

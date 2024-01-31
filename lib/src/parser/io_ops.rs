@@ -1,4 +1,4 @@
-use math::fields::f64::BaseElement;
+use miden::math::Felt;
 
 use crate::Instruction;
 
@@ -30,18 +30,16 @@ pub fn parse_push(op: &Token) -> Result<Vec<Instruction>, String> {
         0 => unreachable!(),
         1 => Err("Missing param, push.<a?>".to_string()),
         2 => match op.parts[1].parse::<u64>() {
-            Ok(num) => Ok(vec![Instruction::Push(BaseElement::from(num))]),
+            Ok(num) => Ok(vec![Instruction::Push(Felt::from(num))]),
             Err(_) => {
                 if op.parts[1].starts_with("0x") {
                     let hex_str = &op.parts[1][2..];
                     if hex_str.len() < 16 && hex_str.len() % 2 == 0 && hex_str.len() != 0 {
-                        return Ok(vec![Instruction::Push(BaseElement::from(parse_hex(
-                            hex_str,
-                        )?))]);
+                        return Ok(vec![Instruction::Push(Felt::from(parse_hex(hex_str)?))]);
                     } else if hex_str.len() == 64 {
                         return Ok(parse_long_hex(hex_str)?
                             .into_iter()
-                            .map(|num| Instruction::Push(BaseElement::from(num)))
+                            .map(|num| Instruction::Push(Felt::from(num)))
                             .collect());
                     } else {
                         Err(format!("Invalid hex value: {}", hex_str))
@@ -55,19 +53,18 @@ pub fn parse_push(op: &Token) -> Result<Vec<Instruction>, String> {
             let mut instructions = Vec::new();
             for i in 1..op.num_parts() {
                 match op.parts[i].parse::<u64>() {
-                    Ok(num) => instructions.push(Instruction::Push(BaseElement::from(num))),
+                    Ok(num) => instructions.push(Instruction::Push(Felt::from(num))),
                     Err(_) => {
                         if op.parts[i].starts_with("0x") {
                             let hex_str = &op.parts[i][2..];
                             if hex_str.len() < 16 && hex_str.len() % 2 == 0 && hex_str.len() != 0 {
-                                instructions.push(Instruction::Push(BaseElement::from(parse_hex(
-                                    hex_str,
-                                )?)));
+                                instructions
+                                    .push(Instruction::Push(Felt::from(parse_hex(hex_str)?)));
                             } else if hex_str.len() == 64 {
                                 instructions.append(
                                     &mut parse_long_hex(hex_str)?
                                         .into_iter()
-                                        .map(|num| Instruction::Push(BaseElement::from(num)))
+                                        .map(|num| Instruction::Push(Felt::from(num)))
                                         .collect(),
                                 );
                             } else {

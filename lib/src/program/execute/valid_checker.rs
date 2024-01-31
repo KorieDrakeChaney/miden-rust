@@ -1,6 +1,5 @@
-use math::{fields::f64::BaseElement, FieldElement, StarkField};
-
 use crate::{program::error::MidenProgramError, Instruction, MidenProgram};
+use miden::math::{Felt, FieldElement, StarkField};
 
 use super::utils::{max, U32_MAX};
 
@@ -9,7 +8,7 @@ impl MidenProgram {
         match operand {
             Instruction::CDrop | Instruction::CSwap | Instruction::CDropW | Instruction::CSwapW => {
                 if let Some(c) = self.stack.get(0) {
-                    if *c != BaseElement::ZERO && *c != BaseElement::ONE {
+                    if *c != Felt::ZERO && *c != Felt::ONE {
                         return Some(MidenProgramError::NotBinaryValue(c.as_int()));
                     }
                 }
@@ -17,21 +16,21 @@ impl MidenProgram {
 
             Instruction::Ext2Div | Instruction::Div => {
                 if let Some(a) = self.stack.get(0) {
-                    if *a == BaseElement::ZERO {
+                    if *a == Felt::ZERO {
                         return Some(MidenProgramError::DivideByZero);
                     }
                 }
             }
             Instruction::Ext2Inv => {
                 if let (Some(a1), Some(a0)) = (self.stack.get(0), self.stack.get(1)) {
-                    if *a0 == BaseElement::ZERO || *a1 == BaseElement::ZERO {
+                    if *a0 == Felt::ZERO || *a1 == Felt::ZERO {
                         return Some(MidenProgramError::ZeroInvertInvalid);
                     }
                 }
             }
             Instruction::Inv => {
                 if let Some(a) = self.stack.get(0) {
-                    if *a == BaseElement::ZERO {
+                    if *a == Felt::ZERO {
                         return Some(MidenProgramError::ZeroInvertInvalid);
                     }
                 }

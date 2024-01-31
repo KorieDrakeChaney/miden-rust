@@ -1,4 +1,4 @@
-use math::{fields::f64::BaseElement, StarkField};
+use miden::math::{Felt, StarkField};
 
 use crate::{Instruction, MidenProgram};
 
@@ -12,7 +12,7 @@ pub fn execute_u32_arithmetic(program: &mut MidenProgram, operand: &Instruction)
                 let b_int = b.as_int();
                 let c_int = a_int + b_int;
 
-                program.stack.push_front(BaseElement::from(c_int));
+                program.stack.push_front(Felt::from(c_int));
             }
         }
         Instruction::U32CheckedAddImm(b) => {
@@ -20,7 +20,7 @@ pub fn execute_u32_arithmetic(program: &mut MidenProgram, operand: &Instruction)
                 let a_int = a.as_int();
                 let c_int = a_int + *b as u64;
 
-                program.stack.push_front(BaseElement::from(c_int));
+                program.stack.push_front(Felt::from(c_int));
             }
         }
 
@@ -31,8 +31,8 @@ pub fn execute_u32_arithmetic(program: &mut MidenProgram, operand: &Instruction)
                 let c_int = a_int + b_int;
                 let d = c_int / U32_MAX;
 
-                program.stack.push_front(BaseElement::from(c_int % U32_MAX));
-                program.stack.push_front(BaseElement::from(d));
+                program.stack.push_front(Felt::from(c_int % U32_MAX));
+                program.stack.push_front(Felt::from(d));
             }
         }
         Instruction::U32OverflowingAddImm(b) => {
@@ -40,7 +40,7 @@ pub fn execute_u32_arithmetic(program: &mut MidenProgram, operand: &Instruction)
                 let a_int = a.as_int();
                 let c_int = (a_int + *b as u64) % U32_MAX;
 
-                program.stack.push_front(BaseElement::from(c_int));
+                program.stack.push_front(Felt::from(c_int));
             }
         }
 
@@ -50,7 +50,7 @@ pub fn execute_u32_arithmetic(program: &mut MidenProgram, operand: &Instruction)
                 let b_int = b.as_int();
                 let c_int = (a_int + b_int) % U32_MAX;
 
-                program.stack.push_front(BaseElement::from(c_int));
+                program.stack.push_front(Felt::from(c_int));
             }
         }
         Instruction::U32WrappingAddImm(b) => {
@@ -58,7 +58,7 @@ pub fn execute_u32_arithmetic(program: &mut MidenProgram, operand: &Instruction)
                 let a_int = a.as_int();
                 let c_int = (a_int + *b as u64) % U32_MAX;
 
-                program.stack.push_front(BaseElement::from(c_int));
+                program.stack.push_front(Felt::from(c_int));
             }
         }
 
@@ -75,8 +75,8 @@ pub fn execute_u32_arithmetic(program: &mut MidenProgram, operand: &Instruction)
                 let d = sum % U32_MAX;
                 let e = sum / U32_MAX;
 
-                program.stack.push_front(BaseElement::from(d));
-                program.stack.push_front(BaseElement::from(e));
+                program.stack.push_front(Felt::from(d));
+                program.stack.push_front(Felt::from(e));
             }
         }
 
@@ -92,7 +92,7 @@ pub fn execute_u32_arithmetic(program: &mut MidenProgram, operand: &Instruction)
                 let sum = a_int + b_int + c_int;
                 let d = sum % U32_MAX;
 
-                program.stack.push_front(BaseElement::from(d));
+                program.stack.push_front(Felt::from(d));
             }
         }
 
@@ -102,7 +102,7 @@ pub fn execute_u32_arithmetic(program: &mut MidenProgram, operand: &Instruction)
                 let b_int = b.as_int();
                 let c_int = a_int - b_int;
 
-                program.stack.push_front(BaseElement::from(c_int));
+                program.stack.push_front(Felt::from(c_int));
             }
         }
 
@@ -111,7 +111,7 @@ pub fn execute_u32_arithmetic(program: &mut MidenProgram, operand: &Instruction)
                 let a_int = a.as_int();
                 let b_int = *b as u64;
 
-                program.stack.push_front(BaseElement::from(a_int - b_int));
+                program.stack.push_front(Felt::from(a_int - b_int));
             }
         }
 
@@ -122,8 +122,8 @@ pub fn execute_u32_arithmetic(program: &mut MidenProgram, operand: &Instruction)
                 let c_int = a_int - b_int;
                 let d = a_int < b_int;
 
-                program.stack.push_front(BaseElement::from(c_int % U32_MAX));
-                program.stack.push_front(BaseElement::from(d as u64));
+                program.stack.push_front(Felt::from(c_int % U32_MAX));
+                program.stack.push_front(Felt::from(d as u64));
             }
         }
 
@@ -134,8 +134,8 @@ pub fn execute_u32_arithmetic(program: &mut MidenProgram, operand: &Instruction)
                 let c_int = a_int - b_int;
                 let d = a_int < b_int;
 
-                program.stack.push_front(BaseElement::from(c_int % U32_MAX));
-                program.stack.push_front(BaseElement::from(d as u64));
+                program.stack.push_front(Felt::from(c_int % U32_MAX));
+                program.stack.push_front(Felt::from(d as u64));
             }
         }
 
@@ -145,7 +145,7 @@ pub fn execute_u32_arithmetic(program: &mut MidenProgram, operand: &Instruction)
                 let b_int = b.as_int();
                 let c_int = a_int - b_int;
 
-                program.stack.push_front(BaseElement::from(c_int % U32_MAX));
+                program.stack.push_front(Felt::from(c_int % U32_MAX));
             }
         }
 
@@ -155,7 +155,7 @@ pub fn execute_u32_arithmetic(program: &mut MidenProgram, operand: &Instruction)
                 let b_int = *b as u64;
                 let c_int = a_int - b_int;
 
-                program.stack.push_front(BaseElement::from(c_int % U32_MAX));
+                program.stack.push_front(Felt::from(c_int % U32_MAX));
             }
         }
 
@@ -165,7 +165,7 @@ pub fn execute_u32_arithmetic(program: &mut MidenProgram, operand: &Instruction)
                 let b_int = b.as_int();
                 let c_int = a_int * b_int;
 
-                program.stack.push_front(BaseElement::from(c_int));
+                program.stack.push_front(Felt::from(c_int));
             }
         }
 
@@ -175,7 +175,7 @@ pub fn execute_u32_arithmetic(program: &mut MidenProgram, operand: &Instruction)
                 let b_int = *b as u64;
                 let c_int = a_int * b_int;
 
-                program.stack.push_front(BaseElement::from(c_int));
+                program.stack.push_front(Felt::from(c_int));
             }
         }
 
@@ -186,8 +186,8 @@ pub fn execute_u32_arithmetic(program: &mut MidenProgram, operand: &Instruction)
                 let c_int = a_int * b_int;
                 let d = c_int / U32_MAX;
 
-                program.stack.push_front(BaseElement::from(c_int % U32_MAX));
-                program.stack.push_front(BaseElement::from(d));
+                program.stack.push_front(Felt::from(c_int % U32_MAX));
+                program.stack.push_front(Felt::from(d));
             }
         }
 
@@ -198,8 +198,8 @@ pub fn execute_u32_arithmetic(program: &mut MidenProgram, operand: &Instruction)
                 let c_int = a_int * b_int;
                 let d = c_int / U32_MAX;
 
-                program.stack.push_front(BaseElement::from(c_int % U32_MAX));
-                program.stack.push_front(BaseElement::from(d));
+                program.stack.push_front(Felt::from(c_int % U32_MAX));
+                program.stack.push_front(Felt::from(d));
             }
         }
 
@@ -209,7 +209,7 @@ pub fn execute_u32_arithmetic(program: &mut MidenProgram, operand: &Instruction)
                 let b_int = b.as_int();
                 let c_int = a_int * b_int;
 
-                program.stack.push_front(BaseElement::from(c_int % U32_MAX));
+                program.stack.push_front(Felt::from(c_int % U32_MAX));
             }
         }
 
@@ -219,7 +219,7 @@ pub fn execute_u32_arithmetic(program: &mut MidenProgram, operand: &Instruction)
                 let b_int = *b as u64;
                 let c_int = a_int * b_int;
 
-                program.stack.push_front(BaseElement::from(c_int % U32_MAX));
+                program.stack.push_front(Felt::from(c_int % U32_MAX));
             }
         }
 
@@ -235,10 +235,10 @@ pub fn execute_u32_arithmetic(program: &mut MidenProgram, operand: &Instruction)
 
                 program
                     .stack
-                    .push_front(BaseElement::from((a_int + b_int + c_int) % U32_MAX));
+                    .push_front(Felt::from((a_int + b_int + c_int) % U32_MAX));
                 program
                     .stack
-                    .push_front(BaseElement::from((a_int + b_int + c_int) / U32_MAX));
+                    .push_front(Felt::from((a_int + b_int + c_int) / U32_MAX));
             }
         }
 
@@ -254,7 +254,7 @@ pub fn execute_u32_arithmetic(program: &mut MidenProgram, operand: &Instruction)
 
                 program
                     .stack
-                    .push_front(BaseElement::from((a_int + b_int + c_int) % U32_MAX));
+                    .push_front(Felt::from((a_int + b_int + c_int) % U32_MAX));
             }
         }
 
@@ -263,7 +263,7 @@ pub fn execute_u32_arithmetic(program: &mut MidenProgram, operand: &Instruction)
                 let a_int = a.as_int();
                 let b_int = b.as_int();
 
-                program.stack.push_front(BaseElement::from(a_int / b_int));
+                program.stack.push_front(Felt::from(a_int / b_int));
             }
         }
 
@@ -272,7 +272,7 @@ pub fn execute_u32_arithmetic(program: &mut MidenProgram, operand: &Instruction)
                 let a_int = a.as_int();
                 let b_int = *b as u64;
 
-                program.stack.push_front(BaseElement::from(a_int / b_int));
+                program.stack.push_front(Felt::from(a_int / b_int));
             }
         }
 
@@ -281,7 +281,7 @@ pub fn execute_u32_arithmetic(program: &mut MidenProgram, operand: &Instruction)
                 let a_int = a.as_int();
                 let b_int = b.as_int();
 
-                program.stack.push_front(BaseElement::from(a_int / b_int));
+                program.stack.push_front(Felt::from(a_int / b_int));
             }
         }
 
@@ -290,7 +290,7 @@ pub fn execute_u32_arithmetic(program: &mut MidenProgram, operand: &Instruction)
                 let a_int = a.as_int();
                 let b_int = *b as u64;
 
-                program.stack.push_front(BaseElement::from(a_int / b_int));
+                program.stack.push_front(Felt::from(a_int / b_int));
             }
         }
 
@@ -299,7 +299,7 @@ pub fn execute_u32_arithmetic(program: &mut MidenProgram, operand: &Instruction)
                 let a_int = a.as_int();
                 let b_int = b.as_int();
 
-                program.stack.push_front(BaseElement::from(a_int % b_int));
+                program.stack.push_front(Felt::from(a_int % b_int));
             }
         }
 
@@ -308,7 +308,7 @@ pub fn execute_u32_arithmetic(program: &mut MidenProgram, operand: &Instruction)
                 let a_int = a.as_int();
                 let b_int = *b as u64;
 
-                program.stack.push_front(BaseElement::from(a_int % b_int));
+                program.stack.push_front(Felt::from(a_int % b_int));
             }
         }
 
@@ -317,7 +317,7 @@ pub fn execute_u32_arithmetic(program: &mut MidenProgram, operand: &Instruction)
                 let a_int = a.as_int();
                 let b_int = b.as_int();
 
-                program.stack.push_front(BaseElement::from(a_int % b_int));
+                program.stack.push_front(Felt::from(a_int % b_int));
             }
         }
 
@@ -326,7 +326,7 @@ pub fn execute_u32_arithmetic(program: &mut MidenProgram, operand: &Instruction)
                 let a_int = a.as_int();
                 let b_int = *b as u64;
 
-                program.stack.push_front(BaseElement::from(a_int % b_int));
+                program.stack.push_front(Felt::from(a_int % b_int));
             }
         }
 
@@ -335,8 +335,8 @@ pub fn execute_u32_arithmetic(program: &mut MidenProgram, operand: &Instruction)
                 let a_int = a.as_int();
                 let b_int = b.as_int();
 
-                program.stack.push_front(BaseElement::from(a_int / b_int));
-                program.stack.push_front(BaseElement::from(a_int % b_int));
+                program.stack.push_front(Felt::from(a_int / b_int));
+                program.stack.push_front(Felt::from(a_int % b_int));
             }
         }
 
@@ -345,8 +345,8 @@ pub fn execute_u32_arithmetic(program: &mut MidenProgram, operand: &Instruction)
                 let a_int = a.as_int();
                 let b_int = *b as u64;
 
-                program.stack.push_front(BaseElement::from(a_int / b_int));
-                program.stack.push_front(BaseElement::from(a_int % b_int));
+                program.stack.push_front(Felt::from(a_int / b_int));
+                program.stack.push_front(Felt::from(a_int % b_int));
             }
         }
 
@@ -354,8 +354,8 @@ pub fn execute_u32_arithmetic(program: &mut MidenProgram, operand: &Instruction)
             if let (Some(b), Some(a)) = (program.stack.pop_front(), program.stack.pop_front()) {
                 let a_int = a.as_int();
                 let b_int = b.as_int();
-                program.stack.push_front(BaseElement::from(a_int / b_int));
-                program.stack.push_front(BaseElement::from(a_int % b_int));
+                program.stack.push_front(Felt::from(a_int / b_int));
+                program.stack.push_front(Felt::from(a_int % b_int));
             }
         }
 
@@ -364,8 +364,8 @@ pub fn execute_u32_arithmetic(program: &mut MidenProgram, operand: &Instruction)
                 let a_int = a.as_int();
                 let b_int = *b as u64;
 
-                program.stack.push_front(BaseElement::from(a_int / b_int));
-                program.stack.push_front(BaseElement::from(a_int % b_int));
+                program.stack.push_front(Felt::from(a_int / b_int));
+                program.stack.push_front(Felt::from(a_int % b_int));
             }
         }
 
