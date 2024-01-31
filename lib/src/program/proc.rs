@@ -7,7 +7,7 @@ use crate::{Instruction, MidenProgram, Program};
 #[derive(Clone, Debug, PartialEq)]
 pub struct Proc {
     pub name: String,
-    pub operands: VecDeque<Instruction>,
+    pub instructions: VecDeque<Instruction>,
     loc_count: u16,
 }
 
@@ -15,7 +15,7 @@ impl Proc {
     pub fn new(name: &str) -> Self {
         Self {
             name: name.to_string(),
-            operands: VecDeque::new(),
+            instructions: VecDeque::new(),
             loc_count: 0,
         }
     }
@@ -29,7 +29,7 @@ impl Proc {
         masm.push_str(&format!("\n"));
 
         let mut scope = 1;
-        for op in self.operands.iter() {
+        for op in self.instructions.iter() {
             match op {
                 &Instruction::IF | &Instruction::WHILE | &Instruction::REPEAT(_) => {
                     let tabs = "\t".repeat(scope);
@@ -111,7 +111,7 @@ impl Proc {
         temp_stack.append(&mut else_instructions);
         temp_stack.push_back(Instruction::END);
 
-        self.add_operands(temp_stack);
+        self.add_instructions(temp_stack);
     }
 
     /// Constructs a new `while` block in the Miden program.
@@ -146,7 +146,7 @@ impl Proc {
         let mut instructions = program.get_instructions();
         instructions.push_front(Instruction::WHILE);
         instructions.push_back(Instruction::END);
-        self.add_operands(instructions);
+        self.add_instructions(instructions);
     }
     /// Constructs a new `repeat` block in the Miden program.
     ///
@@ -179,7 +179,7 @@ impl Proc {
         let mut instructions = program.get_instructions();
         instructions.push_front(Instruction::REPEAT(n));
         instructions.push_back(Instruction::END);
-        self.add_operands(instructions);
+        self.add_instructions(instructions);
     }
 
     /// Constructs a new `if` block in the Miden program.
@@ -212,7 +212,7 @@ impl Proc {
         let mut instructions = program.get_instructions();
         instructions.push_front(Instruction::IF);
         instructions.push_back(Instruction::END);
-        self.add_operands(instructions);
+        self.add_instructions(instructions);
     }
 
     pub fn add_instruction(&mut self, operand: Instruction) {
@@ -241,11 +241,12 @@ impl Proc {
 
             _ => {}
         }
-        self.operands.push_back(operand);
+        self.instructions.push_back(operand);
     }
 
-    pub fn add_operands(&mut self, operands: VecDeque<Instruction>) {
-        self.operands.append(&mut operands.into_iter().collect());
+    pub fn add_instructions(&mut self, instructions: VecDeque<Instruction>) {
+        self.instructions
+            .append(&mut instructions.into_iter().collect());
     }
 
     pub fn execute_block(
@@ -259,12 +260,12 @@ impl Proc {
             println!("operand: {:?}", operand);
             match program.is_valid_operand(&operand) {
                 Some(error) => {
-                    if let Some(op) = self.operands.get_mut(index) {
+                    if let Some(op) = self.instructions.get_mut(index) {
                         match op {
                             Instruction::Error(_) | Instruction::CommentedOut(_) => {}
                             _ => {
                                 *op = Instruction::CommentedOut(op.to_string());
-                                self.operands
+                                self.instructions
                                     .insert(index, Instruction::Error(error.clone()));
                             }
                         }
@@ -424,7 +425,7 @@ impl Proc {
     }
 
     pub fn execute(&mut self, program: &mut MidenProgram) {
-        self.execute_block(program, &mut self.operands.clone(), 0);
+        self.execute_block(program, &mut self.instructions.clone(), 0);
     }
 
     pub fn execute_operand(&mut self, program: &mut MidenProgram, operand: &Instruction) {
@@ -1170,12 +1171,12 @@ impl Proc {
     where
         F: FnOnce() -> VecDeque<Instruction>,
     {
-        self.add_operands(program());
+        self.add_instructions(program());
     }
 }
 
 impl Program for Proc {
     fn get_instructions(&self) -> VecDeque<Instruction> {
-        self.operands.clone()
+        self.instructions.clone()
     }
 }
