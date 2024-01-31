@@ -344,7 +344,7 @@ impl MidenProgram {
                 }
             }
 
-            Instruction::AssertZ => {
+            Instruction::Assertz => {
                 if let Some(a) = self.stack.get(0) {
                     if *a == BaseElement::ZERO {
                         self.stack.pop_front();

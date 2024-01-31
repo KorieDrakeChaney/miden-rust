@@ -10,4 +10,3 @@ serde_json = "1.0"
 serde-wasm-bindgen = "0.4"
 math = { package = "winter-math", git ="https://github.com/facebook/winterfell.git", branch="main", default-features = false, features = ["serde"] }
 miden-vm = "0.7.0"
-lazy-regex = "3.1.0"

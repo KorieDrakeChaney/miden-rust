@@ -243,8 +243,8 @@ impl Proc {
         self.add_instructions(instructions);
     }
 
-    pub fn add_instruction(&mut self, operand: Instruction) {
-        match &operand {
+    pub fn add_instruction(&mut self, instruction: Instruction) {
+        match &instruction {
             Instruction::LocLoad(key) => {
                 if *key >= self.loc_count {
                     self.loc_count = key + 1;
@@ -269,7 +269,7 @@ impl Proc {
 
             _ => {}
         }
-        self.instructions.push_back(operand);
+        self.instructions.push_back(instruction);
     }
 
     pub(crate) fn add_instructions(&mut self, instructions: VecDeque<Instruction>) {

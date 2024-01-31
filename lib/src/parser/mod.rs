@@ -1,94 +1,94 @@
+mod errors;
+mod field_ops;
+mod io_ops;
 mod sanitize;
+mod stack_ops;
+mod sys_ops;
 mod token;
 mod tokenizer;
+mod u32_ops;
 
-use sanitize::sanitize;
+pub(crate) use sanitize::sanitize;
 
 use std::collections::VecDeque;
 
-use math::fields::f64::BaseElement;
 use token::Token;
 pub use tokenizer::tokenize;
 
 use crate::{Instruction, Proc};
 
+fn simple_instruction(op: &Token, instruction: Instruction) -> Result<Instruction, String> {
+    match op.num_parts() {
+        0 => unreachable!(),
+        1 => Ok(instruction),
+        _ => Err("Instruction takes no arguments".to_string()),
+    }
+}
+
 pub fn parse(tokens: Vec<Token>) -> Result<(VecDeque<Instruction>, Vec<Proc>), String> {
+    use Instruction::*;
+
     let mut procedures: Vec<Proc> = Vec::new();
 
     let mut instructions: VecDeque<Instruction> = VecDeque::new();
-
-    let mut i = 0;
 
     let mut scope = 0;
     let mut in_proc = false;
 
     let mut has_begin = false;
 
-    while i < tokens.len() {
-        let token = &tokens[i];
-        match token {
-            Token::Assert => {
+    for token in tokens.iter() {
+        let parts = token.parts();
+        match parts[0] {
+            "assert" => {
                 if in_proc {
                     let index = procedures.len() - 1;
-                    procedures[index].add_instruction(Instruction::Assert);
+                    procedures[index].add_instruction(sys_ops::parse_assert(token)?);
                 } else {
-                    instructions.push_back(Instruction::Assert);
+                    instructions.push_back(sys_ops::parse_assert(token)?);
                 }
             }
-            Token::AssertZ => {
+            "assertz" => {
                 if in_proc {
                     let index = procedures.len() - 1;
-                    procedures[index].add_instruction(Instruction::AssertZ);
+                    procedures[index].add_instruction(sys_ops::parse_assertz(token)?);
                 } else {
-                    instructions.push_back(Instruction::AssertZ);
+                    instructions.push_back(sys_ops::parse_assertz(token)?);
                 }
             }
-            Token::AssertEq => {
+            "assert_eq" => {
                 if in_proc {
                     let index = procedures.len() - 1;
-                    procedures[index].add_instruction(Instruction::AssertEq);
+                    procedures[index].add_instruction(sys_ops::parse_assert_eq(token)?);
                 } else {
-                    instructions.push_back(Instruction::AssertEq);
+                    instructions.push_back(sys_ops::parse_assert_eq(token)?);
                 }
             }
-            Token::AssertEqW => {
+            "assert_eqw" => {
                 if in_proc {
                     let index = procedures.len() - 1;
-                    procedures[index].add_instruction(Instruction::AssertEqW);
+                    procedures[index].add_instruction(sys_ops::parse_assert_eqw(token)?);
                 } else {
-                    instructions.push_back(Instruction::AssertEqW);
-                }
-            }
-            Token::Proc => {
-                if i + 1 < tokens.len() {
-                    match &tokens[i + 1] {
-                        Token::String(name) => {
-                            procedures.push(Proc::new(name));
-                            in_proc = true;
-                            scope += 1;
-                            i += 1;
-                        }
-                        _ => {
-                            return Err(format!(
-                                "Expected name after proc, found {:?}",
-                                tokens[i + 1]
-                            ));
-                        }
-                    }
-                    if i + 1 < tokens.len() {
-                        match &tokens[i + 1] {
-                            Token::Number(_) => {
-                                i += 1;
-                            }
-                            _ => {}
-                        }
-                    }
-                } else {
-                    return Err(format!("Expected name after proc, found EOF"));
+                    instructions.push_back(sys_ops::parse_assert_eqw(token)?);
                 }
             }
 
-            Token::Begin => {
+            "proc" => match token.num_parts() {
+                0 => unreachable!(),
+                1 => {
+                    return Err(format!("Expected name after proc",));
+                }
+                2..=3 => {
+                    procedures.push(Proc::new(parts[1]));
+                    in_proc = true;
+                    scope += 1;
+                }
+                _ => {
+                    return Err(format!("Too many arguments after proc"));
+                }
+            },
+
+            "begin" => {
                 if !has_begin {
                     has_begin = true;
                     scope += 1;
@@ -96,2193 +96,1056 @@ pub fn parse(tokens: Vec<Token>) -> Result<(VecDeque<Instruction>, Vec<Proc>), S
                     return Err(format!("Unexpected begin"));
                 }
             }
-            Token::Print => {
-                if i + 1 < tokens.len() {
-                    match &tokens[i + 1] {
-                        Token::String(name) => {
-                            if in_proc {
-                                let index = procedures.len() - 1;
-                                procedures[index]
-                                    .add_instruction(Instruction::PRINT(name.to_string()));
-                            } else {
-                                instructions.push_back(Instruction::PRINT(name.to_string()));
-                            }
-                            i += 1;
-                        }
-                        _ => {
-                            instructions.push_back(Instruction::PRINT("test".to_string()));
-                        }
-                    }
-                } else {
-                    instructions.push_back(Instruction::PRINT("test".to_string()));
-                }
-            }
-            Token::If => {
-                if i + 1 < tokens.len() {
-                    match &tokens[i + 1] {
-                        Token::String(statement) => {
-                            if statement == "true" {
-                                if in_proc {
-                                    let index = procedures.len() - 1;
-                                    procedures[index].add_instruction(Instruction::IF);
-                                } else {
-                                    instructions.push_back(Instruction::IF);
-                                }
-                                scope += 1;
-                                i += 1;
-                            } else {
-                                return Err(format!(
-                                    "Expected `true` after if, found {:?}",
-                                    statement
-                                ));
-                            }
-                        }
-                        _ => {
-                            return Err(format!(
-                                "Expected `true` after if, found {:?}",
-                                tokens[i + 1]
-                            ));
-                        }
-                    }
-                } else {
-                    return Err(format!("Expected `true` after if, found EOF"));
-                }
-            }
-
-            Token::Pow2 => {
-                if in_proc {
-                    let index = procedures.len() - 1;
-                    procedures[index].add_instruction(Instruction::Pow2);
-                } else {
-                    instructions.push_back(Instruction::Pow2);
-                }
-            }
-
-            Token::Neg => {
-                if in_proc {
-                    let index = procedures.len() - 1;
-                    procedures[index].add_instruction(Instruction::Neg);
-                } else {
-                    instructions.push_back(Instruction::Neg);
-                }
-            }
-
-            Token::Inv => {
-                if in_proc {
-                    let index = procedures.len() - 1;
-                    procedures[index].add_instruction(Instruction::Inv);
-                } else {
-                    instructions.push_back(Instruction::Inv);
-                }
-            }
-
-            Token::Exp => {
-                if i + 1 < tokens.len() {
-                    match &tokens[i + 1] {
-                        Token::Number(n) => {
-                            if in_proc {
-                                let index = procedures.len() - 1;
-                                procedures[index].add_instruction(Instruction::ExpImm(*n));
-                            } else {
-                                instructions.push_back(Instruction::ExpImm(*n));
-                            }
-                            i += 1;
-                        }
-                        _ => {
-                            if in_proc {
-                                let index = procedures.len() - 1;
-                                procedures[index].add_instruction(Instruction::Exp);
-                            } else {
-                                instructions.push_back(Instruction::Exp);
-                            }
-                        }
-                    }
-                } else {
+            "print" => match token.num_parts() {
+                1 => {
                     if in_proc {
                         let index = procedures.len() - 1;
-                        procedures[index].add_instruction(Instruction::Exp);
+                        procedures[index].add_instruction(PRINT(parts[1].to_string()));
                     } else {
-                        instructions.push_back(Instruction::Exp);
+                        instructions.push_back(PRINT(parts[1].to_string()));
                     }
                 }
-            }
-
-            Token::Push => {
-                if i + 1 < tokens.len() {
-                    let mut nums = Vec::new();
-
-                    while i + 1 < tokens.len() {
-                        match &tokens[i + 1] {
-                            Token::Number(n) => {
-                                nums.push(*n);
-                                i += 1;
-                            }
-                            _ => {
-                                break;
-                            }
-                        }
+                _ => {
+                    if in_proc {
+                        let index = procedures.len() - 1;
+                        procedures[index].add_instruction(PRINT("test".to_string()));
+                    } else {
+                        instructions.push_back(PRINT("test".to_string()));
                     }
-
-                    if nums.len() == 0 {
-                        return Err(format!(
-                            "Expected number after push_back, found {:?}",
-                            tokens[i + 1]
-                        ));
-                    }
-
-                    for n in nums {
+                }
+            },
+            "if" => match token.num_parts() {
+                0 => unreachable!(),
+                1 => {
+                    return Err(format!("Expected `true` after if"));
+                }
+                2 => {
+                    if parts[1] == "true" {
                         if in_proc {
                             let index = procedures.len() - 1;
-                            procedures[index]
-                                .add_instruction(Instruction::Push(BaseElement::from(n)));
+                            procedures[index].add_instruction(IF);
                         } else {
-                            instructions.push_back(Instruction::Push(BaseElement::from(n)));
+                            instructions.push_back(IF);
                         }
+                        scope += 1;
+                    } else {
+                        return Err(format!("Expected `true` after if, found {:?}", parts[1]));
                     }
-                } else {
-                    return Err(format!("Expected number after push_back, found EOF"));
                 }
-            }
+                _ => {
+                    return Err(format!("Too many arguments after if"));
+                }
+            },
 
-            Token::Else => {
+            "exp" => {
                 if in_proc {
                     let index = procedures.len() - 1;
-                    procedures[index].add_instruction(Instruction::ELSE);
+                    procedures[index].add_instruction(field_ops::parse_exp(token)?);
                 } else {
-                    instructions.push_back(Instruction::ELSE);
+                    instructions.push_back(field_ops::parse_exp(token)?);
                 }
             }
-            Token::End => {
-                scope -= 1;
 
+            "add" => {
+                if in_proc {
+                    let index = procedures.len() - 1;
+                    procedures[index].add_instruction(field_ops::parse_add(token)?);
+                } else {
+                    instructions.push_back(field_ops::parse_add(token)?);
+                }
+            }
+
+            "sub" => {
+                if in_proc {
+                    let index = procedures.len() - 1;
+                    procedures[index].add_instruction(field_ops::parse_sub(token)?);
+                } else {
+                    instructions.push_back(field_ops::parse_sub(token)?);
+                }
+            }
+
+            "mul" => {
+                if in_proc {
+                    let index = procedures.len() - 1;
+                    procedures[index].add_instruction(field_ops::parse_mul(token)?);
+                } else {
+                    instructions.push_back(field_ops::parse_mul(token)?);
+                }
+            }
+
+            "div" => {
+                if in_proc {
+                    let index = procedures.len() - 1;
+                    procedures[index].add_instruction(field_ops::parse_div(token)?);
+                } else {
+                    instructions.push_back(field_ops::parse_div(token)?);
+                }
+            }
+
+            "eq" => {
+                if in_proc {
+                    let index = procedures.len() - 1;
+                    procedures[index].add_instruction(field_ops::parse_eq(token)?);
+                } else {
+                    instructions.push_back(field_ops::parse_eq(token)?);
+                }
+            }
+
+            "neq" => {
+                if in_proc {
+                    let index = procedures.len() - 1;
+                    procedures[index].add_instruction(field_ops::parse_neq(token)?);
+                } else {
+                    instructions.push_back(field_ops::parse_neq(token)?);
+                }
+            }
+
+            "neg" => {
+                if in_proc {
+                    let index = procedures.len() - 1;
+                    procedures[index].add_instruction(simple_instruction(token, Neg)?);
+                } else {
+                    instructions.push_back(simple_instruction(token, Neg)?);
+                }
+            }
+
+            "inv" => {
+                if in_proc {
+                    let index = procedures.len() - 1;
+                    procedures[index].add_instruction(simple_instruction(token, Inv)?);
+                } else {
+                    instructions.push_back(simple_instruction(token, Inv)?);
+                }
+            }
+
+            "pow2" => {
+                if in_proc {
+                    let index = procedures.len() - 1;
+                    procedures[index].add_instruction(simple_instruction(token, Pow2)?);
+                } else {
+                    instructions.push_back(simple_instruction(token, Pow2)?);
+                }
+            }
+
+            "lt" => {
+                if in_proc {
+                    let index = procedures.len() - 1;
+                    procedures[index].add_instruction(simple_instruction(token, Lt)?);
+                } else {
+                    instructions.push_back(simple_instruction(token, Lt)?);
+                }
+            }
+
+            "lte" => {
+                if in_proc {
+                    let index = procedures.len() - 1;
+                    procedures[index].add_instruction(simple_instruction(token, Lte)?);
+                } else {
+                    instructions.push_back(simple_instruction(token, Lte)?);
+                }
+            }
+
+            "gt" => {
+                if in_proc {
+                    let index = procedures.len() - 1;
+                    procedures[index].add_instruction(simple_instruction(token, Gt)?);
+                } else {
+                    instructions.push_back(simple_instruction(token, Gt)?);
+                }
+            }
+
+            "gte" => {
+                if in_proc {
+                    let index = procedures.len() - 1;
+                    procedures[index].add_instruction(simple_instruction(token, Gte)?);
+                } else {
+                    instructions.push_back(simple_instruction(token, Gte)?);
+                }
+            }
+
+            "is_odd" => {
+                if in_proc {
+                    let index = procedures.len() - 1;
+                    procedures[index].add_instruction(simple_instruction(token, IsOdd)?);
+                } else {
+                    instructions.push_back(simple_instruction(token, IsOdd)?);
+                }
+            }
+
+            "eqw" => {
+                if in_proc {
+                    let index = procedures.len() - 1;
+                    procedures[index].add_instruction(simple_instruction(token, EqW)?);
+                } else {
+                    instructions.push_back(simple_instruction(token, EqW)?);
+                }
+            }
+
+            "ext2add" => {
+                if in_proc {
+                    let index = procedures.len() - 1;
+                    procedures[index].add_instruction(simple_instruction(token, Ext2Add)?);
+                } else {
+                    instructions.push_back(simple_instruction(token, Ext2Add)?);
+                }
+            }
+
+            "ext2sub" => {
+                if in_proc {
+                    let index = procedures.len() - 1;
+                    procedures[index].add_instruction(simple_instruction(token, Ext2Sub)?);
+                } else {
+                    instructions.push_back(simple_instruction(token, Ext2Sub)?);
+                }
+            }
+
+            "ext2mul" => {
+                if in_proc {
+                    let index = procedures.len() - 1;
+                    procedures[index].add_instruction(simple_instruction(token, Ext2Mul)?);
+                } else {
+                    instructions.push_back(simple_instruction(token, Ext2Mul)?);
+                }
+            }
+
+            "ext2div" => {
+                if in_proc {
+                    let index = procedures.len() - 1;
+                    procedures[index].add_instruction(simple_instruction(token, Ext2Div)?);
+                } else {
+                    instructions.push_back(simple_instruction(token, Ext2Div)?);
+                }
+            }
+
+            "ext2neg" => {
+                if in_proc {
+                    let index = procedures.len() - 1;
+                    procedures[index].add_instruction(simple_instruction(token, Ext2Neg)?);
+                } else {
+                    instructions.push_back(simple_instruction(token, Ext2Neg)?);
+                }
+            }
+
+            "ext2inv" => {
+                if in_proc {
+                    let index = procedures.len() - 1;
+                    procedures[index].add_instruction(simple_instruction(token, Ext2Inv)?);
+                } else {
+                    instructions.push_back(simple_instruction(token, Ext2Inv)?);
+                }
+            }
+
+            "push" => {
+                for instruction in io_ops::parse_push(token)? {
+                    if in_proc {
+                        let index = procedures.len() - 1;
+                        procedures[index].add_instruction(instruction);
+                    } else {
+                        instructions.push_back(instruction);
+                    }
+                }
+            }
+
+            "else" => {
+                if in_proc {
+                    let index = procedures.len() - 1;
+                    procedures[index].add_instruction(ELSE);
+                } else {
+                    instructions.push_back(ELSE);
+                }
+            }
+
+            "end" => {
+                scope -= 1;
                 if scope != 0 {
                     if in_proc {
                         let index = procedures.len() - 1;
-                        procedures[index].add_instruction(Instruction::END);
+                        procedures[index].add_instruction(END);
                     } else {
-                        instructions.push_back(Instruction::END);
+                        instructions.push_back(END);
                     }
                 } else {
                     in_proc = false;
                 }
             }
-            Token::While => {
-                if i + 1 < tokens.len() {
-                    match &tokens[i + 1] {
-                        Token::String(statement) => {
-                            if statement == "true" {
-                                if in_proc {
-                                    let index = procedures.len() - 1;
-                                    procedures[index].add_instruction(Instruction::WHILE);
-                                } else {
-                                    instructions.push_back(Instruction::WHILE);
-                                }
-                                scope += 1;
-                                i += 1;
-                            } else {
-                                return Err(format!(
-                                    "Expected `true` after while, found {:?}",
-                                    statement
-                                ));
-                            }
+
+            "while" => match parts.len() {
+                0 => unreachable!(),
+                1 => {
+                    return Err(format!("Expected `true` after while"));
+                }
+                2 => {
+                    if parts[1] == "true" {
+                        if in_proc {
+                            let index = procedures.len() - 1;
+                            procedures[index].add_instruction(WHILE);
+                        } else {
+                            instructions.push_back(WHILE);
                         }
-                        _ => {
-                            return Err(format!(
-                                "Expected `true` after while, found {:?}",
-                                tokens[i + 1]
-                            ));
-                        }
+                        scope += 1;
+                    } else {
+                        return Err(format!("Expected `true` after while, found {:?}", parts[1]));
                     }
+                }
+                _ => {
+                    return Err(format!("Too many arguments after while"));
+                }
+            },
+
+            "repeat" => match parts.len() {
+                0 => unreachable!(),
+                1 => {
+                    return Err(format!("Expected number after repeat"));
+                }
+                2 => match parts[1].parse::<usize>() {
+                    Ok(n) => {
+                        if in_proc {
+                            let index = procedures.len() - 1;
+                            procedures[index].add_instruction(REPEAT(n));
+                        } else {
+                            instructions.push_back(REPEAT(n));
+                        }
+                        scope += 1;
+                    }
+                    Err(_) => {
+                        return Err(format!(
+                            "Expected number after repeat, found {:?}",
+                            parts[1]
+                        ));
+                    }
+                },
+                _ => {
+                    return Err(format!("Too many arguments after while"));
+                }
+            },
+
+            "drop" => {
+                if in_proc {
+                    let index = procedures.len() - 1;
+                    procedures[index].add_instruction(simple_instruction(token, Drop)?);
                 } else {
-                    return Err(format!("Expected `true` after while, found EOF"));
+                    instructions.push_back(simple_instruction(token, Drop)?);
                 }
             }
-            Token::Repeat => {
-                if i + 1 < tokens.len() {
-                    match &tokens[i + 1] {
-                        Token::Number(n) => {
-                            if in_proc {
-                                let index = procedures.len() - 1;
-                                procedures[index].add_instruction(Instruction::REPEAT(*n as usize));
-                            } else {
-                                instructions.push_back(Instruction::REPEAT(*n as usize));
-                            }
-                            i += 1;
-                        }
-                        _ => {
-                            return Err(format!(
-                                "Expected number after repeat, found {:?}",
-                                tokens[i + 1]
-                            ));
-                        }
-                    }
+
+            "dropw" => {
+                if in_proc {
+                    let index = procedures.len() - 1;
+                    procedures[index].add_instruction(simple_instruction(token, DropW)?);
                 } else {
-                    return Err(format!("Expected number after repeat, found EOF"));
+                    instructions.push_back(simple_instruction(token, DropW)?);
                 }
-                scope += 1;
             }
-            Token::Add => {
-                if i + 1 < tokens.len() {
-                    match &tokens[i + 1] {
-                        Token::Number(n) => {
-                            if in_proc {
-                                let index = procedures.len() - 1;
-                                procedures[index]
-                                    .add_instruction(Instruction::AddImm(BaseElement::from(*n)));
-                            } else {
-                                instructions.push_back(Instruction::AddImm(BaseElement::from(*n)));
-                            }
-                            i += 1;
-                        }
-                        _ => {
-                            if in_proc {
-                                let index = procedures.len() - 1;
-                                procedures[index].add_instruction(Instruction::Add);
-                            } else {
-                                instructions.push_back(Instruction::Add);
-                            }
-                        }
-                    }
+
+            "padw" => {
+                if in_proc {
+                    let index = procedures.len() - 1;
+                    procedures[index].add_instruction(simple_instruction(token, PadW)?);
                 } else {
+                    instructions.push_back(simple_instruction(token, PadW)?);
+                }
+            }
+
+            "swap" => {
+                if in_proc {
+                    let index = procedures.len() - 1;
+                    procedures[index].add_instruction(stack_ops::parse_swap(token)?);
+                } else {
+                    instructions.push_back(stack_ops::parse_swap(token)?);
+                }
+            }
+
+            "swapw" => {
+                if in_proc {
+                    let index = procedures.len() - 1;
+                    procedures[index].add_instruction(stack_ops::parse_swapw(token)?);
+                } else {
+                    instructions.push_back(stack_ops::parse_swapw(token)?);
+                }
+            }
+
+            "swapdw" => {
+                if in_proc {
+                    let index = procedures.len() - 1;
+                    procedures[index].add_instruction(simple_instruction(token, SwapDw)?);
+                } else {
+                    instructions.push_back(simple_instruction(token, SwapDw)?);
+                }
+            }
+
+            "movdn" => {
+                if in_proc {
+                    let index = procedures.len() - 1;
+                    procedures[index].add_instruction(stack_ops::parse_movdn(token)?);
+                } else {
+                    instructions.push_back(stack_ops::parse_movdn(token)?);
+                }
+            }
+
+            "movdnw" => {
+                if in_proc {
+                    let index = procedures.len() - 1;
+                    procedures[index].add_instruction(stack_ops::parse_movdnw(token)?);
+                } else {
+                    instructions.push_back(stack_ops::parse_movdnw(token)?);
+                }
+            }
+
+            "movup" => {
+                if in_proc {
+                    let index = procedures.len() - 1;
+                    procedures[index].add_instruction(stack_ops::parse_movup(token)?);
+                } else {
+                    instructions.push_back(stack_ops::parse_movup(token)?);
+                }
+            }
+
+            "movupw" => {
+                if in_proc {
+                    let index = procedures.len() - 1;
+                    procedures[index].add_instruction(stack_ops::parse_movupw(token)?);
+                } else {
+                    instructions.push_back(stack_ops::parse_movupw(token)?);
+                }
+            }
+
+            "dup" => {
+                if in_proc {
+                    let index = procedures.len() - 1;
+                    procedures[index].add_instruction(stack_ops::parse_dup(token)?);
+                } else {
+                    instructions.push_back(stack_ops::parse_dup(token)?);
+                }
+            }
+
+            "dupw" => {
+                if in_proc {
+                    let index = procedures.len() - 1;
+                    procedures[index].add_instruction(stack_ops::parse_dupw(token)?);
+                } else {
+                    instructions.push_back(stack_ops::parse_dupw(token)?);
+                }
+            }
+
+            "adv_push" => {
+                if in_proc {
+                    let index = procedures.len() - 1;
+                    procedures[index].add_instruction(io_ops::parse_adv_push(token)?);
+                } else {
+                    instructions.push_back(io_ops::parse_adv_push(token)?);
+                }
+            }
+
+            "adv_loadw" => {
+                if in_proc {
+                    let index = procedures.len() - 1;
+                    procedures[index].add_instruction(simple_instruction(token, AdvLoadW)?);
+                } else {
+                    instructions.push_back(simple_instruction(token, AdvLoadW)?);
+                }
+            }
+
+            "adv_pipe" => {
+                if in_proc {
+                    let index = procedures.len() - 1;
+                    procedures[index].add_instruction(simple_instruction(token, AdvPipe)?);
+                } else {
+                    instructions.push_back(simple_instruction(token, AdvPipe)?);
+                }
+            }
+
+            "mem_load" => {
+                if in_proc {
+                    let index = procedures.len() - 1;
+                    procedures[index].add_instruction(io_ops::parse_mem_load(token)?);
+                } else {
+                    instructions.push_back(io_ops::parse_mem_load(token)?);
+                }
+            }
+
+            "mem_store" => {
+                if in_proc {
+                    let index = procedures.len() - 1;
+                    procedures[index].add_instruction(io_ops::parse_mem_store(token)?);
+                } else {
+                    instructions.push_back(io_ops::parse_mem_store(token)?);
+                }
+            }
+
+            "mem_loadw" => {
+                if in_proc {
+                    let index = procedures.len() - 1;
+                    procedures[index].add_instruction(io_ops::parse_mem_loadw(token)?);
+                } else {
+                    instructions.push_back(io_ops::parse_mem_loadw(token)?);
+                }
+            }
+
+            "mem_storew" => {
+                if in_proc {
+                    let index = procedures.len() - 1;
+                    procedures[index].add_instruction(io_ops::parse_mem_storew(token)?);
+                } else {
+                    instructions.push_back(io_ops::parse_mem_storew(token)?);
+                }
+            }
+
+            "loc_load" => {
+                if in_proc {
+                    let index = procedures.len() - 1;
+                    procedures[index].add_instruction(io_ops::parse_loc_load(token)?);
+                } else {
+                    instructions.push_back(io_ops::parse_loc_load(token)?);
+                }
+            }
+
+            "loc_loadw" => {
+                if in_proc {
+                    let index = procedures.len() - 1;
+                    procedures[index].add_instruction(io_ops::parse_loc_loadw(token)?);
+                } else {
+                    instructions.push_back(io_ops::parse_loc_loadw(token)?);
+                }
+            }
+
+            "loc_store" => {
+                if in_proc {
+                    let index = procedures.len() - 1;
+                    procedures[index].add_instruction(io_ops::parse_loc_store(token)?);
+                } else {
+                    instructions.push_back(io_ops::parse_loc_store(token)?);
+                }
+            }
+
+            "loc_storew" => {
+                if in_proc {
+                    let index = procedures.len() - 1;
+                    procedures[index].add_instruction(io_ops::parse_loc_storew(token)?);
+                } else {
+                    instructions.push_back(io_ops::parse_loc_storew(token)?);
+                }
+            }
+
+            "exec" => match token.num_parts() {
+                0 => unreachable!(),
+                1 => {
+                    return Err(format!("Expected name after exec"));
+                }
+                2 => {
                     if in_proc {
                         let index = procedures.len() - 1;
-                        procedures[index].add_instruction(Instruction::Add);
+                        procedures[index].add_instruction(Instruction::Exec(parts[1].to_string()));
                     } else {
-                        instructions.push_back(Instruction::Add);
+                        instructions.push_back(Instruction::Exec(parts[1].to_string()));
                     }
                 }
-            }
-            Token::Sub => {
-                if i + 1 < tokens.len() {
-                    match &tokens[i + 1] {
-                        Token::Number(n) => {
-                            if in_proc {
-                                let index = procedures.len() - 1;
-                                procedures[index]
-                                    .add_instruction(Instruction::SubImm(BaseElement::from(*n)));
-                            } else {
-                                instructions.push_back(Instruction::SubImm(BaseElement::from(*n)));
-                            }
-                            i += 1;
-                        }
-                        _ => {
-                            if in_proc {
-                                let index = procedures.len() - 1;
-                                procedures[index].add_instruction(Instruction::Sub);
-                            } else {
-                                instructions.push_back(Instruction::Sub);
-                            }
-                        }
-                    }
-                } else {
-                    if in_proc {
-                        let index = procedures.len() - 1;
-                        procedures[index].add_instruction(Instruction::Sub);
-                    } else {
-                        instructions.push_back(Instruction::Sub);
-                    }
+                _ => {
+                    return Err(format!("Too many arguments after exec"));
                 }
-            }
-            Token::Mul => {
-                if i + 1 < tokens.len() {
-                    match &tokens[i + 1] {
-                        Token::Number(n) => {
-                            if in_proc {
-                                let index = procedures.len() - 1;
-                                procedures[index]
-                                    .add_instruction(Instruction::MulImm(BaseElement::from(*n)));
-                            } else {
-                                instructions.push_back(Instruction::MulImm(BaseElement::from(*n)));
-                            }
-                            i += 1;
-                        }
-                        _ => {
-                            if in_proc {
-                                let index = procedures.len() - 1;
-                                procedures[index].add_instruction(Instruction::Mul);
-                            } else {
-                                instructions.push_back(Instruction::Mul);
-                            }
-                        }
-                    }
-                } else {
-                    if in_proc {
-                        let index = procedures.len() - 1;
-                        procedures[index].add_instruction(Instruction::Mul);
-                    } else {
-                        instructions.push_back(Instruction::Mul);
-                    }
-                }
-            }
-            Token::Div => {
-                if i + 1 < tokens.len() {
-                    match &tokens[i + 1] {
-                        Token::Number(n) => {
-                            if in_proc {
-                                let index = procedures.len() - 1;
-                                procedures[index]
-                                    .add_instruction(Instruction::DivImm(BaseElement::from(*n)));
-                            } else {
-                                instructions.push_back(Instruction::DivImm(BaseElement::from(*n)));
-                            }
-                            i += 1;
-                        }
-                        _ => {
-                            if in_proc {
-                                let index = procedures.len() - 1;
-                                procedures[index].add_instruction(Instruction::Div);
-                            } else {
-                                instructions.push_back(Instruction::Div);
-                            }
-                        }
-                    }
-                } else {
-                    if in_proc {
-                        let index = procedures.len() - 1;
-                        procedures[index].add_instruction(Instruction::Div);
-                    } else {
-                        instructions.push_back(Instruction::Div);
-                    }
-                }
-            }
-            Token::AdvPush => {
-                if i + 1 < tokens.len() {
-                    match &tokens[i + 1] {
-                        Token::Number(n) => {
-                            if in_proc {
-                                let index = procedures.len() - 1;
-                                procedures[index]
-                                    .add_instruction(Instruction::AdvPush(*n as usize));
-                            } else {
-                                instructions.push_back(Instruction::AdvPush(*n as usize));
-                            }
-                            i += 1;
-                        }
-                        _ => {
-                            return Err(format!(
-                                "Expected number after advpush_back, found {:?}",
-                                tokens[i + 1]
-                            ));
-                        }
-                    }
-                } else {
-                    return Err(format!("Expected number after advpush_back, found EOF"));
-                }
-            }
+            },
 
-            Token::AdvLoadW => {
+            "cswap" => {
                 if in_proc {
                     let index = procedures.len() - 1;
-                    procedures[index].add_instruction(Instruction::AdvLoadW);
+                    procedures[index].add_instruction(simple_instruction(token, CSwap)?);
                 } else {
-                    instructions.push_back(Instruction::AdvLoadW);
+                    instructions.push_back(simple_instruction(token, CSwap)?);
                 }
             }
 
-            Token::AdvPipe => {
+            "cswapw" => {
                 if in_proc {
                     let index = procedures.len() - 1;
-                    procedures[index].add_instruction(Instruction::AdvPipe);
+                    procedures[index].add_instruction(simple_instruction(token, CSwapW)?);
                 } else {
-                    instructions.push_back(Instruction::AdvPipe);
+                    instructions.push_back(simple_instruction(token, CSwapW)?);
                 }
             }
 
-            Token::MemLoad => {
-                if i + 1 < tokens.len() {
-                    match &tokens[i + 1] {
-                        Token::Number(n) => {
-                            if in_proc {
-                                let index = procedures.len() - 1;
-                                procedures[index]
-                                    .add_instruction(Instruction::MemLoadImm(*n as u32));
-                            } else {
-                                instructions.push_back(Instruction::MemLoadImm(*n as u32));
-                            }
-                            i += 1;
-                        }
-                        _ => {
-                            if in_proc {
-                                let index = procedures.len() - 1;
-                                procedures[index].add_instruction(Instruction::MemLoad);
-                            } else {
-                                instructions.push_back(Instruction::MemLoad);
-                            }
-                        }
-                    }
-                } else {
-                    if in_proc {
-                        let index = procedures.len() - 1;
-                        procedures[index].add_instruction(Instruction::MemLoad);
-                    } else {
-                        instructions.push_back(Instruction::MemLoad);
-                    }
-                }
-            }
-
-            Token::MemStore => {
-                if i + 1 < tokens.len() {
-                    match &tokens[i + 1] {
-                        Token::Number(n) => {
-                            if in_proc {
-                                let index = procedures.len() - 1;
-                                procedures[index]
-                                    .add_instruction(Instruction::MemStoreImm(*n as u32));
-                            } else {
-                                instructions.push_back(Instruction::MemStoreImm(*n as u32));
-                            }
-                            i += 1;
-                        }
-                        _ => {
-                            if in_proc {
-                                let index = procedures.len() - 1;
-                                procedures[index].add_instruction(Instruction::MemStore);
-                            } else {
-                                instructions.push_back(Instruction::MemStore);
-                            }
-                        }
-                    }
-                } else {
-                    if in_proc {
-                        let index = procedures.len() - 1;
-                        procedures[index].add_instruction(Instruction::MemStore);
-                    } else {
-                        instructions.push_back(Instruction::MemStore);
-                    }
-                }
-            }
-
-            Token::MemLoadW => {
-                if i + 1 < tokens.len() {
-                    match &tokens[i + 1] {
-                        Token::Number(n) => {
-                            if in_proc {
-                                let index = procedures.len() - 1;
-                                procedures[index]
-                                    .add_instruction(Instruction::MemLoadWImm(*n as u32));
-                            } else {
-                                instructions.push_back(Instruction::MemLoadWImm(*n as u32));
-                            }
-                            i += 1;
-                        }
-                        _ => {
-                            if in_proc {
-                                let index = procedures.len() - 1;
-                                procedures[index].add_instruction(Instruction::MemLoadW);
-                            } else {
-                                instructions.push_back(Instruction::MemLoadW);
-                            }
-                        }
-                    }
-                } else {
-                    if in_proc {
-                        let index = procedures.len() - 1;
-                        procedures[index].add_instruction(Instruction::MemLoadW);
-                    } else {
-                        instructions.push_back(Instruction::MemLoadW);
-                    }
-                }
-            }
-
-            Token::MemStoreW => {
-                if i + 1 < tokens.len() {
-                    match &tokens[i + 1] {
-                        Token::Number(n) => {
-                            if in_proc {
-                                let index = procedures.len() - 1;
-                                procedures[index]
-                                    .add_instruction(Instruction::MemStoreWImm(*n as u32));
-                            } else {
-                                instructions.push_back(Instruction::MemStoreWImm(*n as u32));
-                            }
-                            i += 1;
-                        }
-                        _ => {
-                            if in_proc {
-                                let index = procedures.len() - 1;
-                                procedures[index].add_instruction(Instruction::MemStoreW);
-                            } else {
-                                instructions.push_back(Instruction::MemStoreW);
-                            }
-                        }
-                    }
-                } else {
-                    if in_proc {
-                        let index = procedures.len() - 1;
-                        procedures[index].add_instruction(Instruction::MemStoreW);
-                    } else {
-                        instructions.push_back(Instruction::MemStoreW);
-                    }
-                }
-            }
-
-            Token::LocLoad => {
-                if i + 1 < tokens.len() {
-                    match &tokens[i + 1] {
-                        Token::Number(n) => {
-                            if in_proc {
-                                let index = procedures.len() - 1;
-                                procedures[index].add_instruction(Instruction::LocLoad(*n as u16));
-                            } else {
-                                return Err(format!(
-                                    "Unexpected loc_load with value: {:?}",
-                                    tokens[i + 1]
-                                ));
-                            }
-                            i += 1;
-                        }
-                        _ => {
-                            return Err(format!(
-                                "Expected number after loc_load, found {:?}",
-                                tokens[i + 1]
-                            ));
-                        }
-                    }
-                } else {
-                    return Err(format!("Expected number after loc_load, found EOF"));
-                }
-            }
-
-            Token::LocLoadW => {
-                if i + 1 < tokens.len() {
-                    match &tokens[i + 1] {
-                        Token::Number(n) => {
-                            if in_proc {
-                                let index = procedures.len() - 1;
-                                procedures[index].add_instruction(Instruction::LocLoadW(*n as u16));
-                            } else {
-                                return Err(format!(
-                                    "Unexpected loc_loadw with value: {:?}",
-                                    tokens[i + 1]
-                                ));
-                            }
-                            i += 1;
-                        }
-                        _ => {
-                            return Err(format!(
-                                "Expected number after loc_loadw, found {:?}",
-                                tokens[i + 1]
-                            ));
-                        }
-                    }
-                } else {
-                    return Err(format!("Expected number after loc_loadw, found EOF"));
-                }
-            }
-
-            Token::LocStore => {
-                if i + 1 < tokens.len() {
-                    match &tokens[i + 1] {
-                        Token::Number(n) => {
-                            if in_proc {
-                                let index = procedures.len() - 1;
-                                procedures[index].add_instruction(Instruction::LocStore(*n as u16));
-                            } else {
-                                return Err(format!(
-                                    "Unexpected loc_store with value: {:?}",
-                                    tokens[i + 1]
-                                ));
-                            }
-                            i += 1;
-                        }
-                        _ => {
-                            return Err(format!(
-                                "Expected number after loc_store, found {:?}",
-                                tokens[i + 1]
-                            ));
-                        }
-                    }
-                } else {
-                    return Err(format!("Expected number after loc_store, found EOF"));
-                }
-            }
-
-            Token::LocStoreW => {
-                if i + 1 < tokens.len() {
-                    match &tokens[i + 1] {
-                        Token::Number(n) => {
-                            if in_proc {
-                                let index = procedures.len() - 1;
-                                procedures[index]
-                                    .add_instruction(Instruction::LocStoreW(*n as u16));
-                            } else {
-                                return Err(format!(
-                                    "Unexpected loc_storew with value: {:?}",
-                                    tokens[i + 1]
-                                ));
-                            }
-                            i += 1;
-                        }
-                        _ => {
-                            return Err(format!(
-                                "Expected number after loc_storew, found {:?}",
-                                tokens[i + 1]
-                            ));
-                        }
-                    }
-                } else {
-                    return Err(format!("Expected number after loc_storew, found EOF"));
-                }
-            }
-
-            Token::Exec => {
-                if i + 1 < tokens.len() {
-                    match &tokens[i + 1] {
-                        Token::String(name) => {
-                            if in_proc {
-                                let index = procedures.len() - 1;
-                                procedures[index]
-                                    .add_instruction(Instruction::Exec(name.to_string()));
-                            } else {
-                                instructions.push_back(Instruction::Exec(name.to_string()));
-                            }
-                            i += 1;
-                        }
-                        _ => {
-                            return Err(format!(
-                                "Expected name after exec, found {:?}",
-                                tokens[i + 1]
-                            ));
-                        }
-                    }
-                } else {
-                    return Err(format!("Expected name after exec, found EOF"));
-                }
-            }
-
-            Token::Dup => {
-                if i + 1 < tokens.len() {
-                    match &tokens[i + 1] {
-                        Token::Number(n) => {
-                            if in_proc {
-                                let index = procedures.len() - 1;
-                                procedures[index].add_instruction(Instruction::Dup(*n as usize));
-                            } else {
-                                instructions.push_back(Instruction::Dup(*n as usize));
-                            }
-                            i += 1;
-                        }
-                        _ => {
-                            if in_proc {
-                                let index = procedures.len() - 1;
-                                procedures[index].add_instruction(Instruction::Dup(0));
-                            } else {
-                                instructions.push_back(Instruction::Dup(0));
-                            }
-                        }
-                    }
-                } else {
-                    if in_proc {
-                        let index = procedures.len() - 1;
-                        procedures[index].add_instruction(Instruction::Dup(0));
-                    } else {
-                        instructions.push_back(Instruction::Dup(0));
-                    }
-                    instructions.push_back(Instruction::Dup(0));
-                }
-            }
-
-            Token::Swap => {
-                if i + 1 < tokens.len() {
-                    match &tokens[i + 1] {
-                        Token::Number(n) => {
-                            if in_proc {
-                                let index = procedures.len() - 1;
-                                procedures[index].add_instruction(Instruction::Swap(*n as usize));
-                            } else {
-                                instructions.push_back(Instruction::Swap(*n as usize));
-                            }
-                            i += 1;
-                        }
-                        _ => {
-                            if in_proc {
-                                let index = procedures.len() - 1;
-                                procedures[index].add_instruction(Instruction::Swap(1));
-                            } else {
-                                instructions.push_back(Instruction::Swap(1));
-                            }
-                        }
-                    }
-                } else {
-                    if in_proc {
-                        let index = procedures.len() - 1;
-                        procedures[index].add_instruction(Instruction::Swap(1));
-                    } else {
-                        instructions.push_back(Instruction::Swap(1));
-                    }
-                }
-            }
-
-            Token::SwapW => {
-                if i + 1 < tokens.len() {
-                    match &tokens[i + 1] {
-                        Token::Number(n) => {
-                            if in_proc {
-                                let index = procedures.len() - 1;
-                                procedures[index].add_instruction(Instruction::SwapW(*n as usize));
-                            } else {
-                                instructions.push_back(Instruction::SwapW(*n as usize));
-                            }
-                            i += 1;
-                        }
-                        _ => {
-                            if in_proc {
-                                let index = procedures.len() - 1;
-                                procedures[index].add_instruction(Instruction::SwapW(1));
-                            } else {
-                                instructions.push_back(Instruction::SwapW(1));
-                            }
-                        }
-                    }
-                } else {
-                    if in_proc {
-                        let index = procedures.len() - 1;
-                        procedures[index].add_instruction(Instruction::SwapW(1));
-                    } else {
-                        instructions.push_back(Instruction::SwapW(1));
-                    }
-                }
-            }
-
-            Token::SwapDw => {
-                if i + 1 < tokens.len() {
-                    match &tokens[i + 1] {
-                        Token::Number(n) => {
-                            if in_proc {
-                                let index = procedures.len() - 1;
-                                procedures[index].add_instruction(Instruction::SwapDw(*n as usize));
-                            } else {
-                                instructions.push_back(Instruction::SwapDw(*n as usize));
-                            }
-                            i += 1;
-                        }
-                        _ => {
-                            if in_proc {
-                                let index = procedures.len() - 1;
-                                procedures[index].add_instruction(Instruction::SwapDw(1));
-                            } else {
-                                instructions.push_back(Instruction::SwapDw(1));
-                            }
-                        }
-                    }
-                } else {
-                    if in_proc {
-                        let index = procedures.len() - 1;
-                        procedures[index].add_instruction(Instruction::SwapDw(1));
-                    } else {
-                        instructions.push_back(Instruction::SwapDw(1));
-                    }
-                }
-            }
-
-            Token::PadW => {
+            "cdrop" => {
                 if in_proc {
                     let index = procedures.len() - 1;
-                    procedures[index].add_instruction(Instruction::PadW);
+                    procedures[index].add_instruction(simple_instruction(token, CDrop)?);
                 } else {
-                    instructions.push_back(Instruction::PadW);
+                    instructions.push_back(simple_instruction(token, CDrop)?);
                 }
             }
 
-            Token::MovUp => {
-                if i + 1 < tokens.len() {
-                    match &tokens[i + 1] {
-                        Token::Number(n) => {
-                            if in_proc {
-                                let index = procedures.len() - 1;
-                                procedures[index].add_instruction(Instruction::MovUp(*n as usize));
-                            } else {
-                                instructions.push_back(Instruction::MovUp(*n as usize));
-                            }
-                            i += 1;
-                        }
-                        _ => {
-                            return Err(format!(
-                                "Expected number after movup, found {:?}",
-                                tokens[i + 1]
-                            ));
-                        }
-                    }
-                } else {
-                    return Err(format!("Expected number after movup, found EOF"));
-                }
-            }
-
-            Token::MovUpW => {
-                if i + 1 < tokens.len() {
-                    match &tokens[i + 1] {
-                        Token::Number(n) => {
-                            if in_proc {
-                                let index = procedures.len() - 1;
-                                procedures[index].add_instruction(Instruction::MovUpW(*n as usize));
-                            } else {
-                                instructions.push_back(Instruction::MovUpW(*n as usize));
-                            }
-                            i += 1;
-                        }
-                        _ => {
-                            return Err(format!(
-                                "Expected number after movupw, found {:?}",
-                                tokens[i + 1]
-                            ));
-                        }
-                    }
-                } else {
-                    return Err(format!("Expected number after movupw, found EOF"));
-                }
-            }
-
-            Token::MovDn => {
-                if i + 1 < tokens.len() {
-                    match &tokens[i + 1] {
-                        Token::Number(n) => {
-                            if in_proc {
-                                let index = procedures.len() - 1;
-                                procedures[index].add_instruction(Instruction::MovDn(*n as usize));
-                            } else {
-                                instructions.push_back(Instruction::MovDn(*n as usize));
-                            }
-                            i += 1;
-                        }
-                        _ => {
-                            return Err(format!(
-                                "Expected number after movdn, found {:?}",
-                                tokens[i + 1]
-                            ));
-                        }
-                    }
-                } else {
-                    return Err(format!("Expected number after movdn, found EOF"));
-                }
-            }
-
-            Token::MovDnW => {
-                if i + 1 < tokens.len() {
-                    match &tokens[i + 1] {
-                        Token::Number(n) => {
-                            if in_proc {
-                                let index = procedures.len() - 1;
-                                procedures[index].add_instruction(Instruction::MovDnW(*n as usize));
-                            } else {
-                                instructions.push_back(Instruction::MovDnW(*n as usize));
-                            }
-                            i += 1;
-                        }
-                        _ => {
-                            return Err(format!(
-                                "Expected number after movdnw, found {:?}",
-                                tokens[i + 1]
-                            ));
-                        }
-                    }
-                } else {
-                    return Err(format!("Expected number after movdnw, found EOF"));
-                }
-            }
-
-            Token::Drop => {
+            "cdropw" => {
                 if in_proc {
                     let index = procedures.len() - 1;
-                    procedures[index].add_instruction(Instruction::Drop);
+                    procedures[index].add_instruction(simple_instruction(token, CDropW)?);
                 } else {
-                    instructions.push_back(Instruction::Drop);
+                    instructions.push_back(simple_instruction(token, CDropW)?);
                 }
             }
 
-            Token::DropW => {
+            "and" => {
                 if in_proc {
                     let index = procedures.len() - 1;
-                    procedures[index].add_instruction(Instruction::DropW);
+                    procedures[index].add_instruction(simple_instruction(token, And)?);
                 } else {
-                    instructions.push_back(Instruction::DropW);
+                    instructions.push_back(simple_instruction(token, And)?);
                 }
             }
 
-            Token::CSwap => {
+            "or" => {
                 if in_proc {
                     let index = procedures.len() - 1;
-                    procedures[index].add_instruction(Instruction::CSwap);
+                    procedures[index].add_instruction(simple_instruction(token, Or)?);
                 } else {
-                    instructions.push_back(Instruction::CSwap);
+                    instructions.push_back(simple_instruction(token, Or)?);
                 }
             }
 
-            Token::CSwapW => {
+            "xor" => {
                 if in_proc {
                     let index = procedures.len() - 1;
-                    procedures[index].add_instruction(Instruction::CSwapW);
+                    procedures[index].add_instruction(simple_instruction(token, Xor)?);
                 } else {
-                    instructions.push_back(Instruction::CSwapW);
+                    instructions.push_back(simple_instruction(token, Xor)?);
                 }
             }
 
-            Token::CDrop => {
+            "not" => {
                 if in_proc {
                     let index = procedures.len() - 1;
-                    procedures[index].add_instruction(Instruction::CDrop);
+                    procedures[index].add_instruction(simple_instruction(token, Not)?);
                 } else {
-                    instructions.push_back(Instruction::CDrop);
+                    instructions.push_back(simple_instruction(token, Not)?);
                 }
             }
 
-            Token::CDropW => {
+            "u32checked_add" => {
                 if in_proc {
                     let index = procedures.len() - 1;
-                    procedures[index].add_instruction(Instruction::CDropW);
+                    procedures[index].add_instruction(u32_ops::parse_u32checked_add(token)?);
                 } else {
-                    instructions.push_back(Instruction::CDropW);
+                    instructions.push_back(u32_ops::parse_u32checked_add(token)?)
                 }
             }
 
-            Token::Ext2Add => {
+            "u32wrapping_add" => {
                 if in_proc {
                     let index = procedures.len() - 1;
-                    procedures[index].add_instruction(Instruction::Ext2Add);
+                    procedures[index].add_instruction(u32_ops::parse_u32wrapping_add(token)?);
                 } else {
-                    instructions.push_back(Instruction::Ext2Add);
+                    instructions.push_back(u32_ops::parse_u32wrapping_add(token)?)
                 }
             }
 
-            Token::Ext2Sub => {
+            "u32overflowing_add" => {
                 if in_proc {
                     let index = procedures.len() - 1;
-                    procedures[index].add_instruction(Instruction::Ext2Sub);
+                    procedures[index].add_instruction(u32_ops::parse_u32overflowing_add(token)?);
                 } else {
-                    instructions.push_back(Instruction::Ext2Sub);
+                    instructions.push_back(u32_ops::parse_u32overflowing_add(token)?)
                 }
             }
 
-            Token::Ext2Mul => {
+            "u32checked_sub" => {
                 if in_proc {
                     let index = procedures.len() - 1;
-                    procedures[index].add_instruction(Instruction::Ext2Mul);
+                    procedures[index].add_instruction(u32_ops::parse_u32checked_sub(token)?);
                 } else {
-                    instructions.push_back(Instruction::Ext2Mul);
+                    instructions.push_back(u32_ops::parse_u32checked_sub(token)?)
                 }
             }
 
-            Token::Ext2Div => {
+            "u32wrapping_sub" => {
                 if in_proc {
                     let index = procedures.len() - 1;
-                    procedures[index].add_instruction(Instruction::Ext2Div);
+                    procedures[index].add_instruction(u32_ops::parse_u32wrapping_sub(token)?);
                 } else {
-                    instructions.push_back(Instruction::Ext2Div);
+                    instructions.push_back(u32_ops::parse_u32wrapping_sub(token)?)
                 }
             }
 
-            Token::Ext2Neg => {
+            "u32overflowing_sub" => {
                 if in_proc {
                     let index = procedures.len() - 1;
-                    procedures[index].add_instruction(Instruction::Ext2Neg);
+                    procedures[index].add_instruction(u32_ops::parse_u32overflowing_sub(token)?);
                 } else {
-                    instructions.push_back(Instruction::Ext2Neg);
+                    instructions.push_back(u32_ops::parse_u32overflowing_sub(token)?)
                 }
             }
 
-            Token::Ext2Inv => {
+            "u32checked_mul" => {
                 if in_proc {
                     let index = procedures.len() - 1;
-                    procedures[index].add_instruction(Instruction::Ext2Inv);
+                    procedures[index].add_instruction(u32_ops::parse_u32checked_mul(token)?);
                 } else {
-                    instructions.push_back(Instruction::Ext2Inv);
+                    instructions.push_back(u32_ops::parse_u32checked_mul(token)?)
                 }
             }
 
-            Token::And => {
+            "u32wrapping_mul" => {
                 if in_proc {
                     let index = procedures.len() - 1;
-                    procedures[index].add_instruction(Instruction::And);
+                    procedures[index].add_instruction(u32_ops::parse_u32wrapping_mul(token)?);
                 } else {
-                    instructions.push_back(Instruction::And);
+                    instructions.push_back(u32_ops::parse_u32wrapping_mul(token)?)
                 }
             }
 
-            Token::Or => {
+            "u32overflowing_mul" => {
                 if in_proc {
                     let index = procedures.len() - 1;
-                    procedures[index].add_instruction(Instruction::Or);
+                    procedures[index].add_instruction(u32_ops::parse_u32overflowing_mul(token)?);
                 } else {
-                    instructions.push_back(Instruction::Or);
+                    instructions.push_back(u32_ops::parse_u32overflowing_mul(token)?)
                 }
             }
 
-            Token::Xor => {
+            "u32checked_div" => {
                 if in_proc {
                     let index = procedures.len() - 1;
-                    procedures[index].add_instruction(Instruction::Xor);
+                    procedures[index].add_instruction(u32_ops::parse_u32checked_div(token)?);
                 } else {
-                    instructions.push_back(Instruction::Xor);
+                    instructions.push_back(u32_ops::parse_u32checked_div(token)?)
                 }
             }
 
-            Token::Not => {
+            "u32unchecked_div" => {
                 if in_proc {
                     let index = procedures.len() - 1;
-                    procedures[index].add_instruction(Instruction::Not);
+                    procedures[index].add_instruction(u32_ops::parse_u32unchecked_div(token)?);
                 } else {
-                    instructions.push_back(Instruction::Not);
+                    instructions.push_back(u32_ops::parse_u32unchecked_div(token)?)
                 }
             }
 
-            Token::IsOdd => {
+            "u32checked_mod" => {
                 if in_proc {
                     let index = procedures.len() - 1;
-                    procedures[index].add_instruction(Instruction::IsOdd);
+                    procedures[index].add_instruction(u32_ops::parse_u32checked_mod(token)?);
                 } else {
-                    instructions.push_back(Instruction::IsOdd);
+                    instructions.push_back(u32_ops::parse_u32checked_mod(token)?)
                 }
             }
 
-            Token::Eq => {
-                if i + 1 < tokens.len() {
-                    match &tokens[i + 1] {
-                        Token::Number(n) => {
-                            if in_proc {
-                                let index = procedures.len() - 1;
-                                procedures[index]
-                                    .add_instruction(Instruction::EqImm(BaseElement::from(*n)));
-                            } else {
-                                instructions.push_back(Instruction::EqImm(BaseElement::from(*n)));
-                            }
-                            i += 1;
-                        }
-                        _ => {
-                            if in_proc {
-                                let index = procedures.len() - 1;
-                                procedures[index].add_instruction(Instruction::Eq);
-                            } else {
-                                instructions.push_back(Instruction::Eq);
-                            }
-                        }
-                    }
-                } else {
-                    if in_proc {
-                        let index = procedures.len() - 1;
-                        procedures[index].add_instruction(Instruction::Eq);
-                    } else {
-                        instructions.push_back(Instruction::Eq);
-                    }
-                }
-            }
-
-            Token::Neq => {
-                if i + 1 < tokens.len() {
-                    match &tokens[i + 1] {
-                        Token::Number(n) => {
-                            if in_proc {
-                                let index = procedures.len() - 1;
-                                procedures[index]
-                                    .add_instruction(Instruction::NeqImm(BaseElement::from(*n)));
-                            } else {
-                                instructions.push_back(Instruction::NeqImm(BaseElement::from(*n)));
-                            }
-                        }
-                        _ => {
-                            if in_proc {
-                                let index = procedures.len() - 1;
-                                procedures[index].add_instruction(Instruction::Neq);
-                            } else {
-                                instructions.push_back(Instruction::Neq);
-                            }
-                        }
-                    }
-                } else {
-                    if in_proc {
-                        let index = procedures.len() - 1;
-                        procedures[index].add_instruction(Instruction::Neq);
-                    } else {
-                        instructions.push_back(Instruction::Neq);
-                    }
-                }
-            }
-
-            Token::Lt => {
+            "u32unchecked_mod" => {
                 if in_proc {
                     let index = procedures.len() - 1;
-                    procedures[index].add_instruction(Instruction::Lt);
+                    procedures[index].add_instruction(u32_ops::parse_u32unchecked_mod(token)?);
                 } else {
-                    instructions.push_back(Instruction::Lt);
+                    instructions.push_back(u32_ops::parse_u32unchecked_mod(token)?)
                 }
             }
 
-            Token::Lte => {
+            "u32checked_divmod" => {
                 if in_proc {
                     let index = procedures.len() - 1;
-                    procedures[index].add_instruction(Instruction::Lte);
+                    procedures[index].add_instruction(u32_ops::parse_u32checked_divmod(token)?);
                 } else {
-                    instructions.push_back(Instruction::Lte);
+                    instructions.push_back(u32_ops::parse_u32checked_divmod(token)?)
                 }
             }
 
-            Token::Gt => {
+            "u32unchecked_divmod" => {
                 if in_proc {
                     let index = procedures.len() - 1;
-                    procedures[index].add_instruction(Instruction::Gt);
+                    procedures[index].add_instruction(u32_ops::parse_u32unchecked_divmod(token)?);
                 } else {
-                    instructions.push_back(Instruction::Gt);
+                    instructions.push_back(u32_ops::parse_u32unchecked_divmod(token)?)
                 }
             }
 
-            Token::Gte => {
+            "u32overflowing_add3" => {
                 if in_proc {
                     let index = procedures.len() - 1;
-                    procedures[index].add_instruction(Instruction::Gte);
+                    procedures[index]
+                        .add_instruction(simple_instruction(token, U32OverflowingAdd3)?);
                 } else {
-                    instructions.push_back(Instruction::Gte);
+                    instructions.push_back(simple_instruction(token, U32OverflowingAdd3)?);
                 }
             }
 
-            Token::EqW => {
+            "u32wrapping_add3" => {
                 if in_proc {
                     let index = procedures.len() - 1;
-                    procedures[index].add_instruction(Instruction::EqW);
+                    procedures[index].add_instruction(simple_instruction(token, U32WrappingAdd3)?);
                 } else {
-                    instructions.push_back(Instruction::EqW);
+                    instructions.push_back(simple_instruction(token, U32WrappingAdd3)?);
                 }
             }
 
-            Token::U32CheckedAdd => {
-                if i + 1 < tokens.len() {
-                    match &tokens[i + 1] {
-                        Token::Number(n) => {
-                            if in_proc {
-                                let index = procedures.len() - 1;
-                                let n = *n as u32;
-                                procedures[index].add_instruction(Instruction::U32CheckedAddImm(n));
-                            } else {
-                                let n = *n as u32;
-                                instructions.push_back(Instruction::U32CheckedAddImm(n));
-                            }
-                            i += 1;
-                        }
-                        _ => {
-                            if in_proc {
-                                let index = procedures.len() - 1;
-                                procedures[index].add_instruction(Instruction::U32CheckedAdd);
-                            } else {
-                                instructions.push_back(Instruction::U32CheckedAdd);
-                            }
-                        }
-                    }
-                } else {
-                    if in_proc {
-                        let index = procedures.len() - 1;
-                        procedures[index].add_instruction(Instruction::U32CheckedAdd);
-                    } else {
-                        instructions.push_back(Instruction::U32CheckedAdd);
-                    }
-                }
-            }
-
-            Token::U32OverflowingAdd => {
-                if i + 1 < tokens.len() {
-                    match &tokens[i + 1] {
-                        Token::Number(n) => {
-                            if in_proc {
-                                let index = procedures.len() - 1;
-                                let n = *n as u32;
-                                procedures[index]
-                                    .add_instruction(Instruction::U32OverflowingAddImm(n));
-                            } else {
-                                let n = *n as u32;
-                                instructions.push_back(Instruction::U32OverflowingAddImm(n));
-                            }
-                            i += 1;
-                        }
-                        _ => {
-                            if in_proc {
-                                let index = procedures.len() - 1;
-                                procedures[index].add_instruction(Instruction::U32OverflowingAdd);
-                            } else {
-                                instructions.push_back(Instruction::U32OverflowingAdd);
-                            }
-                        }
-                    }
-                } else {
-                    if in_proc {
-                        let index = procedures.len() - 1;
-                        procedures[index].add_instruction(Instruction::U32OverflowingAdd);
-                    } else {
-                        instructions.push_back(Instruction::U32OverflowingAdd);
-                    }
-                }
-            }
-
-            Token::U32WrappingAdd => {
-                if i + 1 < tokens.len() {
-                    match &tokens[i + 1] {
-                        Token::Number(n) => {
-                            if in_proc {
-                                let index = procedures.len() - 1;
-                                let n = *n as u32;
-                                procedures[index]
-                                    .add_instruction(Instruction::U32WrappingAddImm(n));
-                            } else {
-                                let n = *n as u32;
-                                instructions.push_back(Instruction::U32WrappingAddImm(n));
-                            }
-                            i += 1;
-                        }
-                        _ => {
-                            if in_proc {
-                                let index = procedures.len() - 1;
-                                procedures[index].add_instruction(Instruction::U32WrappingAdd);
-                            } else {
-                                instructions.push_back(Instruction::U32WrappingAdd);
-                            }
-                        }
-                    }
-                } else {
-                    if in_proc {
-                        let index = procedures.len() - 1;
-                        procedures[index].add_instruction(Instruction::U32WrappingAdd);
-                    } else {
-                        instructions.push_back(Instruction::U32WrappingAdd);
-                    }
-                }
-            }
-
-            Token::U32CheckedSub => {
-                if i + 1 < tokens.len() {
-                    match &tokens[i + 1] {
-                        Token::Number(n) => {
-                            if in_proc {
-                                let n = *n as u32;
-                                let index = procedures.len() - 1;
-                                procedures[index].add_instruction(Instruction::U32CheckedSubImm(n));
-                            } else {
-                                let n = *n as u32;
-                                instructions.push_back(Instruction::U32CheckedSubImm(n));
-                            }
-                            i += 1;
-                        }
-                        _ => {
-                            if in_proc {
-                                let index = procedures.len() - 1;
-                                procedures[index].add_instruction(Instruction::U32CheckedSub);
-                            } else {
-                                instructions.push_back(Instruction::U32CheckedSub);
-                            }
-                        }
-                    }
-                } else {
-                    if in_proc {
-                        let index = procedures.len() - 1;
-                        procedures[index].add_instruction(Instruction::U32CheckedSub);
-                    } else {
-                        instructions.push_back(Instruction::U32CheckedSub);
-                    }
-                }
-            }
-
-            Token::U32OverflowingSub => {
-                if i + 1 < tokens.len() {
-                    match &tokens[i + 1] {
-                        Token::Number(n) => {
-                            if in_proc {
-                                let n = *n as u32;
-                                let index = procedures.len() - 1;
-                                procedures[index]
-                                    .add_instruction(Instruction::U32OverflowingSubImm(n));
-                            } else {
-                                let n = *n as u32;
-                                instructions.push_back(Instruction::U32OverflowingSubImm(n));
-                            }
-                            i += 1;
-                        }
-                        _ => {
-                            if in_proc {
-                                let index = procedures.len() - 1;
-                                procedures[index].add_instruction(Instruction::U32OverflowingSub);
-                            } else {
-                                instructions.push_back(Instruction::U32OverflowingSub);
-                            }
-                        }
-                    }
-                } else {
-                    if in_proc {
-                        let index = procedures.len() - 1;
-                        procedures[index].add_instruction(Instruction::U32OverflowingSub);
-                    } else {
-                        instructions.push_back(Instruction::U32OverflowingSub);
-                    }
-                }
-            }
-
-            Token::U32WrappingSub => {
-                if i + 1 < tokens.len() {
-                    match &tokens[i + 1] {
-                        Token::Number(n) => {
-                            if in_proc {
-                                let n = *n as u32;
-                                let index = procedures.len() - 1;
-                                procedures[index]
-                                    .add_instruction(Instruction::U32WrappingSubImm(n));
-                            } else {
-                                let n = *n as u32;
-                                instructions.push_back(Instruction::U32WrappingSubImm(n));
-                            }
-                            i += 1;
-                        }
-                        _ => {
-                            if in_proc {
-                                let index = procedures.len() - 1;
-                                procedures[index].add_instruction(Instruction::U32WrappingSub);
-                            } else {
-                                instructions.push_back(Instruction::U32WrappingSub);
-                            }
-                        }
-                    }
-                } else {
-                    if in_proc {
-                        let index = procedures.len() - 1;
-                        procedures[index].add_instruction(Instruction::U32WrappingSub);
-                    } else {
-                        instructions.push_back(Instruction::U32WrappingSub);
-                    }
-                }
-            }
-
-            Token::U32CheckedMul => {
-                if i + 1 < tokens.len() {
-                    match &tokens[i + 1] {
-                        Token::Number(n) => {
-                            if in_proc {
-                                let n = *n as u32;
-                                let index = procedures.len() - 1;
-                                procedures[index].add_instruction(Instruction::U32CheckedMulImm(n));
-                            } else {
-                                let n = *n as u32;
-                                instructions.push_back(Instruction::U32CheckedMulImm(n));
-                            }
-                            i += 1;
-                        }
-                        _ => {
-                            if in_proc {
-                                let index = procedures.len() - 1;
-                                procedures[index].add_instruction(Instruction::U32CheckedMul);
-                            } else {
-                                instructions.push_back(Instruction::U32CheckedMul);
-                            }
-                        }
-                    }
-                } else {
-                    if in_proc {
-                        let index = procedures.len() - 1;
-                        procedures[index].add_instruction(Instruction::U32CheckedMul);
-                    } else {
-                        instructions.push_back(Instruction::U32CheckedMul);
-                    }
-                }
-            }
-
-            Token::U32OverflowingMul => {
-                if i + 1 < tokens.len() {
-                    match &tokens[i + 1] {
-                        Token::Number(n) => {
-                            if in_proc {
-                                let n = *n as u32;
-                                let index = procedures.len() - 1;
-                                procedures[index]
-                                    .add_instruction(Instruction::U32OverflowingMulImm(n));
-                            } else {
-                                let n = *n as u32;
-                                instructions.push_back(Instruction::U32OverflowingMulImm(n));
-                            }
-                            i += 1;
-                        }
-                        _ => {
-                            if in_proc {
-                                let index = procedures.len() - 1;
-                                procedures[index].add_instruction(Instruction::U32OverflowingMul);
-                            } else {
-                                instructions.push_back(Instruction::U32OverflowingMul);
-                            }
-                        }
-                    }
-                } else {
-                    if in_proc {
-                        let index = procedures.len() - 1;
-                        procedures[index].add_instruction(Instruction::U32OverflowingMul);
-                    } else {
-                        instructions.push_back(Instruction::U32OverflowingMul);
-                    }
-                }
-            }
-
-            Token::U32WrappingMul => {
-                if i + 1 < tokens.len() {
-                    match &tokens[i + 1] {
-                        Token::Number(n) => {
-                            if in_proc {
-                                let n = *n as u32;
-                                let index = procedures.len() - 1;
-                                procedures[index]
-                                    .add_instruction(Instruction::U32WrappingMulImm(n));
-                            } else {
-                                let n = *n as u32;
-                                instructions.push_back(Instruction::U32WrappingMulImm(n));
-                            }
-                            i += 1;
-                        }
-                        _ => {
-                            if in_proc {
-                                let index = procedures.len() - 1;
-                                procedures[index].add_instruction(Instruction::U32WrappingMul);
-                            } else {
-                                instructions.push_back(Instruction::U32WrappingMul);
-                            }
-                        }
-                    }
-                } else {
-                    if in_proc {
-                        let index = procedures.len() - 1;
-                        procedures[index].add_instruction(Instruction::U32WrappingMul);
-                    } else {
-                        instructions.push_back(Instruction::U32WrappingMul);
-                    }
-                }
-            }
-
-            Token::U32CheckedDiv => {
-                if i + 1 < tokens.len() {
-                    match &tokens[i + 1] {
-                        Token::Number(n) => {
-                            if in_proc {
-                                let n = *n as u32;
-                                let index = procedures.len() - 1;
-                                procedures[index].add_instruction(Instruction::U32CheckedDivImm(n));
-                            } else {
-                                let n = *n as u32;
-                                instructions.push_back(Instruction::U32CheckedDivImm(n));
-                            }
-                            i += 1;
-                        }
-                        _ => {
-                            if in_proc {
-                                let index = procedures.len() - 1;
-                                procedures[index].add_instruction(Instruction::U32CheckedDiv);
-                            } else {
-                                instructions.push_back(Instruction::U32CheckedDiv);
-                            }
-                        }
-                    }
-                } else {
-                    if in_proc {
-                        let index = procedures.len() - 1;
-                        procedures[index].add_instruction(Instruction::U32CheckedDiv);
-                    } else {
-                        instructions.push_back(Instruction::U32CheckedDiv);
-                    }
-                }
-            }
-
-            Token::U32UncheckedDiv => {
-                if i + 1 < tokens.len() {
-                    match &tokens[i + 1] {
-                        Token::Number(n) => {
-                            if in_proc {
-                                let n = *n as u32;
-                                let index = procedures.len() - 1;
-                                procedures[index]
-                                    .add_instruction(Instruction::U32UncheckedDivImm(n));
-                            } else {
-                                let n = *n as u32;
-                                instructions.push_back(Instruction::U32UncheckedDivImm(n));
-                            }
-                            i += 1;
-                        }
-                        _ => {
-                            if in_proc {
-                                let index = procedures.len() - 1;
-                                procedures[index].add_instruction(Instruction::U32UncheckedDiv);
-                            } else {
-                                instructions.push_back(Instruction::U32UncheckedDiv);
-                            }
-                        }
-                    }
-                } else {
-                    if in_proc {
-                        let index = procedures.len() - 1;
-                        procedures[index].add_instruction(Instruction::U32UncheckedDiv);
-                    } else {
-                        instructions.push_back(Instruction::U32UncheckedDiv);
-                    }
-                }
-            }
-
-            Token::U32CheckedMod => {
-                if i + 1 < tokens.len() {
-                    match &tokens[i + 1] {
-                        Token::Number(n) => {
-                            if in_proc {
-                                let n = *n as u32;
-                                let index = procedures.len() - 1;
-                                procedures[index].add_instruction(Instruction::U32CheckedModImm(n));
-                            } else {
-                                let n = *n as u32;
-                                instructions.push_back(Instruction::U32CheckedModImm(n));
-                            }
-                            i += 1;
-                        }
-                        _ => {
-                            if in_proc {
-                                let index = procedures.len() - 1;
-                                procedures[index].add_instruction(Instruction::U32CheckedMod);
-                            } else {
-                                instructions.push_back(Instruction::U32CheckedMod);
-                            }
-                        }
-                    }
-                } else {
-                    if in_proc {
-                        let index = procedures.len() - 1;
-                        procedures[index].add_instruction(Instruction::U32CheckedMod);
-                    } else {
-                        instructions.push_back(Instruction::U32CheckedMod);
-                    }
-                }
-            }
-
-            Token::U32UncheckedMod => {
-                if i + 1 < tokens.len() {
-                    match &tokens[i + 1] {
-                        Token::Number(n) => {
-                            if in_proc {
-                                let n = *n as u32;
-                                let index = procedures.len() - 1;
-                                procedures[index]
-                                    .add_instruction(Instruction::U32UncheckedModImm(n));
-                            } else {
-                                let n = *n as u32;
-                                instructions.push_back(Instruction::U32UncheckedModImm(n));
-                            }
-                            i += 1;
-                        }
-                        _ => {
-                            if in_proc {
-                                let index = procedures.len() - 1;
-                                procedures[index].add_instruction(Instruction::U32UncheckedMod);
-                            } else {
-                                instructions.push_back(Instruction::U32UncheckedMod);
-                            }
-                        }
-                    }
-                } else {
-                    if in_proc {
-                        let index = procedures.len() - 1;
-                        procedures[index].add_instruction(Instruction::U32UncheckedMod);
-                    } else {
-                        instructions.push_back(Instruction::U32UncheckedMod);
-                    }
-                }
-            }
-
-            Token::U32CheckedDivMod => {
-                if i + 1 < tokens.len() {
-                    match &tokens[i + 1] {
-                        Token::Number(n) => {
-                            if in_proc {
-                                let n = *n as u32;
-                                let index = procedures.len() - 1;
-                                procedures[index]
-                                    .add_instruction(Instruction::U32CheckedDivModImm(n));
-                            } else {
-                                let n = *n as u32;
-                                instructions.push_back(Instruction::U32CheckedDivModImm(n));
-                            }
-                            i += 1;
-                        }
-                        _ => {
-                            if in_proc {
-                                let index = procedures.len() - 1;
-                                procedures[index].add_instruction(Instruction::U32CheckedDivMod);
-                            } else {
-                                instructions.push_back(Instruction::U32CheckedDivMod);
-                            }
-                        }
-                    }
-                } else {
-                    if in_proc {
-                        let index = procedures.len() - 1;
-                        procedures[index].add_instruction(Instruction::U32CheckedDivMod);
-                    } else {
-                        instructions.push_back(Instruction::U32CheckedDivMod);
-                    }
-                }
-            }
-
-            Token::U32UncheckedDivMod => {
-                if i + 1 < tokens.len() {
-                    match &tokens[i + 1] {
-                        Token::Number(n) => {
-                            if in_proc {
-                                let n = *n as u32;
-                                let index = procedures.len() - 1;
-                                procedures[index]
-                                    .add_instruction(Instruction::U32UncheckedDivModImm(n));
-                            } else {
-                                let n = *n as u32;
-                                instructions.push_back(Instruction::U32UncheckedDivModImm(n));
-                            }
-                            i += 1;
-                        }
-                        _ => {
-                            if in_proc {
-                                let index = procedures.len() - 1;
-                                procedures[index].add_instruction(Instruction::U32UncheckedDivMod);
-                            } else {
-                                instructions.push_back(Instruction::U32UncheckedDivMod);
-                            }
-                        }
-                    }
-                } else {
-                    if in_proc {
-                        let index = procedures.len() - 1;
-                        procedures[index].add_instruction(Instruction::U32UncheckedDivMod);
-                    } else {
-                        instructions.push_back(Instruction::U32UncheckedDivMod);
-                    }
-                }
-            }
-
-            Token::U32OverflowingAdd3 => {
+            "u32overflowing_madd" => {
                 if in_proc {
                     let index = procedures.len() - 1;
-                    procedures[index].add_instruction(Instruction::U32OverflowingAdd3);
+                    procedures[index]
+                        .add_instruction(simple_instruction(token, U32OverflowingMadd)?);
                 } else {
-                    instructions.push_back(Instruction::U32OverflowingAdd3);
+                    instructions.push_back(simple_instruction(token, U32OverflowingMadd)?);
                 }
             }
 
-            Token::U32WrappingAdd3 => {
+            "u32wrapping_madd" => {
                 if in_proc {
                     let index = procedures.len() - 1;
-                    procedures[index].add_instruction(Instruction::U32WrappingAdd3);
+                    procedures[index].add_instruction(simple_instruction(token, U32WrappingMadd)?);
                 } else {
-                    instructions.push_back(Instruction::U32WrappingAdd3);
+                    instructions.push_back(simple_instruction(token, U32WrappingMadd)?);
                 }
             }
 
-            Token::U32OverflowingMadd => {
+            "u32checked_and" => {
                 if in_proc {
                     let index = procedures.len() - 1;
-                    procedures[index].add_instruction(Instruction::U32OverflowingMadd);
+                    procedures[index].add_instruction(simple_instruction(token, U32CheckedAnd)?);
                 } else {
-                    instructions.push_back(Instruction::U32OverflowingMadd);
+                    instructions.push_back(simple_instruction(token, U32CheckedAnd)?);
                 }
             }
 
-            Token::U32WrappingMadd => {
+            "u32checked_or" => {
                 if in_proc {
                     let index = procedures.len() - 1;
-                    procedures[index].add_instruction(Instruction::U32WrappingMadd);
+                    procedures[index].add_instruction(simple_instruction(token, U32CheckedOr)?);
                 } else {
-                    instructions.push_back(Instruction::U32WrappingMadd);
+                    instructions.push_back(simple_instruction(token, U32CheckedOr)?);
                 }
             }
 
-            Token::U32CheckedAnd => {
+            "u32checked_xor" => {
                 if in_proc {
                     let index = procedures.len() - 1;
-                    procedures[index].add_instruction(Instruction::U32CheckedAnd);
+                    procedures[index].add_instruction(simple_instruction(token, U32CheckedXor)?);
                 } else {
-                    instructions.push_back(Instruction::U32CheckedAnd);
+                    instructions.push_back(simple_instruction(token, U32CheckedXor)?);
                 }
             }
 
-            Token::U32CheckedOr => {
+            "u32checked_not" => {
                 if in_proc {
                     let index = procedures.len() - 1;
-                    procedures[index].add_instruction(Instruction::U32CheckedOr);
+                    procedures[index].add_instruction(simple_instruction(token, U32CheckedNot)?);
                 } else {
-                    instructions.push_back(Instruction::U32CheckedOr);
+                    instructions.push_back(simple_instruction(token, U32CheckedNot)?);
                 }
             }
 
-            Token::U32CheckedXor => {
+            "u32checked_shl" => {
                 if in_proc {
                     let index = procedures.len() - 1;
-                    procedures[index].add_instruction(Instruction::U32CheckedXor);
+                    procedures[index].add_instruction(u32_ops::parse_u32checked_shl(token)?);
                 } else {
-                    instructions.push_back(Instruction::U32CheckedXor);
+                    instructions.push_back(u32_ops::parse_u32checked_shl(token)?);
                 }
             }
 
-            Token::U32CheckedNot => {
+            "u32unchecked_shl" => {
                 if in_proc {
                     let index = procedures.len() - 1;
-                    procedures[index].add_instruction(Instruction::U32CheckedNot);
+                    procedures[index].add_instruction(u32_ops::parse_u32unchecked_shl(token)?);
                 } else {
-                    instructions.push_back(Instruction::U32CheckedNot);
+                    instructions.push_back(u32_ops::parse_u32unchecked_shl(token)?);
                 }
             }
 
-            Token::U32CheckedShl => {
-                if i + 1 < tokens.len() {
-                    match &tokens[i + 1] {
-                        Token::Number(n) => {
-                            if in_proc {
-                                let n = *n as u32;
-                                let index = procedures.len() - 1;
-                                procedures[index].add_instruction(Instruction::U32CheckedShlImm(n));
-                            } else {
-                                let n = *n as u32;
-                                instructions.push_back(Instruction::U32CheckedShlImm(n));
-                            }
-                            i += 1;
-                        }
-                        _ => {
-                            if in_proc {
-                                let index = procedures.len() - 1;
-                                procedures[index].add_instruction(Instruction::U32CheckedShl);
-                            } else {
-                                instructions.push_back(Instruction::U32CheckedShl);
-                            }
-                        }
-                    }
-                } else {
-                    if in_proc {
-                        let index = procedures.len() - 1;
-                        procedures[index].add_instruction(Instruction::U32CheckedShl);
-                    } else {
-                        instructions.push_back(Instruction::U32CheckedShl);
-                    }
-                }
-            }
-
-            Token::U32UncheckedShl => {
-                if i + 1 < tokens.len() {
-                    match &tokens[i + 1] {
-                        Token::Number(n) => {
-                            if in_proc {
-                                let n = *n as u32;
-                                let index = procedures.len() - 1;
-                                procedures[index]
-                                    .add_instruction(Instruction::U32UncheckedShlImm(n));
-                            } else {
-                                let n = *n as u32;
-                                instructions.push_back(Instruction::U32UncheckedShlImm(n));
-                            }
-                            i += 1;
-                        }
-                        _ => {
-                            if in_proc {
-                                let index = procedures.len() - 1;
-                                procedures[index].add_instruction(Instruction::U32UncheckedShl);
-                            } else {
-                                instructions.push_back(Instruction::U32UncheckedShl);
-                            }
-                        }
-                    }
-                } else {
-                    if in_proc {
-                        let index = procedures.len() - 1;
-                        procedures[index].add_instruction(Instruction::U32UncheckedShl);
-                    } else {
-                        instructions.push_back(Instruction::U32UncheckedShl);
-                    }
-                }
-            }
-
-            Token::U32CheckedShr => {
-                if i + 1 < tokens.len() {
-                    match &tokens[i + 1] {
-                        Token::Number(n) => {
-                            if in_proc {
-                                let n = *n as u32;
-                                let index = procedures.len() - 1;
-                                procedures[index].add_instruction(Instruction::U32CheckedShrImm(n));
-                            } else {
-                                let n = *n as u32;
-                                instructions.push_back(Instruction::U32CheckedShrImm(n));
-                            }
-                            i += 1;
-                        }
-                        _ => {
-                            if in_proc {
-                                let index = procedures.len() - 1;
-                                procedures[index].add_instruction(Instruction::U32CheckedShr);
-                            } else {
-                                instructions.push_back(Instruction::U32CheckedShr);
-                            }
-                        }
-                    }
-                } else {
-                    if in_proc {
-                        let index = procedures.len() - 1;
-                        procedures[index].add_instruction(Instruction::U32CheckedShr);
-                    } else {
-                        instructions.push_back(Instruction::U32CheckedShr);
-                    }
-                }
-            }
-
-            Token::U32UncheckedShr => {
-                if i + 1 < tokens.len() {
-                    match &tokens[i + 1] {
-                        Token::Number(n) => {
-                            if in_proc {
-                                let n = *n as u32;
-                                let index = procedures.len() - 1;
-                                procedures[index]
-                                    .add_instruction(Instruction::U32UncheckedShrImm(n));
-                            } else {
-                                let n = *n as u32;
-                                instructions.push_back(Instruction::U32UncheckedShrImm(n));
-                            }
-                            i += 1;
-                        }
-                        _ => {
-                            if in_proc {
-                                let index = procedures.len() - 1;
-                                procedures[index].add_instruction(Instruction::U32UncheckedShr);
-                            } else {
-                                instructions.push_back(Instruction::U32UncheckedShr);
-                            }
-                        }
-                    }
-                } else {
-                    if in_proc {
-                        let index = procedures.len() - 1;
-                        procedures[index].add_instruction(Instruction::U32UncheckedShr);
-                    } else {
-                        instructions.push_back(Instruction::U32UncheckedShr);
-                    }
-                }
-            }
-
-            Token::U32CheckedRotl => {
-                if i + 1 < tokens.len() {
-                    match &tokens[i + 1] {
-                        Token::Number(n) => {
-                            if in_proc {
-                                let n = *n;
-                                let index = procedures.len() - 1;
-                                procedures[index]
-                                    .add_instruction(Instruction::U32CheckedRotlImm(n as u32));
-                            } else {
-                                let n = *n;
-                                instructions.push_back(Instruction::U32CheckedRotlImm(n as u32));
-                            }
-                            i += 1;
-                        }
-                        _ => {
-                            if in_proc {
-                                let index = procedures.len() - 1;
-                                procedures[index].add_instruction(Instruction::U32CheckedRotl);
-                            } else {
-                                instructions.push_back(Instruction::U32CheckedRotl);
-                            }
-                        }
-                    }
-                } else {
-                    if in_proc {
-                        let index = procedures.len() - 1;
-                        procedures[index].add_instruction(Instruction::U32CheckedRotl);
-                    } else {
-                        instructions.push_back(Instruction::U32CheckedRotl);
-                    }
-                }
-            }
-
-            Token::U32UncheckedRotl => {
-                if i + 1 < tokens.len() {
-                    match &tokens[i + 1] {
-                        Token::Number(n) => {
-                            if in_proc {
-                                let n = *n;
-                                let index = procedures.len() - 1;
-                                procedures[index]
-                                    .add_instruction(Instruction::U32UncheckedRotlImm(n as u32));
-                            } else {
-                                let n = *n;
-                                instructions.push_back(Instruction::U32UncheckedRotlImm(n as u32));
-                            }
-                            i += 1;
-                        }
-                        _ => {
-                            if in_proc {
-                                let index = procedures.len() - 1;
-                                procedures[index].add_instruction(Instruction::U32UncheckedRotl);
-                            } else {
-                                instructions.push_back(Instruction::U32UncheckedRotl);
-                            }
-                        }
-                    }
-                } else {
-                    if in_proc {
-                        let index = procedures.len() - 1;
-                        procedures[index].add_instruction(Instruction::U32UncheckedRotl);
-                    } else {
-                        instructions.push_back(Instruction::U32UncheckedRotl);
-                    }
-                }
-            }
-
-            Token::U32CheckedRotr => {
-                if i + 1 < tokens.len() {
-                    match &tokens[i + 1] {
-                        Token::Number(n) => {
-                            if in_proc {
-                                let n = *n;
-                                let index = procedures.len() - 1;
-                                procedures[index]
-                                    .add_instruction(Instruction::U32CheckedRotrImm(n as u32));
-                            } else {
-                                let n = *n;
-                                instructions.push_back(Instruction::U32CheckedRotrImm(n as u32));
-                            }
-                            i += 1;
-                        }
-                        _ => {
-                            if in_proc {
-                                let index = procedures.len() - 1;
-                                procedures[index].add_instruction(Instruction::U32CheckedRotr);
-                            } else {
-                                instructions.push_back(Instruction::U32CheckedRotr);
-                            }
-                        }
-                    }
-                } else {
-                    if in_proc {
-                        let index = procedures.len() - 1;
-                        procedures[index].add_instruction(Instruction::U32CheckedRotr);
-                    } else {
-                        instructions.push_back(Instruction::U32CheckedRotr);
-                    }
-                }
-            }
-
-            Token::U32UncheckedRotr => {
-                if i + 1 < tokens.len() {
-                    match &tokens[i + 1] {
-                        Token::Number(n) => {
-                            if in_proc {
-                                let n = *n;
-                                let index = procedures.len() - 1;
-                                procedures[index]
-                                    .add_instruction(Instruction::U32UncheckedRotrImm(n as u32));
-                            } else {
-                                let n = *n;
-                                instructions.push_back(Instruction::U32UncheckedRotrImm(n as u32));
-                            }
-                            i += 1;
-                        }
-                        _ => {
-                            if in_proc {
-                                let index = procedures.len() - 1;
-                                procedures[index].add_instruction(Instruction::U32UncheckedRotr);
-                            } else {
-                                instructions.push_back(Instruction::U32UncheckedRotr);
-                            }
-                        }
-                    }
-                } else {
-                    if in_proc {
-                        let index = procedures.len() - 1;
-                        procedures[index].add_instruction(Instruction::U32UncheckedRotr);
-                    } else {
-                        instructions.push_back(Instruction::U32UncheckedRotr);
-                    }
-                }
-            }
-
-            Token::U32CheckedPopcnt => {
+            "u32checked_shr" => {
                 if in_proc {
                     let index = procedures.len() - 1;
-                    procedures[index].add_instruction(Instruction::U32CheckedPopcnt);
+                    procedures[index].add_instruction(u32_ops::parse_u32checked_shr(token)?);
                 } else {
-                    instructions.push_back(Instruction::U32CheckedPopcnt);
+                    instructions.push_back(u32_ops::parse_u32checked_shr(token)?);
                 }
             }
 
-            Token::U32UncheckedPopcnt => {
+            "u32unchecked_shr" => {
                 if in_proc {
                     let index = procedures.len() - 1;
-                    procedures[index].add_instruction(Instruction::U32UncheckedPopcnt);
+                    procedures[index].add_instruction(u32_ops::parse_u32unchecked_shr(token)?);
                 } else {
-                    instructions.push_back(Instruction::U32UncheckedPopcnt);
+                    instructions.push_back(u32_ops::parse_u32unchecked_shr(token)?);
                 }
             }
 
-            Token::U32CheckedEq => {
-                if i + 1 < tokens.len() {
-                    match &tokens[i + 1] {
-                        Token::Number(n) => {
-                            if in_proc {
-                                let index = procedures.len() - 1;
-                                procedures[index]
-                                    .add_instruction(Instruction::U32CheckedEqImm(*n as u32));
-                            } else {
-                                instructions.push_back(Instruction::U32CheckedEqImm(*n as u32));
-                            }
-                            i += 1;
-                        }
-                        _ => {
-                            if in_proc {
-                                let index = procedures.len() - 1;
-                                procedures[index].add_instruction(Instruction::U32CheckedEq);
-                            } else {
-                                instructions.push_back(Instruction::U32CheckedEq);
-                            }
-                        }
-                    }
-                } else {
-                    if in_proc {
-                        let index = procedures.len() - 1;
-                        procedures[index].add_instruction(Instruction::U32CheckedEq);
-                    } else {
-                        instructions.push_back(Instruction::U32CheckedEq);
-                    }
-                }
-            }
-
-            Token::U32CheckedNeq => {
-                if i + 1 < tokens.len() {
-                    match &tokens[i + 1] {
-                        Token::Number(n) => {
-                            if in_proc {
-                                let index = procedures.len() - 1;
-                                procedures[index]
-                                    .add_instruction(Instruction::U32CheckedNeqImm(*n as u32));
-                            } else {
-                                instructions.push_back(Instruction::U32CheckedNeqImm(*n as u32));
-                            }
-                            i += 1;
-                        }
-                        _ => {
-                            if in_proc {
-                                let index = procedures.len() - 1;
-                                procedures[index].add_instruction(Instruction::U32CheckedNeq);
-                            } else {
-                                instructions.push_back(Instruction::U32CheckedNeq);
-                            }
-                        }
-                    }
-                } else {
-                    if in_proc {
-                        let index = procedures.len() - 1;
-                        procedures[index].add_instruction(Instruction::U32CheckedNeq);
-                    } else {
-                        instructions.push_back(Instruction::U32CheckedNeq);
-                    }
-                }
-            }
-
-            Token::U32CheckedLt => {
+            "u32checked_rotl" => {
                 if in_proc {
                     let index = procedures.len() - 1;
-                    procedures[index].add_instruction(Instruction::U32CheckedLt);
+                    procedures[index].add_instruction(u32_ops::parse_u32checked_rotl(token)?);
                 } else {
-                    instructions.push_back(Instruction::U32CheckedLt);
+                    instructions.push_back(u32_ops::parse_u32checked_rotl(token)?);
                 }
             }
 
-            Token::U32UncheckedLte => {
+            "u32unchecked_rotl" => {
                 if in_proc {
                     let index = procedures.len() - 1;
-                    procedures[index].add_instruction(Instruction::U32UncheckedLte);
+                    procedures[index].add_instruction(u32_ops::parse_u32unchecked_rotl(token)?);
                 } else {
-                    instructions.push_back(Instruction::U32UncheckedLte);
+                    instructions.push_back(u32_ops::parse_u32unchecked_rotl(token)?);
                 }
             }
 
-            Token::U32CheckedLte => {
+            "u32checked_rotr" => {
                 if in_proc {
                     let index = procedures.len() - 1;
-                    procedures[index].add_instruction(Instruction::U32CheckedLte);
+                    procedures[index].add_instruction(u32_ops::parse_u32checked_rotr(token)?);
                 } else {
-                    instructions.push_back(Instruction::U32CheckedLte);
+                    instructions.push_back(u32_ops::parse_u32checked_rotr(token)?);
                 }
             }
 
-            Token::U32UncheckedLt => {
+            "u32unchecked_rotr" => {
                 if in_proc {
                     let index = procedures.len() - 1;
-                    procedures[index].add_instruction(Instruction::U32UncheckedLt);
+                    procedures[index].add_instruction(u32_ops::parse_u32unchecked_rotr(token)?);
                 } else {
-                    instructions.push_back(Instruction::U32UncheckedLt);
+                    instructions.push_back(u32_ops::parse_u32unchecked_rotr(token)?);
                 }
             }
 
-            Token::U32CheckedGt => {
+            "u32checked_eq" => {
                 if in_proc {
                     let index = procedures.len() - 1;
-                    procedures[index].add_instruction(Instruction::U32CheckedGt);
+                    procedures[index].add_instruction(u32_ops::parse_u32checked_eq(token)?);
                 } else {
-                    instructions.push_back(Instruction::U32CheckedGt);
+                    instructions.push_back(u32_ops::parse_u32checked_eq(token)?);
                 }
             }
 
-            Token::U32UncheckedGte => {
+            "u32checked_neq" => {
                 if in_proc {
                     let index = procedures.len() - 1;
-                    procedures[index].add_instruction(Instruction::U32UncheckedGte);
+                    procedures[index].add_instruction(u32_ops::parse_u32checked_neq(token)?);
                 } else {
-                    instructions.push_back(Instruction::U32UncheckedGte);
+                    instructions.push_back(u32_ops::parse_u32checked_neq(token)?);
                 }
             }
 
-            Token::U32CheckedGte => {
+            "u32checked_popcnt" => {
                 if in_proc {
                     let index = procedures.len() - 1;
-                    procedures[index].add_instruction(Instruction::U32CheckedGte);
+                    procedures[index].add_instruction(simple_instruction(token, U32CheckedPopcnt)?);
                 } else {
-                    instructions.push_back(Instruction::U32CheckedGte);
+                    instructions.push_back(simple_instruction(token, U32CheckedPopcnt)?);
                 }
             }
 
-            Token::U32UncheckedGt => {
+            "u32unchecked_popcnt" => {
                 if in_proc {
                     let index = procedures.len() - 1;
-                    procedures[index].add_instruction(Instruction::U32UncheckedGt);
+                    procedures[index]
+                        .add_instruction(simple_instruction(token, U32UncheckedPopcnt)?);
                 } else {
-                    instructions.push_back(Instruction::U32UncheckedGt);
+                    instructions.push_back(simple_instruction(token, U32UncheckedPopcnt)?);
                 }
             }
 
-            Token::U32CheckedMin => {
+            "u32checked_lt" => {
                 if in_proc {
                     let index = procedures.len() - 1;
-                    procedures[index].add_instruction(Instruction::U32CheckedMin);
+                    procedures[index].add_instruction(simple_instruction(token, U32CheckedLt)?);
                 } else {
-                    instructions.push_back(Instruction::U32CheckedMin);
+                    instructions.push_back(simple_instruction(token, U32CheckedLt)?);
                 }
             }
 
-            Token::U32UncheckedMin => {
+            "u32unchecked_lte" => {
                 if in_proc {
                     let index = procedures.len() - 1;
-                    procedures[index].add_instruction(Instruction::U32UncheckedMin);
+                    procedures[index].add_instruction(simple_instruction(token, U32UncheckedLte)?);
                 } else {
-                    instructions.push_back(Instruction::U32UncheckedMin);
+                    instructions.push_back(simple_instruction(token, U32UncheckedLte)?);
                 }
             }
 
-            Token::U32CheckedMax => {
+            "u32checked_lte" => {
                 if in_proc {
                     let index = procedures.len() - 1;
-                    procedures[index].add_instruction(Instruction::U32CheckedMax);
+                    procedures[index].add_instruction(simple_instruction(token, U32CheckedLte)?);
                 } else {
-                    instructions.push_back(Instruction::U32CheckedMax);
+                    instructions.push_back(simple_instruction(token, U32CheckedLte)?);
                 }
             }
 
-            Token::U32UncheckedMax => {
+            "u32unchecked_lt" => {
                 if in_proc {
                     let index = procedures.len() - 1;
-                    procedures[index].add_instruction(Instruction::U32UncheckedMax);
+                    procedures[index].add_instruction(simple_instruction(token, U32UncheckedLt)?);
                 } else {
-                    instructions.push_back(Instruction::U32UncheckedMax);
+                    instructions.push_back(simple_instruction(token, U32UncheckedLt)?);
                 }
             }
 
-            Token::Number(_) => {}
+            "u32checked_gte" => {
+                if in_proc {
+                    let index = procedures.len() - 1;
+                    procedures[index].add_instruction(simple_instruction(token, U32CheckedGte)?);
+                } else {
+                    instructions.push_back(simple_instruction(token, U32CheckedGte)?);
+                }
+            }
 
-            Token::String(_) => {}
+            "u32unchecked_gte" => {
+                if in_proc {
+                    let index = procedures.len() - 1;
+                    procedures[index].add_instruction(simple_instruction(token, U32UncheckedGte)?);
+                } else {
+                    instructions.push_back(simple_instruction(token, U32UncheckedGte)?);
+                }
+            }
+
+            "u32checked_gt" => {
+                if in_proc {
+                    let index = procedures.len() - 1;
+                    procedures[index].add_instruction(simple_instruction(token, U32CheckedGt)?);
+                } else {
+                    instructions.push_back(simple_instruction(token, U32CheckedGt)?);
+                }
+            }
+
+            "u32unchecked_gt" => {
+                if in_proc {
+                    let index = procedures.len() - 1;
+                    procedures[index].add_instruction(simple_instruction(token, U32UncheckedGt)?);
+                } else {
+                    instructions.push_back(simple_instruction(token, U32UncheckedGt)?);
+                }
+            }
+
+            "u32checked_min" => {
+                if in_proc {
+                    let index = procedures.len() - 1;
+                    procedures[index].add_instruction(simple_instruction(token, U32CheckedMin)?);
+                } else {
+                    instructions.push_back(simple_instruction(token, U32CheckedMin)?);
+                }
+            }
+
+            "u32unchecked_min" => {
+                if in_proc {
+                    let index = procedures.len() - 1;
+                    procedures[index].add_instruction(simple_instruction(token, U32UncheckedMin)?);
+                } else {
+                    instructions.push_back(simple_instruction(token, U32UncheckedMin)?);
+                }
+            }
+
+            "u32checked_max" => {
+                if in_proc {
+                    let index = procedures.len() - 1;
+                    procedures[index].add_instruction(simple_instruction(token, U32CheckedMax)?);
+                } else {
+                    instructions.push_back(simple_instruction(token, U32CheckedMax)?);
+                }
+            }
+
+            "u32unchecked_max" => {
+                if in_proc {
+                    let index = procedures.len() - 1;
+                    procedures[index].add_instruction(simple_instruction(token, U32UncheckedMax)?);
+                } else {
+                    instructions.push_back(simple_instruction(token, U32UncheckedMax)?);
+                }
+            }
+
+            _ => {
+                return Err(format!("Unknown instruction {:?}", parts[0]));
+            }
         }
-        i += 1;
     }
 
     Ok((instructions, procedures))

@@ -1,4 +1,4 @@
-use crate::{parse, tokenize, Inputs, MidenProgram};
+use crate::{parse, sanitize, tokenize, Inputs, MidenProgram};
 
 impl MidenProgram {
     /// Parses a Miden assembly string into a MidenProgram.
@@ -19,7 +19,8 @@ impl MidenProgram {
     /// ```
     pub fn parse(masm: &str) -> Result<Self, String> {
         let mut program = MidenProgram::new();
-        let tokens = tokenize(masm);
+        let sanitized = sanitize(masm);
+        let tokens = tokenize(&sanitized);
 
         let (mut instructions, procedures) = parse(tokens)?;
 
@@ -49,7 +50,8 @@ impl MidenProgram {
     /// ```
     pub fn parse_with_inputs(masm: &str, inputs: Inputs) -> Result<Self, String> {
         let mut program = MidenProgram::new().with_inputs(inputs);
-        let tokens = tokenize(masm);
+        let sanitized = sanitize(masm);
+        let tokens = tokenize(&sanitized);
 
         let (mut instructions, procedures) = parse(tokens)?;
 
@@ -84,8 +86,9 @@ impl MidenProgram {
         let file = std::fs::read_to_string(file);
 
         match file {
-            Ok(file_string) => {
-                let tokens = tokenize(&file_string);
+            Ok(masm) => {
+                let sanitized = sanitize(&masm);
+                let tokens = tokenize(&sanitized);
 
                 let (mut instructions, procedures) = parse(tokens)?;
 
@@ -122,8 +125,9 @@ impl MidenProgram {
         let file = std::fs::read_to_string(file);
 
         match file {
-            Ok(file_string) => {
-                let tokens = tokenize(&file_string);
+            Ok(masm) => {
+                let sanitized = sanitize(&masm);
+                let tokens = tokenize(&sanitized);
 
                 let (mut instructions, procedures) = parse(tokens)?;
 

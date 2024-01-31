@@ -133,6 +133,7 @@ proc.matrix_multiply
 		neq
 		while.true
 			swapw.1
+			dupw.0
 			dup.0
 			dup.9
 			mul

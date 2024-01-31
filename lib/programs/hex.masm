@@ -51,12 +51,28 @@ begin
 	gt
 	push.1
 	push.2
+
+	#ERROR: NotBinaryValue(2), 2 is not binary
+	#cswap
+
 	push.1
 	push.2
+
+	#ERROR: NotBinaryValue(2), 2 is not binary
+	#cswapw
+
 	push.1
 	push.2
+
+	#ERROR: NotBinaryValue(2), 2 is not binary
+	#cdrop
+
 	push.1
 	push.2
+
+	#ERROR: NotBinaryValue(2), 2 is not binary
+	#cdropw
+
 end
 
 #stack output : [2, 1, 2, 1, 2, 1, 2, 1, 0, 1, 0, 2, 1, 0, 2, 1, 2, 1, 2, 1, 0, 1, 0, 9223372034707292161, 2, 18446744069414584320, 3, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0] 

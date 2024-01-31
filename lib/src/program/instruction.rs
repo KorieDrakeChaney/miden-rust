@@ -6,7 +6,7 @@ use super::error::MidenProgramError;
 pub enum Instruction {
     // assertions and tests
     Assert,
-    AssertZ,
+    Assertz,
     AssertEq,
     AssertEqW,
 
@@ -17,7 +17,7 @@ pub enum Instruction {
     DupW(usize),  // 1-3
     Swap(usize),  // 1-15
     SwapW(usize), // 1-3
-    SwapDw(usize),
+    SwapDw,
     PadW,
 
     MovUp(usize),  // 2-15
@@ -228,7 +228,7 @@ impl std::fmt::Display for Instruction {
         match self {
             // assertions and tests
             Self::Assert => write!(f, "assert"),
-            Self::AssertZ => write!(f, "assertz"),
+            Self::Assertz => write!(f, "assertz"),
             Self::AssertEq => write!(f, "assert_eq"),
             Self::AssertEqW => write!(f, "assert_eqw"),
             // Manipulation operations
@@ -239,7 +239,7 @@ impl std::fmt::Display for Instruction {
             Self::DupW(value) => write!(f, "dupw.{value}"),
             Self::Swap(value) => write!(f, "swap.{value}"),
             Self::SwapW(value) => write!(f, "swapw.{value}"),
-            Self::SwapDw(value) => write!(f, "swapdw.{value}"),
+            Self::SwapDw => write!(f, "swapdw"),
             Self::PadW => write!(f, "padw"),
             Self::MovUp(value) => write!(f, "movup.{value}"),
             Self::MovUpW(value) => write!(f, "movupw.{value}"),
