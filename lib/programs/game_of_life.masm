@@ -747,6 +747,12 @@ proc.fifteen.32
 	#ERROR: InvalidParameter(12312), adv_push.12312 is invalid, must be between 1 and 16
 	#adv_push.12312
 
+	push.2
+
+	#ERROR: NotBinaryValue(2), 2 is not binary
+	#and
+
+	drop
 	push.0
 	loc_store.31
 	loc_load.10

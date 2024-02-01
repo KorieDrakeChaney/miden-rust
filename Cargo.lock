@@ -456,7 +456,6 @@ dependencies = [
  "serde",
  "serde-wasm-bindgen",
  "serde_json",
- "winter-utils",
 ]
 
 [[package]]
