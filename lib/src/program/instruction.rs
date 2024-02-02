@@ -129,6 +129,7 @@ pub enum Instruction {
     AdvPush(usize),
     AdvLoadW,
     AdvPipe,
+    AdvInject(AdviceInjector),
 
     WHILE,
     IF,
@@ -362,6 +363,7 @@ impl std::fmt::Display for Instruction {
             Self::AdvPush(value) => write!(f, "adv_push.{value}"),
             Self::AdvLoadW => write!(f, "adv_loadw"),
             Self::AdvPipe => write!(f, "adv_pipe"),
+            Self::AdvInject(injector) => write!(f, "adv.{injector}"),
 
             Self::WHILE => write!(f, "while.true"),
             Self::IF => write!(f, "if.true"),
@@ -375,8 +377,8 @@ impl std::fmt::Display for Instruction {
             Self::Increment => write!(f, "add.1"),
             Self::Decrement => write!(f, "sub.1"),
 
-            Self::Error(e) => write!(f, "{}", e),
-            Self::CommentedOut(message) => write!(f, "#{}", message),
+            Self::Error(e) => write!(f, "{e}"),
+            Self::CommentedOut(message) => write!(f, "#{message}"),
 
             // u32 arithmetic operations
             Self::U32CheckedAdd => write!(f, "u32checked_add"),
