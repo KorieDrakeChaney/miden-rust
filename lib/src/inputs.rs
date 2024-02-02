@@ -1,9 +1,9 @@
-use std::collections::{BTreeMap, HashMap};
+use std::collections::HashMap;
 
 use miden::{
     crypto::{MerkleStore, MerkleTree, NodeIndex, PartialMerkleTree, RpoDigest, SimpleSmt},
     math::Felt,
-    AdviceInputs, MemAdviceProvider, Word,
+    Word,
 };
 use serde::Deserialize;
 

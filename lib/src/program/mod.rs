@@ -190,7 +190,7 @@ impl MidenProgram {
 
                 let host = DefaultHost::new(advice_provider);
 
-                if let Ok((outputs, proof)) = prove(
+                if let Ok((_, proof)) = prove(
                     &program,
                     self.stack_inputs.clone(),
                     host,
